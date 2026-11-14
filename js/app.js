@@ -47,16 +47,16 @@ function playTone(frequency, duration, volume, delay = 0) {
 
 function playSound(name, progress = 0) {
   if (name === 'click') {
-    playTone(520, 0.045, 0.035);
+    playTone(520, 0.045, 0.07);
   } else if (name === 'fill') {
-    playTone(440 + progress * 150, 0.12, 0.055);
+    playTone(440 + progress * 150, 0.12, 0.11);
   } else if (name === 'login') {
-    playTone(523, 0.28, 0.055);
-    playTone(659, 0.28, 0.055, 0.11);
-    playTone(784, 0.38, 0.055, 0.22);
+    playTone(523, 0.28, 0.11);
+    playTone(659, 0.28, 0.11, 0.11);
+    playTone(784, 0.38, 0.11, 0.22);
   } else if (name === 'assistant') {
-    playTone(740, 0.14, 0.035);
-    playTone(988, 0.2, 0.035, 0.09);
+    playTone(740, 0.14, 0.07);
+    playTone(988, 0.2, 0.07, 0.09);
   }
 }
 
