@@ -7,7 +7,7 @@ const __dirname = resolve(fileURLToPath(import.meta.url), '..')
 
 /**
  * Database file location — override with DB_PATH env var
- * Default: nasa-space-apps/backend/data/app.db
+ * Default: nasa-space-apps/backend/src/data/app.db
  */
 const dbPath = process.env.DB_PATH ?? resolve(__dirname, '..', 'data', 'app.db')
 
