@@ -984,11 +984,43 @@ button {
   cursor: pointer;
 }
 
+.mis li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surf2);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.mis li.done {
+  opacity: 0.72;
+}
+
 .mis input {
   width: 18px;
   height: 18px;
   margin-top: 3px;
+  flex-shrink: 0;
   accent-color: #8B1C1F;
+}
+
+.mission-open {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+}
+
+.mission-open:hover strong {
+  color: var(--accent);
+}
+
+.mission-open small {
+  display: block;
+  color: var(--mute);
+  font-size: 12.5px;
 }
 
 .mis small {
@@ -997,8 +1029,7 @@ button {
   font-size: 12.5px;
 }
 
-.mis li.done label {
-  opacity: 0.6;
+.mis li.done .mission-open strong {
   text-decoration: line-through;
 }
 
@@ -1007,6 +1038,31 @@ button {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.orbit-heading {
+  min-width: 0;
+}
+
+.orbit-voice-toggle {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surf2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.orbit-voice-toggle:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.orbit-voice-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .orbit-avatar-wrap {
@@ -1101,6 +1157,12 @@ form.in input {
   font-size: 14px;
 }
 
+.orbit-mic-toggle {
+  flex-shrink: 0;
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
 .note {
   font-size: 12.5px;
   color: var(--mute);
@@ -1130,6 +1192,37 @@ form.in input {
   color: #fff;
   background: linear-gradient(145deg, #2A2B4A, #5B1927);
   box-shadow: 0 20px 60px rgba(18, 11, 29, 0.8);
+}
+
+.mission-dialog {
+  color: var(--ink);
+  background: var(--surf);
+}
+
+.mission-dialog::backdrop {
+  background: rgba(16, 13, 28, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.mission-dialog h2 {
+  margin-right: 36px;
+}
+
+.mission-dialog > p {
+  color: var(--mute);
+}
+
+.mission-instructions {
+  padding-left: 24px;
+}
+
+.mission-instructions li {
+  margin: 10px 0;
+  padding-left: 4px;
+}
+
+.mission-dialog .dialog-actions {
+  margin-top: 18px;
 }
 
 .register-dialog::backdrop {
