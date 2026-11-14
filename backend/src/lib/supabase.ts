@@ -1,11 +1,14 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
+const supabaseUrlEnv = process.env.SUPABASE_URL
+const supabaseAnonKeyEnv = process.env.SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrlEnv || !supabaseAnonKeyEnv) {
   throw new Error('Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env')
 }
+
+const supabaseUrl: string = supabaseUrlEnv
+const supabaseAnonKey: string = supabaseAnonKeyEnv
 
 /**
  * Supabase client for browser/client-side use.
@@ -24,10 +27,11 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
  * Use ONLY in trusted server contexts (API routes, Edge Functions, scripts).
  */
 export function createServiceClient(): SupabaseClient {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) {
+  const serviceKeyEnv = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKeyEnv) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY not set')
   }
+  const serviceKey: string = serviceKeyEnv
   return createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
