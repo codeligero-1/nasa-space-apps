@@ -532,8 +532,11 @@ function renderMissionList() {
         appState.xp += MIS[idx][2];
         toast('Mission logged');
         say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
-      } else {
-        checkbox.checked = true;
+      } else if (!checkbox.checked && appState.done.has(idx)) {
+        appState.done.delete(idx);
+        appState.xp -= MIS[idx][2];
+        toast('Mission unchecked');
+        say(`Removed "${MIS[idx][0]}" from your medical telemetry.`);
       }
       renderMissionList();
     };
