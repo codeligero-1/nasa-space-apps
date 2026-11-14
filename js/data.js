@@ -1,4 +1,4 @@
-window.HEMODECK_DATA = {
+window.VITAL_DATA = {
   metrics: [
     [
       "Red blood cells",

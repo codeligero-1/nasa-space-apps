@@ -1,4 +1,4 @@
-/* HemoDeck design tokens and theme colors. */
+/* VITAL design tokens and theme colors. */
 :root {
   --bg: #F3F6FB;
   --surf: #fff;
@@ -769,5 +769,325 @@ th {
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* VITAL NFC onboarding screen. */
+.onboarding-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  background: linear-gradient(180deg, #2A2B4A 0%, #4A1320 40%, #8B1C1F 70%, #F07C8A 100%);
+  text-shadow: 0 1px 3px #24101899;
+  transition: opacity .35s ease;
+}
+
+.onboarding-screen.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.planet {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  width: clamp(280px, 38vw, 420px);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.planet-top {
+  top: clamp(-35px, -2.5vw, -18px);
+  right: clamp(-35px, -2.5vw, -18px);
+}
+
+.planet-bottom {
+  bottom: clamp(-20px, -1.5vw, -8px);
+  left: clamp(-40px, -3vw, -20px);
+}
+
+.onboarding-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100% - 32px, 440px);
+  text-align: center;
+}
+
+.vital-reader {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid #ffffff70;
+  border-radius: 50%;
+  color: #fff;
+  background: #ffffff24;
+  box-shadow: 0 8px 26px #160d1e40, inset 0 1px 1px #ffffff38;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform .35s ease, box-shadow .35s ease, background-color .35s ease;
+  isolation: isolate;
+}
+
+.vital-reader::before {
+  position: absolute;
+  z-index: -1;
+  inset: -7px;
+  border: 1px solid #fff9;
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
+  animation: idle-ripple 4s ease-out infinite;
+  pointer-events: none;
+}
+
+.vital-reader svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.vital-reader:focus-visible,
+.register-trigger:focus-visible,
+.dialog-close:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
+.vital-reader.reading {
+  transform: scale(1.15);
+  background: #ffffff40;
+  box-shadow: 0 0 0 8px #ffffff1c, 0 0 34px 12px #fff9, 0 8px 26px #160d1e50;
+}
+
+.vital-reader.reading::before {
+  animation: none;
+}
+
+.ecg-line {
+  stroke-dasharray: 110;
+  stroke-dashoffset: 0;
+}
+
+.vital-reader.reading .ecg-line {
+  animation: ecg-draw .8s ease-out both;
+}
+
+.ripple-ring {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vital-reader.reading .ripple-ring {
+  animation: tap-ripple .85s ease-out both;
+}
+
+.vital-reader.reading .ripple-ring:nth-of-type(2) {
+  animation-delay: .16s;
+}
+
+.vital-reader.reading .ripple-ring:nth-of-type(3) {
+  animation-delay: .32s;
+}
+
+.brand-name {
+  margin: 8px 0 0;
+  color: #fff;
+  font: 700 clamp(30px, 7vw, 38px)/1.1 Outfit, "Plus Jakarta Sans", sans-serif;
+  letter-spacing: .04em;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.onboarding-content h1 {
+  margin: 10px 0 0;
+  color: #fff;
+  font: 400 20px/1.35 "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+.register-trigger {
+  min-height: 38px;
+  margin-top: 16px;
+  padding: 8px 18px;
+  border: 1px solid #ffffff24;
+  border-radius: 999px;
+  color: #F1D4D8;
+  background: rgb(60 10 15 / 50%);
+  box-shadow: 0 4px 12px #240a0d4a;
+  font-size: 14px;
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.register-trigger:hover {
+  background: rgb(60 10 15 / 78%);
+}
+
+.register-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 26px;
+  border: 1px solid #ffffff70;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(145deg, #34213f, #4a1320);
+  box-shadow: 0 20px 60px #120b1dcc;
+  text-shadow: 0 1px 2px #170e1a99;
+}
+
+.register-dialog::backdrop {
+  background: #100d1caa;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.register-dialog h2 {
+  padding-right: 28px;
+  font-size: 23px;
+}
+
+.register-dialog p {
+  color: #fff;
+  line-height: 1.45;
+}
+
+.register-dialog label {
+  display: block;
+  margin: 16px 0 6px;
+  font-weight: 700;
+}
+
+.register-dialog input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #ffffff8a;
+  border-radius: 10px;
+  color: #1d1830;
+  background: #fff;
+  font: inherit;
+}
+
+.register-dialog input:focus-visible {
+  outline: 3px solid #ffc8d0;
+  outline-offset: 2px;
+}
+
+.registration-status {
+  min-height: 24px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dialog-actions .register-trigger {
+  margin-top: 0;
+}
+
+.dialog-close {
+  float: right;
+  width: 34px;
+  height: 34px;
+  margin: -8px -8px 0 8px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #ffffff20;
+  font-size: 24px;
+  line-height: 1;
+}
+
+@keyframes idle-ripple {
+  0% { transform: scale(.94); opacity: .35; }
+  75%, 100% { transform: scale(1.45); opacity: 0; }
+}
+
+@keyframes tap-ripple {
+  0% { transform: scale(1); opacity: .9; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+@keyframes ecg-draw {
+  from { stroke-dashoffset: 110; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fade-onboarding {
+  to { opacity: 0; }
+}
+
+@media (max-width: 520px) {
+  .planet {
+    width: 280px;
+  }
+
+  .planet-top {
+    top: -30px;
+    right: -25px;
+  }
+
+  .planet-bottom {
+    bottom: -10px;
+    left: -25px;
+  }
+
+  .register-dialog {
+    padding: 22px;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vital-reader,
+  .onboarding-screen {
+    transition: none;
+  }
+
+  .vital-reader::before,
+  .vital-reader.reading .ripple-ring {
+    display: none;
+    animation: none;
+  }
+
+  .vital-reader.reading {
+    transform: none;
+    color: #fff7dc;
+    background: #ffffff48;
+    box-shadow: 0 0 0 5px #ffffff24, 0 0 28px 8px #fff9;
+  }
+
+  .vital-reader.reading .ecg-line {
+    animation: none;
+    stroke: #ffe9a8;
   }
 }

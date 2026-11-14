@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 360">
+  <title>Decorative navy planet with a tilted ring</title>
+  <circle cx="352" cy="48" r="166" fill="#232F4F"/>
+  <ellipse cx="267" cy="149" rx="231" ry="37" fill="none" stroke="#D9D9D9" stroke-width="7" transform="rotate(-25 267 149)"/>
+</svg>

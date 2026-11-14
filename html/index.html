@@ -3,36 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HemoDeck – Crew Blood Analysis</title>
+<title>VITAL – Crew Blood Analysis</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon/vital.svg">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-<header class="top">
-  <div class="logo"><i></i>HemoDeck</div>
+<header class="top hide" id="siteHeader">
+  <div class="logo"><i></i>VITAL</div>
   <div class="sp"></div>
   <div class="xp hide" id="xpbox"><span class="lvl" id="lvl">Level 1</span><div class="bar" aria-label="Experience"><b id="xpb"></b></div><span id="xpt" style="font-size:14px;color:var(--mute)"></span></div>
   <button class="btn ghost sm hide" id="out">Sign out</button>
 </header>
 
-<!-- Onboarding 1 -->
-<main class="stage" id="s1"><div>
-  <div class="seg" role="group" aria-label="Sign-in type">
-    <button id="mLocal" aria-pressed="true">Crew member</button>
-    <button id="mAdmin" aria-pressed="false">Mainframe admin</button>
+<!-- NFC sign-in: the logo is the interactive reader. -->
+<main class="onboarding-screen" id="s1">
+  <img class="planet planet-top" src="../assets/planets/planet-top-right.svg" alt="" aria-hidden="true">
+  <img class="planet planet-bottom" src="../assets/planets/planet-bottom-left.svg" alt="" aria-hidden="true">
+  <div class="onboarding-content">
+    <button class="vital-reader" id="reader" type="button" aria-label="Tap your card to start">
+      <svg viewBox="0 0 110 110" role="img" aria-label="VITAL astronaut helmet with heartbeat">
+        <path d="M22 51a33 33 0 0 1 66 0v15H22z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M20 53h-4a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h6M90 53h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="22" y="46" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path class="ecg-line" id="ecg-line" d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2h24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="66" y="66" text-anchor="middle" fill="currentColor" font-size="7" font-family="Outfit, sans-serif">VITAL</text>
+        <path d="M24 85q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="ripple-ring" aria-hidden="true"></span>
+      <span class="ripple-ring" aria-hidden="true"></span>
+      <span class="ripple-ring" aria-hidden="true"></span>
+    </button>
+    <p class="brand-name">VITAL</p>
+    <p class="tagline">Every Indicator Matters. Every Life Counts.</p>
+    <h1 id="t1">Tap your card to start</h1>
+    <button class="register-trigger" id="openRegister" type="button">Register Your Credentials</button>
   </div>
-  <h1 id="t1">Tap your card to start</h1>
-  <p id="p1">Hold your NFC card on the reader. Your personal blood profile loads on this device only.</p>
-  <button class="reader" id="reader" aria-label="Simulate NFC card tap"><div class="nfc">NASA CREW<span></span></div></button>
-  <button class="btn" id="tap">Demo: tap card</button>
-  <p class="note">Waiting for the NFC reader…</p>
-</div></main>
+</main>
 
 <!-- Onboarding 2 -->
 <main class="stage hide" id="s2"><div>
   <div class="steps"><span>Signed in</span>›<b>Sample</b>›<span>Dashboard</span></div>
   <h1 id="t2">Waiting for your blood sample</h1>
-  <p id="p2">Insert the cartridge into the analyzer. HemoDeck starts reading when the sensors detect blood.</p>
+  <p id="p2">Insert the cartridge into the analyzer. VITAL starts reading when the sensors detect blood.</p>
   <div class="tube" aria-hidden="true"><i id="fill"></i></div>
   <div class="bar" style="max-width:320px;margin:10px auto"><b id="rb"></b></div>
   <p id="rs" style="margin-top:4px">Sensor status: idle</p>
@@ -48,7 +61,7 @@
       <div><h2 id="hn">Crew report</h2><p id="hs"></p><div class="chips" id="hc"></div></div>
     </div>
     <div id="groups"></div>
-    <p class="note">Demo data for a prototype. Reference ranges are general adult values and vary by lab, age and sex. HemoDeck supports analysis and does not diagnose; confirm results with the flight surgeon.</p>
+    <p class="note">Demo data for a prototype. Reference ranges are general adult values and vary by lab, age and sex. VITAL supports analysis and does not diagnose; confirm results with the flight surgeon.</p>
   </section>
   <aside class="side">
     <div class="card"><h3>Missions</h3><p style="margin:4px 0 0;color:var(--mute);font-size:15px">Follow-up tests and tasks to understand your results. Finish them to earn XP.</p><ul class="mis" id="mis"></ul></div>
@@ -74,6 +87,20 @@
   <tr><td>HD-03</td><td>Medical bay</td><td>Blood sensor, NFC</td><td><span class="chip c-warn">Calibrate soon</span></td></tr>
   </tbody></table></div></div></div>
 </main>
+<dialog class="register-dialog" id="registerDialog" aria-labelledby="registerTitle">
+  <form id="registerForm">
+    <button class="dialog-close" id="closeRegister" type="button" aria-label="Close registration">×</button>
+    <h2 id="registerTitle">Register your credentials</h2>
+    <p>Enter the card holder's name, then tap the card to register it.</p>
+    <label for="cardHolder">Card holder's name</label>
+    <input id="cardHolder" name="cardHolder" autocomplete="name" required>
+    <p class="registration-status" id="registrationStatus" role="status">Ready to register a crew card.</p>
+    <div class="dialog-actions">
+      <button class="btn" id="tapToRegister" type="button">Tap card to register</button>
+      <button class="register-trigger" id="simulateRegister" type="button">Demo: simulate card tap</button>
+    </div>
+  </form>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="../js/data.js"></script>

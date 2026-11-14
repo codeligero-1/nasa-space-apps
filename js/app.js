@@ -2,21 +2,24 @@
 const $ = (selector) => document.querySelector(selector);
 
 const appState = {
-  mode: 'local',
   xp: 40,
-  done: new Set()
+  done: new Set(),
+  loginInProgress: false,
+  registrationReader: null,
+  registrationAbortController: null
 };
 
-const D = window.HEMODECK_DATA.metrics;
-const MIS = window.HEMODECK_DATA.missions;
-const C = window.HEMODECK_DATA.crew;
-const KB = window.HEMODECK_DATA.chatKnowledge;
+const D = window.VITAL_DATA.metrics;
+const MIS = window.VITAL_DATA.missions;
+const C = window.VITAL_DATA.crew;
+const KB = window.VITAL_DATA.chatKnowledge;
 
 // Toggle the visible screen while keeping the UI state centralized.
 function show(screenId) {
   ['s1', 's2', 'dash', 'admin'].forEach((id) => {
     $('#' + id).classList.toggle('hide', id !== screenId);
   });
+  $('#siteHeader').classList.toggle('hide', screenId === 's1');
 }
 
 // Visual helper used by the health assistant card.
@@ -74,43 +77,127 @@ function say(message, isUserMessage = false) {
   $('#log').scrollTop = 1e5;
 }
 
-function setMode(mode) {
-  appState.mode = mode;
-  $('#mLocal').setAttribute('aria-pressed', mode === 'local');
-  $('#mAdmin').setAttribute('aria-pressed', mode === 'admin');
-
-  if (mode === 'local') {
-    $('#p1').textContent = 'Hold your NFC card on the reader. Your personal blood profile loads on this device only.';
-    document.querySelector('.nfc').firstChild.textContent = 'NASA CREW';
+function handleCardTap(isAdmin = false) {
+  if (appState.loginInProgress) {
     return;
   }
 
-  $('#p1').textContent = 'Hold your admin card on the reader to open the mainframe and see all crew data.';
-  document.querySelector('.nfc').firstChild.textContent = 'NASA ADMIN';
-}
-
-function tap() {
+  appState.loginInProgress = true;
   const reader = $('#reader');
-
-  if (reader.classList.contains('ok')) {
-    return;
-  }
-
-  reader.classList.add('ok');
+  reader.classList.add('reading');
   $('#t1').textContent = 'Card read. Welcome aboard';
 
   setTimeout(() => {
-    reader.classList.remove('ok');
-    $('#t1').textContent = 'Tap your card to start';
+    $('#s1').classList.add('leaving');
+    setTimeout(() => {
+      reader.classList.remove('reading');
+      $('#s1').classList.remove('leaving');
+      $('#t1').textContent = 'Tap your card to start';
+      show(isAdmin ? 'admin' : 's2');
+      if (isAdmin) {
+        $('#out').classList.remove('hide');
+      }
+      appState.loginInProgress = false;
+    }, 350);
+  }, 1200);
+}
 
-    if (appState.mode === 'admin') {
-      show('admin');
-      $('#out').classList.remove('hide');
+// Physical-reader integrations can dispatch this event with { role: 'admin' } or { role: 'crew' }.
+function handleNfcLogin(event) {
+  if ($('#s1').classList.contains('hide')) {
+    return;
+  }
+  handleCardTap(event.detail?.role === 'admin');
+}
+
+function openRegistration() {
+  $('#registrationStatus').textContent = 'Enter a name, then tap a card to register.';
+  $('#registerDialog').showModal();
+  $('#cardHolder').focus();
+}
+
+function saveRegistration(name, role, serialNumber = '') {
+  const statusNode = $('#registrationStatus');
+
+  try {
+    const storedCards = JSON.parse(localStorage.getItem('vital.registeredCards') || '[]');
+    if (!Array.isArray(storedCards)) {
+      statusNode.textContent = 'Could not save this card: the saved card list is invalid.';
       return;
     }
 
-    show('s2');
-  }, 1200);
+    storedCards.push({
+      name,
+      role,
+      cardId: serialNumber || `demo-${Date.now()}`,
+      registeredAt: new Date().toISOString()
+    });
+    localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
+    statusNode.textContent = `${name} registered as ${role}.`;
+  } catch (error) {
+    statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
+  }
+}
+
+async function startCardRegistration() {
+  const name = $('#cardHolder').value.trim();
+  const statusNode = $('#registrationStatus');
+  if (!name) {
+    statusNode.textContent = 'Enter the card holder’s name first.';
+    $('#cardHolder').focus();
+    return;
+  }
+
+  if (!('NDEFReader' in window)) {
+    statusNode.textContent = 'NFC is unavailable in this browser. Use the demo button to register a card.';
+    return;
+  }
+
+  const controller = new AbortController();
+  appState.registrationAbortController = controller;
+  appState.registrationReader = new window.NDEFReader();
+  appState.registrationReader.onreading = (event) => {
+    const textRecord = event.message.records.find((record) => record.recordType === 'text');
+    const cardText = textRecord
+      ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
+      : '';
+    const role = /admin/i.test(cardText) ? 'admin' : 'crew';
+
+    saveRegistration(name, role, event.serialNumber || '');
+    controller.abort();
+    appState.registrationReader = null;
+    appState.registrationAbortController = null;
+  };
+  appState.registrationReader.onreadingerror = () => {
+    statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
+  };
+
+  statusNode.textContent = 'Waiting for an NFC card…';
+  try {
+    await appState.registrationReader.scan({ signal: controller.signal });
+    statusNode.textContent = 'NFC reader ready. Tap the card to register it.';
+  } catch (error) {
+    statusNode.textContent = `Could not start NFC scanning: ${error.message}`;
+    appState.registrationReader = null;
+    appState.registrationAbortController = null;
+  }
+}
+
+function simulateCardRegistration() {
+  const name = $('#cardHolder').value.trim();
+  if (!name) {
+    $('#registrationStatus').textContent = 'Enter the card holder’s name first.';
+    $('#cardHolder').focus();
+    return;
+  }
+  saveRegistration(name, 'crew');
+}
+
+function closeRegistration() {
+  appState.registrationAbortController?.abort();
+  appState.registrationReader = null;
+  appState.registrationAbortController = null;
+  $('#registerDialog').close();
 }
 
 function renderMissionList() {
@@ -331,7 +418,7 @@ function resetToOnboarding() {
   $('#rb').style.width = '0';
   $('#fill').style.height = '0';
   $('#t2').textContent = 'Waiting for your blood sample';
-  $('#p2').textContent = 'Insert the cartridge into the analyzer. HemoDeck starts reading when the sensors detect blood.';
+  $('#p2').textContent = 'Insert the cartridge into the analyzer. VITAL starts reading when the sensors detect blood.';
   $('#rs').textContent = 'Sensor status: idle';
 
   document.querySelectorAll('#live div').forEach((entry) => {
@@ -343,14 +430,24 @@ function resetToOnboarding() {
 }
 
 // ---------- Initial app startup ----------
-$('#mLocal').onclick = () => setMode('local');
-$('#mAdmin').onclick = () => setMode('admin');
-$('#tap').onclick = tap;
-$('#reader').onclick = tap;
+$('#reader').onclick = (event) => handleCardTap(event.shiftKey);
+$('#openRegister').onclick = openRegistration;
+$('#closeRegister').onclick = closeRegistration;
+$('#registerDialog').addEventListener('click', (event) => {
+  if (event.target === $('#registerDialog')) {
+    closeRegistration();
+  }
+});
+$('#tapToRegister').onclick = startCardRegistration;
+$('#simulateRegister').onclick = simulateCardRegistration;
+window.addEventListener('vital:nfc-read', handleNfcLogin);
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && document.activeElement === document.body) {
-    tap();
+  if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
+    if (event.target === document.body || event.target === document.documentElement) {
+      event.preventDefault();
+      handleCardTap(event.shiftKey);
+    }
   }
 });
 
@@ -360,5 +457,4 @@ $('#out').onclick = resetToOnboarding;
 bindQuickQuestions();
 populateAdminTable();
 simulateSampleRead();
-setMode('local');
 setXP();
