@@ -90,3 +90,84 @@ CREATE INDEX IF NOT EXISTS idx_scores_project ON scores(project_id);
 CREATE INDEX IF NOT EXISTS idx_scores_judge ON scores(judge_id);
 CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+
+-- Astronaut ownership is assigned only by an administrator. Do not add a
+-- client insert/update policy to astronaut_profiles.
+CREATE TABLE IF NOT EXISTS public.astronaut_profiles (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  astronaut_id TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  mission_code TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.astronaut_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS astronaut_profiles_read_own ON public.astronaut_profiles;
+CREATE POLICY astronaut_profiles_read_own
+  ON public.astronaut_profiles
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE TABLE IF NOT EXISTS public.cbc_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+  record_type TEXT NOT NULL CHECK (record_type IN ('current', 'baseline')),
+  sample_id TEXT,
+  date_time TIMESTAMPTZ,
+  date_precision TEXT CHECK (date_precision IS NULL OR date_precision IN ('date', 'datetime')),
+  mission_day NUMERIC CHECK (mission_day IS NULL OR mission_day >= 0),
+  readings JSONB NOT NULL CHECK (jsonb_typeof(readings) = 'object'),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cbc_records_user_date
+  ON public.cbc_records(user_id, date_time DESC);
+
+ALTER TABLE public.cbc_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS cbc_records_read_own ON public.cbc_records;
+CREATE POLICY cbc_records_read_own
+  ON public.cbc_records
+  FOR SELECT
+  TO authenticated
+  USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1
+      FROM public.astronaut_profiles
+      WHERE user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS cbc_records_insert_own ON public.cbc_records;
+CREATE POLICY cbc_records_insert_own
+  ON public.cbc_records
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1
+      FROM public.astronaut_profiles
+      WHERE user_id = auth.uid()
+    )
+  );
+
+GRANT SELECT ON public.astronaut_profiles TO authenticated;
+GRANT SELECT, INSERT ON public.cbc_records TO authenticated;
+REVOKE ALL ON public.astronaut_profiles FROM PUBLIC, anon;
+REVOKE ALL ON public.cbc_records FROM PUBLIC, anon;
+
+-- Disable access to the former shared demo table if it was created by an older schema.
+DO $$
+BEGIN
+  IF to_regclass('public.demo_cbc_records') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS demo_cbc_records_read_anonymous ON public.demo_cbc_records';
+    EXECUTE 'DROP POLICY IF EXISTS demo_cbc_records_insert_anonymous ON public.demo_cbc_records';
+    EXECUTE 'REVOKE ALL ON TABLE public.demo_cbc_records FROM PUBLIC, anon, authenticated';
+  END IF;
+END $$;
+
+-- After creating an Auth user, link it from the SQL editor (repeat per astronaut):
+-- INSERT INTO public.astronaut_profiles (user_id, astronaut_id, display_name, mission_code)
+-- VALUES ('<auth.users.id>', 'AST-001', 'Alex Vance', 'ARTEMIS-V');

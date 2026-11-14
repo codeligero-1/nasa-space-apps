@@ -1,62 +1,44 @@
 window.VITAL_DATA = {
+  sections: [
+    { id: 'vitals', title: 'Vital Signs Overview', description: 'Latest available measurements compared with configured reference ranges.' },
+    { id: 'blood', title: 'Blood Analysis Summary', description: 'CBC, differential, inflammatory markers, cardiac marker, and electrolytes.' },
+    { id: 'radiation', title: 'Radiation Monitoring', description: 'Physical exposure and biological response measurements.' }
+  ],
   metrics: [
-    [
-      "Red blood cells",
-      "Carry oxygen around the body",
-      [
-        ["Hemoglobin", "g/dL", 12.1, 13.5, 17.5, "The protein in red cells that holds oxygen. Below range can mean the blood carries less oxygen."],
-        ["Hematocrit", "%", 37.8, 41, 53, "The share of your blood volume taken up by red cells."],
-        ["Red cell count", "×10¹²/L", 4.3, 4.5, 5.9, "How many red cells are in a litre of blood."],
-        ["MCV", "fL", 88, 80, 100, "Average size of a red cell."],
-        ["MCH", "pg", 28.1, 27, 33, "Average hemoglobin inside each red cell."],
-        ["MCHC", "g/dL", 32.0, 32, 36, "How concentrated hemoglobin is within red cells."],
-        ["RDW", "%", 14.2, 11.5, 14.5, "How much red cell sizes vary."]
-      ]
-    ],
-    [
-      "White blood cells",
-      "Defend the body against infection",
-      [
-        ["White cell count", "×10⁹/L", 10.6, 4.5, 11, "Total defence cells. High can follow infection, stress or hard exercise."],
-        ["Neutrophils", "%", 58, 40, 70, "First responders to bacteria."],
-        ["Lymphocytes", "%", 31, 20, 45, "Fight viruses and build memory."],
-        ["Monocytes", "%", 7, 2, 8, "Clean up damaged cells and germs."],
-        ["Eosinophils", "%", 3.6, 1, 4, "Respond to allergies and parasites."],
-        ["Basophils", "%", 0.4, 0, 1, "Release histamine during allergic reactions."]
-      ]
-    ],
-    [
-      "Platelets",
-      "Help blood clot",
-      [
-        ["Platelet count", "×10⁹/L", 148, 150, 450, "Tiny cell fragments that seal wounds. Slightly low here."]
-      ]
-    ]
-  ],
+    { id: 'heartRate', section: 'vitals', group: 'Vital Signs', name: 'Heart Rate', abbreviation: 'HR', unit: 'bpm', range: 'Heart Rate', decimals: 1 },
+    { id: 'systolic', section: 'vitals', group: 'Blood Pressure', name: 'Systolic Blood Pressure', abbreviation: 'SBP', unit: 'mmHg', range: 'Systolic Blood Pressure', decimals: 1 },
+    { id: 'diastolic', section: 'vitals', group: 'Blood Pressure', name: 'Diastolic Blood Pressure', abbreviation: 'DBP', unit: 'mmHg', range: 'Diastolic Blood Pressure', decimals: 1 },
+    { id: 'spo2', section: 'vitals', group: 'Vital Signs', name: 'Oxygen Saturation', abbreviation: 'SpO₂', unit: '%', range: 'SpO2 Oxygen Saturation', decimals: 1 },
+    { id: 'temperature', section: 'vitals', group: 'Vital Signs', name: 'Body Temperature', abbreviation: 'Temp', unit: '°C', range: 'Body Temperature', decimals: 2 },
+    { id: 'respiratoryRate', section: 'vitals', group: 'Vital Signs', name: 'Respiratory Rate', abbreviation: 'RR', unit: 'breaths/min', range: null, decimals: 1 },
+    { id: 'hrv', section: 'vitals', group: 'Vital Signs', name: 'Heart Rate Variability', abbreviation: 'HRV', unit: 'ms', range: 'Heart Rate Variability (HRV)', decimals: 1 },
 
-  missions: [
-    ["Iron panel with ferritin", "Checks whether low hemoglobin comes from low iron stores", 120],
-    ["Reticulocyte count", "Shows how fast bone marrow is making new red cells", 90],
-    ["Blood smear review", "A lab tech inspects cell shape and platelet clumping", 90],
-    ["Repeat blood count in 2 weeks", "Confirms whether the changes persist", 60],
-    ["Log hydration and sleep for 3 days", "Context that helps explain this week’s numbers", 30]
-  ],
+    { id: 'rbc', section: 'blood', group: 'Blood Cell Counts', name: 'Red Blood Cell Count', abbreviation: 'RBC', unit: 'M/µL', range: 'Red Blood Cell Count (RBC)', decimals: 2 },
+    { id: 'wbc', section: 'blood', group: 'Blood Cell Counts', name: 'White Blood Cell Count', abbreviation: 'WBC', unit: 'K/µL', range: 'White Blood Cell Count (WBC)', decimals: 2 },
+    { id: 'hemoglobin', section: 'blood', group: 'Blood Cell Counts', name: 'Hemoglobin', abbreviation: 'HGB', unit: 'g/dL', range: 'Hemoglobin', decimals: 2 },
+    { id: 'hematocrit', section: 'blood', group: 'Blood Cell Counts', name: 'Hematocrit', abbreviation: 'HCT', unit: '%', range: 'Hematocrit', decimals: 1 },
+    { id: 'platelets', section: 'blood', group: 'Blood Cell Counts', name: 'Platelet Count', abbreviation: 'PLT', unit: 'K/µL', range: 'Platelet Count', decimals: 1 },
+    { id: 'neutrophils', section: 'blood', group: 'White Blood Cell Differential', name: 'Neutrophils', abbreviation: 'NEUT%', unit: '%', range: 'Neutrophils', decimals: 1 },
+    { id: 'lymphocytes', section: 'blood', group: 'White Blood Cell Differential', name: 'Lymphocytes', abbreviation: 'LYMPH%', unit: '%', range: 'Lymphocytes', decimals: 1 },
+    { id: 'monocytes', section: 'blood', group: 'White Blood Cell Differential', name: 'Monocytes', abbreviation: 'MONO%', unit: '%', range: 'Monocytes', decimals: 1 },
+    { id: 'eosinophils', section: 'blood', group: 'White Blood Cell Differential', name: 'Eosinophils', abbreviation: 'EOS%', unit: '%', range: 'Eosinophils', decimals: 1 },
+    { id: 'basophils', section: 'blood', group: 'White Blood Cell Differential', name: 'Basophils', abbreviation: 'BASO%', unit: '%', range: 'Basophils', decimals: 1 },
+    { id: 'immatureGranulocytes', section: 'blood', group: 'White Blood Cell Differential', name: 'Immature Granulocytes', abbreviation: 'IG%', unit: '%', range: 'Immature Granulocytes', decimals: 2 },
+    { id: 'crp', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'C-Reactive Protein', abbreviation: 'CRP', unit: 'mg/L', range: 'C-Reactive Protein (CRP)', decimals: 2 },
+    { id: 'ferritin', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Ferritin', abbreviation: 'Ferritin', unit: 'ng/mL', range: 'Ferritin', decimals: 1 },
+    { id: 'il6', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Interleukin-6', abbreviation: 'IL-6', unit: 'pg/mL', range: 'Interleukin-6 (IL-6)', decimals: 2 },
+    { id: 'tnfAlpha', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Tumor Necrosis Factor-alpha', abbreviation: 'TNF-α', unit: 'pg/mL', range: null, decimals: 2 },
+    { id: 'cortisol', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Cortisol', abbreviation: 'Cortisol', unit: 'µg/dL', range: 'Cortisol', decimals: 2 },
+    { id: 'troponin', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Troponin-I', abbreviation: 'Troponin-I', unit: 'ng/mL', range: null, decimals: 4 },
+    { id: 'sodium', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Sodium', abbreviation: 'Na', unit: 'mEq/L', range: null, decimals: 1 },
+    { id: 'potassium', section: 'blood', group: 'Biomarkers & Electrolytes', name: 'Potassium', abbreviation: 'K', unit: 'mEq/L', range: null, decimals: 1 },
 
-  crew: [
-    ["Cmdr. A. Reyes", "•••• 4821", "Today", "ok", 92],
-    ["Dr. L. Okafor", "•••• 1190", "Today", "ok", 85],
-    ["J. Tanaka", "•••• 7734", "Yesterday", "warn", 77],
-    ["M. Santos", "•••• 0562", "Today", "low", 69],
-    ["R. Haddad", "•••• 3309", "2 days ago", "ok", 100],
-    ["S. Lindqvist", "•••• 9915", "3 days ago", "warn", 85]
-  ],
-
-  chatKnowledge: [
-    [/hemoglobin|anemi|iron|tired/, "Your hemoglobin is 12.1 g/dL, a bit under the 13.5 floor. Hematocrit and red cell count are slightly low too, so they point the same way. Common reasons include low iron, low B12 or folate, or recent blood loss. An iron panel with ferritin is the best next step, and I put it first in your missions."],
-    [/platelet|clot|bruis/, "Platelets are 148, just below 150. Small dips like this are often harmless, but a blood smear can rule out clumping in the sample. Repeating the count in two weeks shows whether it’s a trend."],
-    [/white|wbc|infect|neutro|lymph/, "Your white cell count is 10.6, close to the top of range, and the mix of types is balanced. Hard exercise, stress or a mild bug can nudge it up. Nothing stands out in the breakdown."],
-    [/score|orbit/, "The Orbit score is the share of your readings that sit in their healthy range. Complete missions and repeat scans to follow how it changes over time."],
-    [/test|next|mission|follow/, "I’d start with the iron panel, then a reticulocyte count. Those two explain most low-hemoglobin patterns. Check them off in Missions to earn XP."],
-    [/doctor|surgeon|serious|worry|diagnos/, "I can explain the numbers, but I can’t diagnose. Share this report with your flight surgeon, especially because three values are below range together."]
+    { id: 'dailyDose', section: 'radiation', group: 'Radiation Exposure', name: 'Daily Radiation Dose', abbreviation: 'Daily Dose', unit: 'mSv', range: null, baselineUnit: 'mSv/day', compareBaseline: false, decimals: 5 },
+    { id: 'cumulativeDose', section: 'radiation', group: 'Radiation Exposure', name: 'Cumulative Radiation Dose', abbreviation: 'Cumulative Dose', unit: 'mSv', range: null, baselineUnit: 'mSv/year', compareBaseline: false, decimals: 2 },
+    { id: 'background', section: 'radiation', group: 'Radiation Exposure', name: 'Space Radiation Background', abbreviation: 'Background', unit: 'mGy', range: null, decimals: 4 },
+    { id: 'gammaH2ax', section: 'radiation', group: 'Biological Response', name: 'Gamma-H2AX Indicator', abbreviation: 'γ-H2AX', unit: 'foci/cell', range: 'Gamma-H2AX Foci per Cell', decimals: 3 },
+    { id: 'dicentrics', section: 'radiation', group: 'Biological Response', name: 'Dicentric Chromosome Assay', abbreviation: 'Dicentrics', unit: '/1000 cells', range: 'Dicentric Chromosomes', decimals: 2 },
+    { id: 'micronuclei', section: 'radiation', group: 'Biological Response', name: 'Micronuclei Indicator', abbreviation: 'Micronuclei', unit: '/1000 cells', range: 'Micronuclei Frequency', decimals: 2 },
+    { id: 'dnaRepair', section: 'radiation', group: 'Biological Response', name: 'DNA Repair Capacity', abbreviation: 'DNA Repair', unit: '%', range: null, decimals: 1 }
   ]
 };
