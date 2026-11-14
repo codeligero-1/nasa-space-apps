@@ -6,12 +6,64 @@ const appState = {
   activeTab: 'overview',
   xp: 40,
   registrationReader: null,
-  registrationAbortController: null
+  registrationAbortController: null,
+  soundsEnabled: true,
+  audioContext: null
 };
 
 let D = window.VITAL_DATA.metrics;
 const MIS = window.VITAL_DATA.missions;
 const KB = window.VITAL_DATA.chatKnowledge;
+
+function playTone(frequency, duration, volume, delay = 0) {
+  if (!appState.soundsEnabled || !window.AudioContext) return;
+
+  try {
+    if (!appState.audioContext) {
+      appState.audioContext = new window.AudioContext();
+    }
+    const context = appState.audioContext;
+    if (context.state === 'suspended') {
+      context.resume().catch((error) => console.warn('Could not resume sound effects:', error));
+    }
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const start = context.currentTime + delay;
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration);
+  } catch (error) {
+    console.warn('Could not play sound effect:', error);
+  }
+}
+
+function playSound(name, progress = 0) {
+  if (name === 'click') {
+    playTone(520, 0.045, 0.035);
+  } else if (name === 'fill') {
+    playTone(440 + progress * 150, 0.12, 0.055);
+  } else if (name === 'login') {
+    playTone(660, 0.18, 0.07);
+    playTone(880, 0.24, 0.07, 0.12);
+  }
+}
+
+function updateSoundToggle() {
+  const toggle = $('#soundToggle');
+  toggle.textContent = appState.soundsEnabled ? 'Sound on' : 'Sound off';
+  toggle.setAttribute('aria-pressed', String(appState.soundsEnabled));
+  toggle.setAttribute(
+    'aria-label',
+    appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'
+  );
+}
 
 function show(screenId) {
   ['s1', 's2', 'dash'].forEach((id) => {
@@ -77,12 +129,14 @@ function say(message, isUserMessage = false) {
 function handleCardTap() {
   if (appState.loginInProgress) return;
   appState.loginInProgress = true;
+  playSound('click');
 
   const reader = $('#reader');
   reader.classList.add('reading');
   $('#t1').textContent = 'NFC Card Verified • Welcome Aboard';
 
   setTimeout(() => {
+    playSound('login');
     $('#s1').classList.add('leaving');
     setTimeout(() => {
       reader.classList.remove('reading');
@@ -244,6 +298,7 @@ function runVialCollection() {
     if (step < totalSteps) {
       const item = flatMetrics[step];
       const pct = Math.round(((step + 1) / totalSteps) * 100);
+      playSound('fill', step);
       $('#fill').style.height = Math.min(88, pct * 0.88) + '%';
       $('#rb').style.width = pct + '%';
       $('#pctLabel').textContent = pct + '%';
@@ -474,6 +529,19 @@ function askAssistant(query) {
 }
 
 /* Event Bindings */
+$('#soundToggle').onclick = () => {
+  appState.soundsEnabled = !appState.soundsEnabled;
+  updateSoundToggle();
+  if (appState.soundsEnabled) playSound('click');
+};
+
+document.addEventListener('click', (event) => {
+  const control = event.target.closest('button, a, input[type="checkbox"]');
+  if (control && control !== $('#soundToggle') && control !== $('#reader') && !control.disabled) {
+    playSound('click');
+  }
+});
+
 $('#send').onclick = runVialCollection;
 $('#xlsxInput').onchange = handleSpreadsheetUpload;
 $('#rescanBtn').onclick = () => {
@@ -540,6 +608,12 @@ $('#f').onsubmit = (e) => {
 };
 
 $('#petsvg').innerHTML = orbitAvatarSVG();
+if (!window.AudioContext) {
+  $('#soundToggle').disabled = true;
+  $('#soundToggle').textContent = 'Sound unavailable';
+  $('#soundToggle').setAttribute('aria-label', 'Sound effects are not supported in this browser');
+  $('#soundToggle').setAttribute('aria-pressed', 'false');
+}
 
 $('#registerForm').onsubmit = (event) => event.preventDefault();
 $('#reader').onclick = handleCardTap;
