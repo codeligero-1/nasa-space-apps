@@ -735,6 +735,14 @@ button {
   .app-shell {
     grid-template-columns: 1fr;
   }
+
+  .blood-counts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .history-comparison {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .main-content {
@@ -805,6 +813,7 @@ button {
 .c-ok { background: var(--okbg); color: var(--ok); }
 .c-warn { background: var(--warnbg); color: var(--warn); }
 .c-low { background: var(--lowbg); color: var(--low); }
+.c-na { background: var(--surf2); color: var(--mute); }
 
 .summary-tiles {
   display: grid;
@@ -815,6 +824,12 @@ button {
 
 @media (max-width: 600px) {
   .summary-tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .blood-counts,
+  .history-controls,
+  .history-comparison {
     grid-template-columns: 1fr;
   }
 }
@@ -839,6 +854,140 @@ button {
   display: block;
   font: 800 24px "Outfit", sans-serif;
   margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.blood-summary,
+.history-panel {
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.blood-summary-heading,
+.history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blood-summary-heading h2,
+.history-heading h2 {
+  font-size: 22px;
+}
+
+.blood-summary-meta,
+.radiation-updated {
+  color: var(--mute);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.blood-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.blood-count,
+.history-comparison > div {
+  min-width: 0;
+  padding: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.blood-count small,
+.history-comparison small {
+  display: block;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.blood-count strong,
+.history-comparison strong {
+  display: block;
+  margin-top: 4px;
+  font: 700 18px "Outfit", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.history-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.history-controls label {
+  display: grid;
+  gap: 6px;
+  color: var(--mute);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.history-controls select {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surf2);
+  color: var(--ink);
+  font: inherit;
+}
+
+.history-comparison {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.history-chart {
+  margin-top: 14px;
+  padding: 10px;
+  background: var(--surf2);
+  border-radius: 12px;
+  color: var(--mute);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.history-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 150px;
+}
+
+.history-axis {
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.history-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.history-point {
+  fill: var(--accent2);
+  stroke: var(--surf);
+  stroke-width: 2;
+}
+
+.history-label {
+  fill: var(--mute);
+  font: 11px "DM Sans", sans-serif;
 }
 
 .grp {

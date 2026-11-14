@@ -110,7 +110,7 @@
       <div class="steps-pill">
         <span>1. NFC Verified</span>
         <span>›</span>
-        <b>2. Blood Sensor Ingestion</b>
+        <b>2. Blood Analysis Record</b>
         <span>›</span>
         <span>3. Analysis</span>
       </div>
@@ -131,12 +131,12 @@
         </div>
       </div>
 
-      <h1 id="t2">Waiting for blood cartridge...</h1>
-      <p id="p2">Insert your sample cartridge into the reader bay, or trigger a live sensor feed below.</p>
+      <h1 id="t2">Ready for Blood Analysis</h1>
+      <p id="p2">Start the analysis to process the available sample data and prepare the report.</p>
 
       <div class="analyzing-box">
         <div class="analyzing-header">
-          <span id="rs">Sensor status: Standby — Ready for microfluidic input</span>
+          <span id="rs">Analysis ready • Source-backed demo data loaded</span>
           <span id="pctLabel">0%</span>
         </div>
         <div class="bar dark-bar"><b id="rb"></b></div>
@@ -144,9 +144,9 @@
       </div>
 
       <div class="vial-controls">
-        <button class="btn pulse-btn" id="send" type="button">Start Sensor Collection</button>
+        <button class="btn pulse-btn" id="send" type="button">Start Blood Analysis</button>
         <label class="register-trigger file-upload-btn" for="xlsxInput">
-          Load .XLSX Sample Data
+          Load Blood Results (.XLSX/.CSV)
           <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" hidden>
         </label>
       </div>
@@ -169,10 +169,13 @@
 
       <div class="nav-links">
         <button class="nav-item active" data-tab="overview" type="button">
-          <span class="nav-dot"></span> Overview
+          <span class="nav-dot"></span> Vital Signs
         </button>
         <button class="nav-item" data-tab="analytics" type="button">
-          <span class="nav-dot"></span> Blood Breakdown
+          <span class="nav-dot"></span> Blood Analysis
+        </button>
+        <button class="nav-item" data-tab="history" type="button">
+          <span class="nav-dot"></span> History
         </button>
         <button class="nav-item" data-tab="alerts" type="button">
           <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
@@ -197,7 +200,7 @@
           <text id="rt" x="60" y="69" text-anchor="middle">--</text>
         </svg>
         <div>
-          <div class="hero-kicker">PERSONAL TELEMETRY • CARTRIDGE SCAN</div>
+          <div class="hero-kicker">PERSONAL TELEMETRY • SOURCE-BACKED DEMO</div>
           <h2 id="hn">Orbit Health Index</h2>
           <p id="hs"></p>
           <div class="chips" id="hc"></div>
@@ -207,8 +210,46 @@
       <!-- Summary Quick Tiles -->
       <div class="summary-tiles" id="summaryTiles"></div>
 
+      <section class="blood-summary hide" id="bloodSummary" aria-labelledby="bloodSummaryTitle">
+        <div class="blood-summary-heading">
+          <div>
+            <div class="hero-kicker">LATEST AVAILABLE TEST</div>
+            <h2 id="bloodSummaryTitle">Blood Analysis Summary</h2>
+          </div>
+          <span class="chip c-na" id="bloodAssessment">Not Available</span>
+        </div>
+        <p class="blood-summary-meta" id="bloodSummaryMeta"></p>
+        <div class="blood-counts" id="bloodCounts"></div>
+      </section>
+
       <!-- Categorized Blood Components -->
       <div id="groups"></div>
+
+      <section class="history-panel hide" id="historyPanel" aria-labelledby="historyTitle">
+        <div class="history-heading">
+          <div>
+            <div class="hero-kicker">PERSONAL BASELINE &amp; MISSION TREND</div>
+            <h2 id="historyTitle">Measurement History</h2>
+          </div>
+        </div>
+        <div class="history-controls">
+          <label>Category
+            <select id="historyCategory">
+              <option value="blood">Blood Analysis</option>
+              <option value="vitals">Vital Signs</option>
+              <option value="radiation">Radiation Monitoring</option>
+            </select>
+          </label>
+          <label>Measurement
+            <select id="historyMetric"></select>
+          </label>
+          <label>Test date
+            <select id="historyDate"></select>
+          </label>
+        </div>
+        <div class="history-comparison" id="historyComparison"></div>
+        <div class="history-chart" id="historyChart" aria-live="polite"></div>
+      </section>
 
       <section class="radiation-panel hide" id="radiationPanel" aria-labelledby="radiationTitle">
         <div class="radiation-heading">
@@ -216,12 +257,13 @@
             <div class="hero-kicker">MISSION EXPOSURE MONITORING</div>
             <h2 id="radiationTitle">Radiation &amp; Biodosimetry</h2>
           </div>
-          <span class="chip c-warn">SAMPLE READINGS</span>
+          <span class="chip c-na" id="radiationStatus">Not Rated</span>
         </div>
         <div class="radiation-summary">
           <strong>Quick read</strong>
-          <p>These are example readings. The indicators compare each reading with the range shown; they are not a diagnosis or proof that someone is safe.</p>
+          <p>Values are shown only when supplied in the latest available demo record. A missing reference range is labeled Not Rated; these readings are not a diagnosis or proof that someone is safe.</p>
         </div>
+        <p class="radiation-updated" id="radiationUpdatedAt"></p>
         <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
 
         <div class="radiation-streams">
@@ -238,7 +280,7 @@
           </section>
         </div>
 
-        <p class="radiation-note">Example readings only—not live sensor data or a medical assessment. Ask a qualified medical professional to interpret real results.</p>
+        <p class="radiation-note">Source-backed demo readings only—not live sensor data or a medical assessment. Ask a qualified medical professional to interpret real results.</p>
       </section>
 
       <p class="note">
@@ -288,7 +330,7 @@
     <form id="registerForm">
       <button class="dialog-close" id="closeRegister" type="button" aria-label="Close registration">&times;</button>
       <h2 id="registerTitle">Register Crew Credentials</h2>
-      <p>Enter your name, then tap your NFC card to bind your localized crew profile.</p>
+      <p>Enter your name, then tap your NFC card to register credentials in this browser. The dashboard demo remains linked to its displayed sample profile.</p>
       <label for="cardHolder">Card holder's name</label>
       <input id="cardHolder" name="cardHolder" placeholder="e.g., Cmdr. Annika Pasaje" autocomplete="name" required>
       <p class="registration-status" id="registrationStatus" role="status">Ready to register a crew card.</p>
@@ -312,6 +354,7 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="../js/data.js"></script>
+  <script src="../js/demo-health-data.js"></script>
   <script src="../js/app.js"></script>
 </body>
 </html> 

@@ -2,12 +2,16 @@
 
 The Node server serves the existing crew application at `/`, the separate administrator sign-in page at `/admin/login`, and the protected administrator dashboard at `/admin/dashboard`. The admin API and dashboard must be served by this backend; do not host the admin HTML as an unrestricted static site.
 
+## Run the demo dashboard
+
+From the repository root, run `npm run dev` and open `http://127.0.0.1:3000`. This local demo server serves only the public dashboard and its assets; administrator pages remain restricted to the authenticated backend.
+
 ## Configuration
 
 1. Copy the project-root `.env.example` to `.env`.
 2. Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from the Supabase project. Keep the service-role key on the server only; never put it in frontend files or commit `.env`.
 3. Configure the Supabase `public.users` table and enable Row Level Security. The backend uses the service-role client to read the profile role.
-4. Start locally with `npm --prefix backend run dev`. For production, build with `npm --prefix backend run build`, then run `npm --prefix backend start` with `NODE_ENV=production` behind HTTPS.
+4. Start the authenticated backend locally with `npm --prefix backend run dev:server`. For production, build with `npm --prefix backend run build`, then run `npm --prefix backend run start:server` with `NODE_ENV=production` behind HTTPS.
 
 The `Username` field accepts the administrator's email address. Sign-in requires a valid Supabase Auth password, a confirmed email, an account that is not banned or deleted, and a matching `public.users` row whose `role` is exactly `admin`. The role is checked again on every dashboard/API session request. No public admin registration endpoint exists.
 
