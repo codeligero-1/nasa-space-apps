@@ -605,9 +605,9 @@ function prepareVialScreen() {
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
   $('#send').disabled = false;
-  $('#t2').textContent = 'Recorded blood analysis ready';
-  $('#p2').textContent = 'Review the source-backed demo record or load a validated blood-analysis spreadsheet.';
-  $('#rs').textContent = 'Demo record ready • No live sensor reading is being generated';
+  $('#t2').textContent = 'Ready for Blood Analysis';
+  $('#p2').textContent = 'Start the analysis to process the available sample data and prepare the report.';
+  $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
 }
 
 function runVialCollection() {
@@ -621,9 +621,10 @@ function runVialCollection() {
   }
 
   $('#send').disabled = true;
-  $('#t2').textContent = 'Loading recorded blood analysis...';
-  $('#p2').textContent = 'Displaying the source-backed demo measurements for this profile.';
-  $('#rs').textContent = 'Demo record loaded • No live sensor reading is being generated';
+  $('#send').textContent = 'Analyzing...';
+  $('#t2').textContent = 'Analyzing Blood Sample...';
+  $('#p2').textContent = 'Processing the available sample data and preparing your report.';
+  $('#rs').textContent = 'Demo analysis in progress • Preparing source-backed results';
 
   let step = 0;
   const totalSteps = flatMetrics.length;
@@ -647,11 +648,11 @@ function runVialCollection() {
     }
 
     clearInterval(timer);
-    $('#rs').textContent = 'Recorded analysis ready • Generating crew telemetry report';
+    $('#rs').textContent = 'Analysis complete • Source-backed results ready';
     setTimeout(() => {
       buildDashboard();
       show('dash');
-      toast('Recorded blood analysis loaded');
+      toast('Blood analysis complete');
     }, 650);
   }, 420);
 }
@@ -1344,9 +1345,9 @@ function resetToOnboarding() {
   $('#fill').style.height = '0%';
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
-  $('#t2').textContent = 'Recorded blood analysis ready';
-  $('#p2').textContent = 'Review the source-backed demo record or load a validated blood-analysis spreadsheet.';
-  $('#rs').textContent = 'Demo record ready • No live sensor reading is being generated';
+  $('#t2').textContent = 'Ready for Blood Analysis';
+  $('#p2').textContent = 'Start the analysis to process the available sample data and prepare the report.';
+  $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
   $('#live').innerHTML = '';
   show('s1');
 }
