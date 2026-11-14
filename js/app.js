@@ -1,32 +1,111 @@
 const $ = (selector) => document.querySelector(selector);
+const demo = window.VITAL_DEMO_DATA;
+const metrics = window.VITAL_DATA.metrics;
+const sections = window.VITAL_DATA.sections;
+
+if (!demo?.profile || !Array.isArray(demo.records) || !Array.isArray(metrics)) {
+  throw new Error('VITAL demo data or metric definitions are missing.');
+}
 
 const appState = {
-  done: new Set(),
-  loginInProgress: false,
   activeTab: 'overview',
-  xp: 40,
-  registrationReader: null,
-  registrationAbortController: null,
+  activeProfile: null,
   soundsEnabled: true,
-  audioContext: null
+  audioContext: null,
+  selectedHistoryId: '',
+  selectedHistoryMetric: 'heartRate',
+  selectedHistoryCategory: 'vitals'
 };
 
-let D = window.VITAL_DATA.metrics;
-const MIS = window.VITAL_DATA.missions;
-const KB = window.VITAL_DATA.chatKnowledge;
+const latestRecord = (type) => demo.records
+  .filter((record) => record.type === type)
+  .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
+const baselineRecord = latestRecord('baseline');
+const currentRecord = latestRecord('flight');
+const flightRecords = demo.records
+  .filter((record) => record.type === 'flight')
+  .sort((a, b) => a.date.localeCompare(b.date));
+const rangeFor = (metric) => metric.range ? demo.ranges[metric.range] || null : null;
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
+function formatNumber(value, metric) {
+  if (!Number.isFinite(value)) return 'Not Available';
+  const decimals = Number.isInteger(metric.decimals) ? metric.decimals : 2;
+  return Number(value.toFixed(decimals)).toLocaleString(undefined, { maximumFractionDigits: decimals });
+}
+
+function formatDate(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return 'Not Available';
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    .toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatDateWithTimeNote(record) {
+  return record ? `${formatDate(record.date)} · Time not supplied` : 'Not Available';
+}
+
+function measurement(record, metric) {
+  return record?.[metric.section]?.[metric.id];
+}
+
+function classify(metric, value) {
+  const range = rangeFor(metric);
+  if (!Number.isFinite(value) || !range) return 'na';
+
+  if (metric.section === 'blood') {
+    if (value < range.min) return value >= range.warningLow ? 'warn' : 'low';
+    if (value > range.max) return value <= range.warningHigh ? 'warn' : 'high';
+    return 'normal';
+  }
+
+  if (value < range.criticalLow || value > range.criticalHigh) return 'critical';
+  if (value < range.min || value > range.max ||
+      value < range.warningLow || value > range.warningHigh) return 'warning';
+  return 'normal';
+}
+
+function statusLabel(status, section) {
+  if (status === 'normal') return 'Normal';
+  if (status === 'warn' || status === 'warning') return section === 'blood' ? 'Borderline' : 'Warning';
+  if (status === 'low') return 'Low';
+  if (status === 'high') return 'High';
+  if (status === 'critical') return 'Critical';
+  return 'Not Rated';
+}
+
+function statusClass(status) {
+  if (status === 'normal') return 'c-ok';
+  if (status === 'warn' || status === 'warning') return 'c-warn';
+  if (status === 'critical') return 'c-critical';
+  if (status === 'low' || status === 'high') return 'c-low';
+  return 'c-na';
+}
+
+function toast(message) {
+  const node = $('#toast');
+  node.textContent = message;
+  node.classList.add('on');
+  window.setTimeout(() => node.classList.remove('on'), 2600);
+}
 
 function playTone(frequency, duration, volume, delay = 0) {
   if (!appState.soundsEnabled || !window.AudioContext) return;
-
   try {
-    if (!appState.audioContext) {
-      appState.audioContext = new window.AudioContext();
-    }
+    if (!appState.audioContext) appState.audioContext = new window.AudioContext();
     const context = appState.audioContext;
     if (context.state === 'suspended') {
       context.resume().catch((error) => console.warn('Could not resume sound effects:', error));
     }
-
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     const start = context.currentTime + delay;
@@ -44,77 +123,450 @@ function playTone(frequency, duration, volume, delay = 0) {
   }
 }
 
-function playSound(name, progress = 0) {
-  if (name === 'click') {
-    playTone(520, 0.045, 0.035);
-  } else if (name === 'fill') {
-    playTone(440 + progress * 150, 0.12, 0.055);
-  } else if (name === 'login') {
-    playTone(660, 0.18, 0.07);
-    playTone(880, 0.24, 0.07, 0.12);
-  }
-}
-
 function updateSoundToggle() {
-  const toggle = $('#soundToggle');
-  toggle.textContent = appState.soundsEnabled ? 'Sound on' : 'Sound off';
-  toggle.setAttribute('aria-pressed', String(appState.soundsEnabled));
-  toggle.setAttribute(
-    'aria-label',
-    appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'
-  );
+  const button = $('#soundToggle');
+  button.textContent = appState.soundsEnabled ? 'Sound on' : 'Sound off';
+  button.setAttribute('aria-pressed', String(appState.soundsEnabled));
+  button.setAttribute('aria-label', appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on');
 }
 
 function show(screenId) {
-  ['s1', 's2', 'dash'].forEach((id) => {
-    $('#' + id).classList.toggle('hide', id !== screenId);
-  });
-  $('#siteHeader').classList.toggle('hide', screenId === 's1' || screenId === 's2');
+  $('#s1').classList.toggle('hide', screenId !== 's1');
+  $('#dash').classList.toggle('hide', screenId !== 'dash');
+  $('#siteHeader').classList.toggle('hide', screenId === 's1');
 }
 
-/* Cute Cartoon Floating Astronaut Head ("Orbit") */
-function orbitAvatarSVG() {
+function setCrewProfile(profile) {
+  appState.activeProfile = profile;
+  const initials = profile.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  $('#activeCrewName').textContent = profile.name;
+  $('#crewInitials').textContent = initials;
+  $('#activeCardId').textContent = [profile.astronautId, profile.missionCode].filter(Boolean).join(' · ');
+}
+
+function sectionMetrics(section) {
+  return metrics.filter((metric) => metric.section === section);
+}
+
+function countsFor(section, record) {
+  const counts = { normal: 0, warn: 0, low: 0, high: 0, warning: 0, critical: 0, na: 0, measured: 0 };
+  const sectionList = sectionMetrics(section);
+  sectionList.forEach((metric) => {
+    const value = measurement(record, metric);
+    if (!Number.isFinite(value)) return;
+    counts.measured += 1;
+    counts[classify(metric, value)] += 1;
+  });
+  counts.missing = sectionList.length - counts.measured;
+  return counts;
+}
+
+function sectionAssessment(section, record) {
+  const counts = countsFor(section, record);
+  const rated = counts.measured - counts.na;
+  if (!counts.measured) return { label: 'No measurements available', key: 'na', counts };
+  if (counts.critical) return { label: 'Critical result(s) detected', key: 'critical', counts };
+  if (counts.low || counts.high) return { label: 'Results outside reference range', key: 'low', counts };
+  if (counts.warning || counts.warn) return { label: 'Warning results need review', key: 'warning', counts };
+  if (!rated) return { label: 'Reference ranges not configured', key: 'na', counts };
+  if (counts.na || counts.missing) return { label: 'Incomplete · some results missing or unrated', key: 'na', counts };
+  return { label: 'All rated measurements within range', key: 'normal', counts };
+}
+
+function bloodAssessment(record) {
+  const counts = countsFor('blood', record);
+  if (!counts.measured) return { label: 'No blood measurements available', counts };
+  if (counts.low || counts.high) return { label: 'Results outside configured reference ranges', counts };
+  if (counts.warn) return { label: counts.missing ? 'Borderline results; some measurements unavailable' : 'Borderline results need review', counts };
+  if (counts.na || counts.missing) return { label: 'Incomplete · some results missing or unrated', counts };
+  return { label: 'All measured results within configured ranges', counts };
+}
+
+function assessmentChipLabel(assessment, section) {
+  if (assessment.key === 'na') return assessment.counts.measured ? 'Partially Rated' : 'Not Available';
+  return statusLabel(assessment.key, section);
+}
+
+function rangeMarkup(metric, value, state) {
+  const range = rangeFor(metric);
+  if (!range) return '<div class="range-unavailable">Reference range not configured.</div>';
+  if (!Number.isFinite(value)) return '<div class="range-unavailable">Measurement not available.</div>';
+
+  const spread = Math.max(range.max - range.min, Math.abs(range.max) * 0.01, 0.01);
+  const scaleMin = range.min - spread * 0.6;
+  const scaleMax = range.max + spread * 0.6;
+  const position = (number) => Math.max(2, Math.min(98, ((number - scaleMin) / (scaleMax - scaleMin)) * 100));
+  const left = position(range.min);
+  const right = position(range.max);
   return `
-    <svg viewBox="0 0 110 110" aria-hidden="true">
-      <defs>
-        <linearGradient id="helmetShell" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#FFFFFF"/>
-          <stop offset="100%" stop-color="#DCE4F5"/>
-        </linearGradient>
-        <linearGradient id="visorGlass" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2A2B4A"/>
-          <stop offset="100%" stop-color="#141629"/>
-        </linearGradient>
-      </defs>
-      <line x1="55" y1="16" x2="55" y2="6" stroke="#F07C8A" stroke-width="3.5" stroke-linecap="round"/>
-      <circle cx="55" cy="5" r="4.5" fill="#FF5A67"/>
-      <rect x="12" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
-      <rect x="88" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
-      <rect x="19" y="16" width="72" height="72" rx="34" fill="url(#helmetShell)" stroke="#9BA4D9" stroke-width="2"/>
-      <rect x="27" y="34" width="56" height="38" rx="18" fill="url(#visorGlass)"/>
-      <path d="M35 41 Q55 37 73 42" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <ellipse class="eye blink" cx="43" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/>
-      <ellipse class="eye blink" cx="67" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/>
-      <path d="M49 62 Q55 67 61 62" stroke="#7FE3FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M29 86 Q55 95 81 86 L77 96 Q55 103 33 96 Z" fill="#8B1C1F"/>
+    <div class="rg ${['low', 'high', 'critical'].includes(state) ? 'out-of-range' : ''}" aria-label="Reference range ${range.min} to ${range.max} ${escapeHtml(metric.unit)}">
+      <i style="left:${left}%;width:${right - left}%"></i>
+      <u style="left:${position(value)}%"></u>
+    </div>
+    <div class="r">
+      <span>Min ${range.min} ${escapeHtml(metric.unit)}</span>
+      <span>Nominal ${range.min}–${range.max}</span>
+      <span>Max ${range.max} ${escapeHtml(metric.unit)}</span>
+    </div>
+  `;
+}
+
+function metricCard(metric, record) {
+  const value = measurement(record, metric);
+  const state = classify(metric, value);
+  const hasValue = Number.isFinite(value);
+  const label = !hasValue ? 'Not Available' : !rangeFor(metric) ? 'Not Rated' : statusLabel(state, metric.section);
+  return `
+    <article class="m metric-card">
+      <div class="h">
+        <span class="n">${escapeHtml(metric.name)} <small>(${escapeHtml(metric.abbreviation)})</small></span>
+        <span class="chip ${statusClass(state)}">${label}</span>
+      </div>
+      <div class="v">${hasValue ? `${escapeHtml(formatNumber(value, metric))} <small>${escapeHtml(metric.unit)}</small>` : 'Not Available'}</div>
+      ${rangeMarkup(metric, value, state)}
+    </article>
+  `;
+}
+
+function renderMetricGroups(section, targetId) {
+  const grouped = new Map();
+  sectionMetrics(section).forEach((metric) => {
+    if (!grouped.has(metric.group)) grouped.set(metric.group, []);
+    grouped.get(metric.group).push(metric);
+  });
+  $(`#${targetId}`).innerHTML = [...grouped.entries()].map(([groupName, groupMetrics]) => `
+    <div class="grp">
+      <h3>${escapeHtml(groupName)}</h3>
+      <div class="rows">${groupMetrics.map((metric) => metricCard(metric, currentRecord)).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function tile(label, value, detail = '') {
+  return `<div class="tile-card"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong>${detail ? `<span class="tile-detail">${escapeHtml(detail)}</span>` : ''}</div>`;
+}
+
+function renderBloodSummary() {
+  const assessment = bloodAssessment(currentRecord);
+  const counts = assessment.counts;
+  const latest = currentRecord;
+  const latestSampleId = latest?.sampleId || 'Not provided';
+  $('#bloodSummaryTiles').innerHTML = [
+    tile('Overall CBC Assessment', assessment.label),
+    tile('Parameters Measured', String(counts.measured)),
+    tile('Normal', String(counts.normal)),
+    tile('Low', String(counts.low)),
+    tile('High', String(counts.high)),
+    tile('Borderline', String(counts.warn)),
+    tile('Not Rated', String(counts.na)),
+    tile('Not Available', String(counts.missing)),
+    tile('Latest Blood Test', formatDateWithTimeNote(latest)),
+    tile('Sample ID', latestSampleId)
+  ].join('');
+  $('#bloodMetadata').textContent = `AST-001 · ${latest?.label || 'Mission day not supplied'} · Sample ID: ${latestSampleId}`;
+  $('#bloodUpdated').textContent = `Latest result: ${formatDateWithTimeNote(latest)}`;
+}
+
+function renderSectionSummary(section, targetId, record = currentRecord) {
+  const assessment = sectionAssessment(section, record);
+  const counts = assessment.counts;
+  const label = sections.find((item) => item.id === section)?.title || section;
+  const summary = section === 'vitals'
+    ? [
+      tile(`${label} Assessment`, assessment.label),
+      tile('Normal', String(counts.normal)),
+      tile('Warning', String(counts.warning)),
+      tile('Critical', String(counts.critical)),
+      tile('Not Rated', String(counts.na)),
+      tile('Not Available', String(counts.missing)),
+      tile('Latest Measurement', formatDateWithTimeNote(record))
+    ]
+    : [
+      tile(`${label} Status`, assessment.label),
+      tile('Normal', String(counts.normal)),
+      tile('Warning', String(counts.warning)),
+      tile('Critical', String(counts.critical)),
+      tile('Not Rated', String(counts.na)),
+      tile('Not Available', String(counts.missing)),
+      tile('Latest Measurement', formatDateWithTimeNote(record))
+    ];
+  $(`#${targetId}`).innerHTML = summary.join('');
+  return assessment;
+}
+
+function formatOverviewValue(metric, record) {
+  const value = measurement(record, metric);
+  if (!Number.isFinite(value)) return 'Not Available';
+  return `${formatNumber(value, metric)} ${metric.unit}`;
+}
+
+function renderOverview() {
+  const vital = sectionAssessment('vitals', currentRecord);
+  const blood = bloodAssessment(currentRecord);
+  const radiation = sectionAssessment('radiation', currentRecord);
+  const bloodCounts = blood.counts;
+  const bloodKey = bloodCounts.low || bloodCounts.high ? 'low' : bloodCounts.warn ? 'warning' : bloodCounts.na ? 'na' : 'normal';
+  const bloodStatusLabel = bloodCounts.low || bloodCounts.high
+    ? 'Outside Range'
+    : bloodCounts.warn
+      ? 'Borderline'
+      : bloodCounts.na || bloodCounts.missing
+        ? 'Not Rated'
+        : 'Normal';
+  $('#overviewUpdated').textContent = `Latest in-flight records: ${formatDate(currentRecord.date)} · Time not supplied`;
+  $('#overviewCards').innerHTML = [
+    tile('Vital Signs', vital.label, `${vital.counts.measured} readings · ${formatDate(currentRecord.date)}`),
+    tile('Blood Analysis', blood.label, `${bloodCounts.measured} parameters · ${formatDate(currentRecord.date)}`),
+    tile('Radiation Monitoring', radiation.label, `${radiation.counts.measured} indicators · ${formatDate(currentRecord.date)}`)
+  ].join('');
+
+  const summaries = [
+    { id: 'vitals', title: 'Vital Signs', state: vital.key, stateLabel: assessmentChipLabel(vital, 'vitals'), metricIds: ['heartRate', 'systolic', 'diastolic', 'spo2'] },
+    { id: 'blood', title: 'Blood Analysis', state: bloodKey, stateLabel: bloodStatusLabel, metricIds: ['rbc', 'wbc', 'hemoglobin', 'hematocrit', 'platelets'] },
+    { id: 'radiation', title: 'Radiation Monitoring', state: radiation.key, stateLabel: assessmentChipLabel(radiation, 'radiation'), metricIds: ['dailyDose', 'cumulativeDose', 'gammaH2ax', 'dicentrics'] }
+  ];
+  $('#overviewDetails').innerHTML = summaries.map((summary) => {
+    const rows = summary.metricIds.map((id) => {
+      const metric = metrics.find((item) => item.id === id);
+      return `<div class="overview-reading"><span>${escapeHtml(metric.name)}</span><strong>${escapeHtml(formatOverviewValue(metric, currentRecord))}</strong></div>`;
+    }).join('');
+    return `
+      <article class="card overview-panel">
+        <div class="card-head-row"><h3>${escapeHtml(summary.title)}</h3><span class="chip ${statusClass(summary.state)}">${escapeHtml(summary.stateLabel || statusLabel(summary.state, summary.id))}</span></div>
+        ${rows}
+        <button class="text-link" type="button" data-open-section="${summary.id}">View ${escapeHtml(summary.title.toLowerCase())}</button>
+      </article>
+    `;
+  }).join('');
+  $('#overviewDetails').querySelectorAll('[data-open-section]').forEach((button) => {
+    button.onclick = () => setActiveTab(button.dataset.openSection);
+  });
+
+  const statuses = [
+    ['Vitals', vital.key, assessmentChipLabel(vital, 'vitals')],
+    ['Blood', bloodKey, bloodStatusLabel],
+    ['Radiation', radiation.key, assessmentChipLabel(radiation, 'radiation')]
+  ];
+  $('#hc').innerHTML = statuses.map(([name, key, label]) =>
+    `<span class="chip ${statusClass(key)}">${escapeHtml(name)} · ${escapeHtml(label)}</span>`
+  ).join('');
+  $('#hs').textContent = `Latest available data: ${formatDate(currentRecord.date)} · ${currentRecord.missionDay ? `Flight Day ${currentRecord.missionDay}` : 'Mission day not supplied'}.`;
+  $('#rt').textContent = currentRecord.missionDay ? `FD ${currentRecord.missionDay}` : 'VITAL';
+  $('#hn').textContent = 'Crew Health Overview';
+}
+
+function renderDashboard() {
+  renderOverview();
+  renderSectionSummary('vitals', 'vitalsSummary');
+  $('#vitalsUpdated').textContent = `Latest measurement: ${formatDateWithTimeNote(currentRecord)}`;
+  renderMetricGroups('vitals', 'vitalsGroups');
+  renderBloodSummary();
+  renderMetricGroups('blood', 'bloodGroups');
+  renderSectionSummary('radiation', 'radiationSummary');
+  $('#radiationUpdated').textContent = `Latest radiation data: ${formatDateWithTimeNote(currentRecord)}`;
+  renderMetricGroups('radiation', 'radiationGroups');
+  renderHistoryPanel();
+  updateDashboardTab();
+}
+
+function setActiveTab(tab) {
+  appState.activeTab = tab;
+  updateDashboardTab();
+  playTone(520, 0.045, 0.035);
+}
+
+function updateDashboardTab() {
+  const sectionByTab = {
+    overview: 'overviewSection',
+    vitals: 'vitalsSection',
+    blood: 'bloodSection',
+    radiation: 'radiationSection',
+    history: 'historySection'
+  };
+  Object.entries(sectionByTab).forEach(([tab, id]) => {
+    $(`#${id}`).classList.toggle('hide', appState.activeTab !== tab);
+  });
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    const selected = button.dataset.tab === appState.activeTab;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+function openDemoProfile() {
+  if (appState.activeProfile) return;
+  playTone(660, 0.18, 0.07);
+  playTone(880, 0.24, 0.07, 0.12);
+  setCrewProfile(demo.profile);
+  appState.activeTab = 'overview';
+  renderDashboard();
+  $('#log').innerHTML = '';
+  say(`Hi, ${demo.profile.name}. I can help review your recorded vital signs, blood analysis, and radiation monitoring data. I report source values and configured ranges but do not diagnose.`);
+  show('dash');
+}
+
+function signOut() {
+  appState.activeProfile = null;
+  appState.activeTab = 'overview';
+  $('#activeCrewName').textContent = 'Crew member';
+  $('#activeCardId').textContent = 'Mission profile';
+  $('#crewInitials').textContent = 'AV';
+  $('#log').innerHTML = '';
+  $('#q').value = '';
+  $('#authStatus').textContent = 'Demo profile closed.';
+  show('s1');
+}
+
+function formatMeasurement(value, metric, record) {
+  if (!Number.isFinite(value)) return 'Not Available';
+  let unit = metric.unit;
+  if (metric.id === 'cumulativeDose' && record?.type === 'baseline') unit = metric.baselineUnit || unit;
+  return `${formatNumber(value, metric)} ${unit}`;
+}
+
+function formatChange(current, previous, metric, previousRecord) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) {
+    return { difference: 'Not Available', percent: 'Not Available', direction: 'No comparison' };
+  }
+  if (metric.compareBaseline === false && previousRecord?.type === 'baseline') {
+    return { difference: 'Not comparable', percent: 'Not comparable', direction: 'Different exposure periods' };
+  }
+  const difference = current - previous;
+  const rounded = Number(difference.toFixed(Number.isInteger(metric.decimals) ? metric.decimals : 2));
+  const direction = difference > 0 ? 'Increased' : difference < 0 ? 'Decreased' : 'Unchanged';
+  return {
+    difference: `${rounded > 0 ? '+' : ''}${formatNumber(rounded, metric)} ${metric.unit}`,
+    percent: previous === 0 ? 'Not meaningful (baseline is 0)' : `${((difference / Math.abs(previous)) * 100).toFixed(1)}%`,
+    direction
+  };
+}
+
+function historyMetricOptions() {
+  return sectionMetrics(appState.selectedHistoryCategory);
+}
+
+function refreshHistoryMetricOptions() {
+  const available = historyMetricOptions();
+  if (!available.some((metric) => metric.id === appState.selectedHistoryMetric)) {
+    appState.selectedHistoryMetric = available[0]?.id || '';
+  }
+  $('#historyMetric').innerHTML = available.map((metric) =>
+    `<option value="${escapeHtml(metric.id)}">${escapeHtml(metric.name)} (${escapeHtml(metric.abbreviation)})</option>`
+  ).join('');
+  $('#historyMetric').value = appState.selectedHistoryMetric;
+}
+
+function renderHistoryPanel() {
+  const categorySelect = $('#historyCategory');
+  if (!categorySelect.options.length) {
+    categorySelect.innerHTML = sections.map((section) =>
+      `<option value="${escapeHtml(section.id)}">${escapeHtml(section.title)}</option>`
+    ).join('');
+    categorySelect.value = appState.selectedHistoryCategory;
+  }
+  refreshHistoryMetricOptions();
+
+  const earlierRecords = flightRecords.filter((record) => record.id !== currentRecord.id);
+  if (!earlierRecords.some((record) => record.id === appState.selectedHistoryId)) {
+    appState.selectedHistoryId = earlierRecords[earlierRecords.length - 1]?.id || '';
+  }
+  $('#historyDate').innerHTML = earlierRecords.slice().reverse().map((record) =>
+    `<option value="${escapeHtml(record.id)}">${escapeHtml(formatDate(record.date))} · Flight Day ${escapeHtml(record.missionDay)}</option>`
+  ).join('');
+  $('#historyDate').value = appState.selectedHistoryId;
+
+  const metric = metrics.find((item) => item.id === appState.selectedHistoryMetric);
+  const selectedRecord = earlierRecords.find((record) => record.id === appState.selectedHistoryId) || null;
+  if (!metric) {
+    $('#historyComparison').innerHTML = '';
+    $('#trendChart').innerHTML = '';
+    $('#historyEmpty').textContent = 'Historical measurements are not available.';
+    return;
+  }
+  const currentValue = measurement(currentRecord, metric);
+  const baselineValue = measurement(baselineRecord, metric);
+  const selectedValue = measurement(selectedRecord, metric);
+  const baselineChange = formatChange(currentValue, baselineValue, metric, baselineRecord);
+  const selectedChange = formatChange(currentValue, selectedValue, metric, selectedRecord);
+
+  const row = (label, earlier, earlierRecord, change) => `
+    <div class="comparison-row">
+      <strong>${escapeHtml(label)}</strong>
+      <span>${escapeHtml(formatMeasurement(earlier, metric, earlierRecord))}</span>
+      <span>${escapeHtml(formatMeasurement(currentValue, metric, currentRecord))}</span>
+      <span>${escapeHtml(change.difference)}</span>
+      <span>${escapeHtml(change.percent)}</span>
+      <span>${escapeHtml(change.direction)}</span>
+    </div>
+  `;
+  $('#historyComparison').innerHTML = `
+    <div class="comparison-row comparison-head"><span>Comparison</span><span>Earlier value</span><span>Current value</span><span>Difference</span><span>Change</span><span>Trend</span></div>
+    ${row(`Pre-flight baseline · ${formatDate(baselineRecord.date)}`, baselineValue, baselineRecord, baselineChange)}
+    ${selectedRecord ? row(`Selected test · ${formatDate(selectedRecord.date)}`, selectedValue, selectedRecord, selectedChange) : ''}
+  `;
+  renderTrendChart(metric);
+  $('#historyEmpty').textContent = flightRecords.some((record) => Number.isFinite(measurement(record, metric)))
+    ? ''
+    : 'No historical measurements are available for this parameter.';
+}
+
+function renderTrendChart(metric) {
+  const points = flightRecords.filter((record) => Number.isFinite(measurement(record, metric)));
+  if (!points.length) {
+    $('#trendChart').innerHTML = '';
+    return;
+  }
+  const values = points.map((record) => measurement(record, metric));
+  const range = rangeFor(metric);
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const low = range ? Math.min(dataMin, range.min) : dataMin;
+  const high = range ? Math.max(dataMax, range.max) : dataMax;
+  const padding = Math.max((high - low) * 0.12, Math.abs(high) * 0.03, 0.01);
+  const min = low - padding;
+  const max = high + padding;
+  const span = max - min || 1;
+  const x = (index) => 48 + (points.length === 1 ? 308 : index * 604 / (points.length - 1));
+  const y = (value) => 142 - ((value - min) / span) * 112;
+  const pointList = points.map((record, index) => `${x(index)},${y(measurement(record, metric))}`).join(' ');
+  const circles = points.map((record, index) =>
+    `<circle cx="${x(index)}" cy="${y(measurement(record, metric))}" r="5"><title>${escapeHtml(formatDate(record.date))}: ${escapeHtml(formatMeasurement(measurement(record, metric), metric, record))}</title></circle>`
+  ).join('');
+  const labels = points.map((record, index) =>
+    `<text x="${x(index)}" y="169" text-anchor="middle">FD ${escapeHtml(record.missionDay)}</text>`
+  ).join('');
+  const referenceLines = range ? `
+    <line x1="42" y1="${y(range.min)}" x2="658" y2="${y(range.min)}" class="chart-range"></line>
+    <line x1="42" y1="${y(range.max)}" x2="658" y2="${y(range.max)}" class="chart-range"></line>
+    <text x="4" y="${y(range.max) + 4}" class="chart-axis">${range.max}</text>
+    <text x="4" y="${y(range.min) + 4}" class="chart-axis">${range.min}</text>
+  ` : '';
+  $('#trendChart').innerHTML = `
+    <svg viewBox="0 0 700 180" role="img" aria-label="${escapeHtml(metric.name)} across mission days">
+      ${referenceLines}
+      <polyline points="${pointList}" class="chart-line"></polyline>
+      ${circles}${labels}
     </svg>
   `;
 }
 
-function toast(message) {
-  const toastNode = $('#toast');
-  toastNode.textContent = message;
-  toastNode.classList.add('on');
-  setTimeout(() => toastNode.classList.remove('on'), 2500);
-}
-
-function status(value, lo, hi) {
-  if (value < lo) return ['low', 'Low'];
-  if (value > hi) return ['low', 'High'];
-  if ((value - lo) < (hi - lo) * 0.08 || (hi - value) < (hi - lo) * 0.08) {
-    return ['warn', 'Borderline'];
-  }
-  return ['ok', 'In range'];
+function orbitAvatarSVG() {
+  return `
+    <svg viewBox="0 0 110 110" aria-hidden="true">
+      <defs>
+        <linearGradient id="helmetShell" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#DCE4F5"/></linearGradient>
+        <linearGradient id="visorGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2A2B4A"/><stop offset="100%" stop-color="#141629"/></linearGradient>
+      </defs>
+      <line x1="55" y1="16" x2="55" y2="6" stroke="#F07C8A" stroke-width="3.5" stroke-linecap="round"/><circle cx="55" cy="5" r="4.5" fill="#FF5A67"/>
+      <rect x="12" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/><rect x="88" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
+      <rect x="19" y="16" width="72" height="72" rx="34" fill="url(#helmetShell)" stroke="#9BA4D9" stroke-width="2"/>
+      <rect x="27" y="34" width="56" height="38" rx="18" fill="url(#visorGlass)"/>
+      <path d="M35 41 Q55 37 73 42" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse class="eye blink" cx="43" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/><ellipse class="eye blink" cx="67" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/>
+      <path d="M49 62 Q55 67 61 62" stroke="#7FE3FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M29 86 Q55 95 81 86 L77 96 Q55 103 33 96 Z" fill="#8B1C1F"/>
+    </svg>
+  `;
 }
 
 function say(message, isUserMessage = false) {
@@ -125,509 +577,139 @@ function say(message, isUserMessage = false) {
   $('#log').scrollTop = 1e5;
 }
 
-/* Onboarding 1: Crew NFC Card Tap */
-function handleCardTap() {
-  if (appState.loginInProgress) return;
-  appState.loginInProgress = true;
-  playSound('click');
-
-  const reader = $('#reader');
-  reader.classList.add('reading');
-  $('#t1').textContent = 'NFC Card Verified • Welcome Aboard';
-
-  setTimeout(() => {
-    playSound('login');
-    $('#s1').classList.add('leaving');
-    setTimeout(() => {
-      reader.classList.remove('reading');
-      $('#s1').classList.remove('leaving');
-      $('#t1').textContent = 'Tap your NFC card to start';
-      prepareVialScreen();
-      show('s2');
-      appState.loginInProgress = false;
-    }, 350);
-  }, 1050);
+function metricForQuestion(query) {
+  const normalized = query.toLowerCase();
+  const aliases = [
+    ['blood pressure', ['blood pressure', 'systolic', 'diastolic', 'sbp', 'dbp']],
+    ['heartRate', ['heart rate', 'pulse', 'bpm']],
+    ['spo2', ['spo2', 'oxygen saturation', 'oxygen']],
+    ['temperature', ['temperature', 'temp']],
+    ['respiratoryRate', ['respiratory', 'breathing rate']],
+    ['hrv', ['hrv', 'variability']],
+    ['rbc', ['rbc', 'red blood']],
+    ['wbc', ['wbc', 'white blood']],
+    ['hemoglobin', ['hemoglobin', 'haemoglobin', 'hgb']],
+    ['hematocrit', ['hematocrit', 'hct']],
+    ['platelets', ['platelet', 'plt']],
+    ['neutrophils', ['neutrophil']],
+    ['lymphocytes', ['lymphocyte']],
+    ['crp', ['crp', 'c-reactive']],
+    ['ferritin', ['ferritin']],
+    ['il6', ['il-6', 'interleukin']],
+    ['tnfAlpha', ['tnf', 'tumor necrosis']],
+    ['cortisol', ['cortisol']],
+    ['troponin', ['troponin']],
+    ['sodium', ['sodium', 'electrolyte']],
+    ['potassium', ['potassium']],
+    ['dailyDose', ['daily dose', 'radiation dose']],
+    ['cumulativeDose', ['cumulative dose']],
+    ['background', ['radiation background', 'space background']],
+    ['gammaH2ax', ['gamma', 'h2ax']],
+    ['dicentrics', ['dicentric']],
+    ['micronuclei', ['micronuclei']],
+    ['dnaRepair', ['dna repair']]
+  ];
+  const found = aliases.find(([, words]) => words.some((word) => normalized.includes(word)));
+  return found?.[0] || '';
 }
 
-function updateCrewProfile(name, cardId = '') {
-  const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
-  $('#activeCrewName').textContent = name;
-  $('#crewInitials').textContent = initials || 'CR';
-  $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
-}
-
-function openRegistration() {
-  $('#registrationStatus').textContent = 'Enter a name, then tap a card to register.';
-  $('#registerDialog').showModal();
-  $('#cardHolder').focus();
-}
-
-function saveRegistration(name, role, serialNumber = '') {
-  const statusNode = $('#registrationStatus');
-
-  try {
-    const storedCards = JSON.parse(localStorage.getItem('vital.registeredCards') || '[]');
-    if (!Array.isArray(storedCards)) {
-      statusNode.textContent = 'Could not save this card: the saved card list is invalid.';
-      return;
-    }
-
-    const cardId = serialNumber || `demo-${Date.now()}`;
-    storedCards.push({
-      name,
-      role,
-      cardId,
-      registeredAt: new Date().toISOString()
-    });
-    localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
-    updateCrewProfile(name, serialNumber);
-    statusNode.textContent = `${name} registered as ${role}.`;
-  } catch (error) {
-    statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
+function answerForMetric(metricId) {
+  if (metricId === 'blood pressure') {
+    const systolic = metrics.find((metric) => metric.id === 'systolic');
+    const diastolic = metrics.find((metric) => metric.id === 'diastolic');
+    return `Latest blood pressure is ${formatNumber(measurement(currentRecord, systolic), systolic)}/${formatNumber(measurement(currentRecord, diastolic), diastolic)} mmHg, recorded ${formatDate(currentRecord.date)}. Systolic status: ${statusLabel(classify(systolic, measurement(currentRecord, systolic)), 'vitals')}; diastolic status: ${statusLabel(classify(diastolic, measurement(currentRecord, diastolic)), 'vitals')}.`;
   }
-}
-
-async function startCardRegistration() {
-  const name = $('#cardHolder').value.trim();
-  const statusNode = $('#registrationStatus');
-  if (!name) {
-    statusNode.textContent = 'Enter the card holder’s name first.';
-    $('#cardHolder').focus();
-    return;
-  }
-
-  if (!('NDEFReader' in window)) {
-    statusNode.textContent = 'NFC is unavailable in this browser. Use the demo button to register a card.';
-    return;
-  }
-
-  if (appState.registrationAbortController) {
-    statusNode.textContent = 'NFC scanning is already active. Tap a card or close this dialog to stop.';
-    return;
-  }
-
-  const controller = new AbortController();
-  appState.registrationAbortController = controller;
-  statusNode.textContent = 'Waiting for an NFC card…';
-  try {
-    const reader = new window.NDEFReader();
-    appState.registrationReader = reader;
-    reader.onreading = (event) => {
-      const textRecord = event.message.records.find((record) => record.recordType === 'text');
-      const cardText = textRecord
-        ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
-        : '';
-      const role = /admin/i.test(cardText) ? 'admin' : 'crew';
-
-      saveRegistration(name, role, event.serialNumber || '');
-      controller.abort();
-      appState.registrationReader = null;
-      appState.registrationAbortController = null;
-    };
-    reader.onreadingerror = () => {
-      statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
-    };
-
-    await reader.scan({ signal: controller.signal });
-    if (!controller.signal.aborted) {
-      statusNode.textContent = 'NFC reader ready. Tap the card to register it.';
-    }
-  } catch (error) {
-    stopCardRegistration();
-    if (error.name !== 'AbortError') {
-      statusNode.textContent = `Could not start NFC scanning: ${error.message}`;
-    }
-  }
-}
-
-function stopCardRegistration() {
-  appState.registrationAbortController?.abort();
-  appState.registrationReader = null;
-  appState.registrationAbortController = null;
-}
-
-function closeRegistration() {
-  stopCardRegistration();
-  if ($('#registerDialog').open) {
-    $('#registerDialog').close();
-  }
-}
-
-function simulateCardRegistration() {
-  const name = $('#cardHolder').value.trim();
-  if (!name) {
-    $('#registrationStatus').textContent = 'Enter the card holder’s name first.';
-    $('#cardHolder').focus();
-    return;
-  }
-  saveRegistration(name, 'crew');
-}
-
-function handleNfcLogin() {
-  if (!$('#s1').classList.contains('hide')) {
-    handleCardTap();
-  }
-}
-
-/* Onboarding 2: Vial Fill & Sensor Read */
-function prepareVialScreen() {
-  const flatMetrics = D.flatMap((group) => group[2]);
-  $('#live').innerHTML = flatMetrics.slice(0, 6).map((metric, index) => {
-    return `<div id="l${index}"><span>${metric[0]}</span><b>Waiting…</b></div>`;
-  }).join('');
-
-  $('#fill').style.height = '0%';
-  $('#rb').style.width = '0%';
-  $('#pctLabel').textContent = '0%';
-  $('#send').disabled = false;
-  $('#t2').textContent = 'Waiting for blood cartridge...';
-  $('#rs').textContent = 'Sensor status: Standby — Ready for microfluidic input';
-}
-
-function runVialCollection() {
-  const flatMetrics = D.flatMap((group) => group[2]).slice(0, 6);
-  $('#send').disabled = true;
-  $('#t2').textContent = 'Collecting & analyzing blood sample...';
-  $('#p2').textContent = 'Microfluidic optical sensors are reading cellular components.';
-  $('#rs').textContent = 'Sensor status: Blood detected • Spectroscopic scan active';
-
-  let step = 0;
-  const totalSteps = flatMetrics.length;
-
-  const timer = setInterval(() => {
-    if (step < totalSteps) {
-      const item = flatMetrics[step];
-      const pct = Math.round(((step + 1) / totalSteps) * 100);
-      playSound('fill', step);
-      $('#fill').style.height = Math.min(88, pct * 0.88) + '%';
-      $('#rb').style.width = pct + '%';
-      $('#pctLabel').textContent = pct + '%';
-
-      const cell = $('#l' + step);
-      if (cell) {
-        cell.classList.add('done');
-        cell.querySelector('b').textContent = `${item[2]} ${item[1]}`;
-      }
-      step += 1;
-      return;
-    }
-
-    clearInterval(timer);
-    $('#rs').textContent = 'Analysis complete • Generating crew telemetry report';
-    setTimeout(() => {
-      buildDashboard();
-      show('dash');
-      toast('Blood sample analyzed');
-    }, 650);
-  }, 420);
-}
-
-/* Optional .XLSX Spreadsheet Loader */
-function handleSpreadsheetUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (typeof XLSX === 'undefined') {
-    toast('Spreadsheet support is unavailable. Try reloading the page.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const wb = XLSX.read(e.target.result, { type: 'array' });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet);
-
-      if (!rows.length) {
-        toast('No metric rows were found in that spreadsheet.');
-        return;
-      }
-
-      const flat = D.flatMap((group) => group[2]);
-      let updatedCount = 0;
-      rows.forEach((row) => {
-        const name = String(row.Metric || row.Parameter || row.Component || '').toLowerCase();
-        const value = parseFloat(row.Value ?? row.Result ?? row.Reading);
-        if (name && !Number.isNaN(value)) {
-          const target = flat.find((metric) => metric[0].toLowerCase().includes(name) || name.includes(metric[0].toLowerCase()));
-          if (target) {
-            target[2] = value;
-            updatedCount += 1;
-          }
-        }
-      });
-
-      if (!updatedCount) {
-        toast('No spreadsheet rows matched the known blood metrics.');
-        return;
-      }
-
-      toast(`Loaded ${updatedCount} metric${updatedCount === 1 ? '' : 's'} from ${file.name}`);
-      prepareVialScreen();
-      runVialCollection();
-    } catch (error) {
-      toast(`Could not parse spreadsheet: ${error.message}`);
-    }
-  };
-  reader.onerror = () => toast('Could not read the selected spreadsheet file.');
-  reader.readAsArrayBuffer(file);
-}
-
-/* Dashboard Builder */
-function buildDashboard() {
-  let okCount = 0;
-  let totalReadings = 0;
-  const issues = [];
-
-  D.forEach((group) => {
-    group[2].forEach((reading) => {
-      const [key, label] = status(reading[2], reading[3], reading[4]);
-      totalReadings += 1;
-      if (key === 'ok') okCount += 1;
-      if (key !== 'ok') {
-        issues.push({
-          name: reading[0],
-          status: label,
-          key
-        });
-      }
-    });
-  });
-
-  const score = Math.round((okCount / totalReadings) * 100);
-  $('#rt').textContent = score + '%';
-  setTimeout(() => {
-    $('#rc').style.strokeDashoffset = 314 * (1 - score / 100);
-  }, 80);
-
-  $('#hs').textContent = `${okCount} of ${totalReadings} blood biomarkers are within nominal crew range. ${issues.length} flagged for follow-up.`;
-  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`).join('');
-  $('#alertBadge').textContent = issues.length;
-
-  $('#summaryTiles').innerHTML = `
-    <div class="tile-card"><small>In-Range Biomarkers</small><strong>${okCount} / ${totalReadings}</strong></div>
-    <div class="tile-card"><small>Flagged Indicators</small><strong>${issues.length} Alerts</strong></div>
-    <div class="tile-card"><small>Cartridge Status</small><strong>Verified</strong></div>
-  `;
-
-  renderGroups();
-  renderMissionList();
-  updateDashboardTab();
-
-  $('#log').innerHTML = '';
-  say("Hi! I'm Orbit. I analyzed your blood cartridge: Hemoglobin, Hematocrit, and Platelets sit slightly below baseline, while White Blood Cells are steady. Tap any card to inspect details or ask me a question!");
-}
-
-function renderGroups() {
-  const filterAlertsOnly = appState.activeTab === 'alerts';
-
-  $('#groups').innerHTML = D.map((group) => {
-    const filtered = group[2].filter((reading) => {
-      if (!filterAlertsOnly) return true;
-      return status(reading[2], reading[3], reading[4])[0] !== 'ok';
-    });
-
-    if (!filtered.length) return '';
-
-    return `
-      <div class="grp">
-        <h3>${group[0]}</h3>
-        <p>${group[1]}</p>
-        <div class="rows">
-          ${filtered.map((reading) => {
-            const [resultKey, label] = status(reading[2], reading[3], reading[4]);
-            const span = (reading[4] - reading[3]) * 2.2;
-            const min = reading[3] - (reading[4] - reading[3]) * 0.6;
-            const clamp = (v) => Math.max(2, Math.min(98, ((v - min) / span) * 100));
-
-            return `
-              <button class="m" type="button" aria-expanded="false">
-                <div class="h">
-                  <span class="n">${reading[0]}</span>
-                  <span class="chip c-${resultKey}">${label}</span>
-                </div>
-                <div class="v">${reading[2]} <small>${reading[1]}</small></div>
-                <div class="rg">
-                  <i style="left:${clamp(reading[3])}%;width:${clamp(reading[4]) - clamp(reading[3])}%"></i>
-                  <u style="left:${clamp(reading[2])}%"></u>
-                </div>
-                <div class="r">
-                  <span>Min ${reading[3]}</span>
-                  <span>Nominal Range</span>
-                  <span>Max ${reading[4]}</span>
-                </div>
-                <div class="d">${reading[5]}</div>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  document.querySelectorAll('.m').forEach((button) => {
-    button.onclick = () => {
-      const open = button.classList.toggle('open');
-      button.setAttribute('aria-expanded', open);
-    };
-  });
-}
-
-function updateDashboardTab() {
-  const overview = appState.activeTab === 'overview';
-  $('#summaryTiles').classList.toggle('hide', !overview);
-  $('#groups').classList.toggle('hide', overview);
-
-  document.querySelectorAll('.nav-item').forEach((button) => {
-    const isActive = button.dataset.tab === appState.activeTab;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-pressed', String(isActive));
-  });
-}
-
-function renderMissionList() {
-  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length}`;
-  $('#mis').innerHTML = MIS.map((mission, index) => {
-    const isDone = appState.done.has(index);
-    return `
-      <li class="${isDone ? 'done' : ''}">
-        <label>
-          <input type="checkbox" data-i="${index}" ${isDone ? 'checked' : ''}>
-          <span>
-            ${mission[0]}
-            <small>${mission[1]}</small>
-          </span>
-        </label>
-      </li>
-    `;
-  }).join('');
-
-  document.querySelectorAll('#mis input').forEach((checkbox) => {
-    checkbox.onchange = () => {
-      const idx = +checkbox.dataset.i;
-      if (checkbox.checked && !appState.done.has(idx)) {
-        appState.done.add(idx);
-        appState.xp += MIS[idx][2];
-        toast('Mission logged');
-        say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
-      } else {
-        checkbox.checked = true;
-      }
-      renderMissionList();
-    };
-  });
+  const metric = metrics.find((item) => item.id === metricId);
+  if (!metric) return '';
+  const value = measurement(currentRecord, metric);
+  const state = classify(metric, value);
+  const range = rangeFor(metric);
+  const rangeText = range ? `Configured nominal range: ${range.min}–${range.max} ${metric.unit}.` : 'A reference range is not configured for this measurement.';
+  return `${metric.name} is ${formatMeasurement(value, metric, currentRecord)} (${statusLabel(state, metric.section)}), recorded ${formatDate(currentRecord.date)}. ${rangeText}`;
 }
 
 function askAssistant(query) {
   say(query, true);
-  const match = KB.find(([pattern]) => pattern.test(query.toLowerCase()));
-  const answer = match
-    ? match[1]
-    : 'I can break down your Hemoglobin, Hematocrit, White Blood Cells, Platelets, or recommend follow-up tests. What would you like to inspect?';
-  setTimeout(() => say(answer), 420);
+  const normalized = query.toLowerCase();
+  const metricId = metricForQuestion(normalized);
+  let answer = metricId ? answerForMetric(metricId) : '';
+  if (!answer && /radiation|dose|dosimetry/.test(normalized)) {
+    const assessment = sectionAssessment('radiation', currentRecord);
+    answer = `Radiation monitoring status: ${assessment.label}. Some exposure indicators do not have configured reference ranges, so their values are shown without a clinical status.`;
+  } else if (!answer && /blood|cbc|biomarker|analysis/.test(normalized)) {
+    const assessment = bloodAssessment(currentRecord);
+    answer = `Blood analysis assessment: ${assessment.label}. ${assessment.counts.measured} parameters are present; ${assessment.counts.na} measured values have no configured range.`;
+  } else if (!answer && /vital|health|overall/.test(normalized)) {
+    const assessment = sectionAssessment('vitals', currentRecord);
+    answer = `Vital signs assessment: ${assessment.label}. Results without configured thresholds are marked Not Rated.`;
+  } else if (!answer && /baseline|trend|history|mission day/.test(normalized)) {
+    answer = 'Open History & Trends to compare a selected mission-day measurement with the latest result and pre-flight baseline.';
+  } else if (!answer && /test|follow|next/.test(normalized)) {
+    answer = 'The demo data does not include personalized follow-up plans. Please review unusual or borderline results with your flight surgeon.';
+  } else if (!answer && /doctor|surgeon|diagnos|serious|worry/.test(normalized)) {
+    answer = 'I can explain recorded measurements and configured ranges, but I cannot diagnose or recommend treatment. Please review concerns with your flight surgeon.';
+  }
+  if (!answer) {
+    answer = 'I can summarize the recorded vital signs, blood analysis, and radiation indicators. Ask about a named parameter or open History & Trends to compare mission days.';
+  }
+  window.setTimeout(() => say(answer), 250);
 }
 
-/* Event Bindings */
+$('#reader').onclick = () => {
+  if (!appState.activeProfile) openDemoProfile();
+};
+$('#out').onclick = signOut;
+$('#themeToggle').onclick = () => {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
 $('#soundToggle').onclick = () => {
   appState.soundsEnabled = !appState.soundsEnabled;
   updateSoundToggle();
-  if (appState.soundsEnabled) playSound('click');
+  if (appState.soundsEnabled) playTone(520, 0.045, 0.035);
 };
 
-document.addEventListener('click', (event) => {
-  const control = event.target.closest('button, a, input[type="checkbox"]');
-  if (control && control !== $('#soundToggle') && control !== $('#reader') && !control.disabled) {
-    playSound('click');
-  }
+document.querySelectorAll('.nav-item').forEach((button) => {
+  button.onclick = () => setActiveTab(button.dataset.tab);
 });
 
-$('#send').onclick = runVialCollection;
-$('#xlsxInput').onchange = handleSpreadsheetUpload;
-$('#rescanBtn').onclick = () => {
-  appState.activeTab = 'overview';
-  prepareVialScreen();
-  show('s2');
+$('#historyCategory').onchange = () => {
+  appState.selectedHistoryCategory = $('#historyCategory').value;
+  appState.selectedHistoryMetric = '';
+  refreshHistoryMetricOptions();
+  renderHistoryPanel();
 };
-
-document.querySelectorAll('.nav-item').forEach((btn) => {
-  btn.onclick = () => {
-    appState.activeTab = btn.dataset.tab;
-    renderGroups();
-    updateDashboardTab();
-  };
-});
-
-$('#themeToggle').onclick = () => {
-  const root = document.documentElement;
-  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  root.setAttribute('data-theme', next);
+$('#historyMetric').onchange = () => {
+  appState.selectedHistoryMetric = $('#historyMetric').value;
+  renderHistoryPanel();
 };
-
-$('#out').onclick = () => resetToOnboarding();
-
-function resetToOnboarding() {
-  closeRegistration();
-  $('#s1').classList.remove('leaving');
-  $('#reader').classList.remove('reading');
-  $('#t1').textContent = 'Tap your NFC card to start';
-  $('#send').disabled = false;
-  $('#fill').style.height = '0%';
-  $('#rb').style.width = '0%';
-  $('#pctLabel').textContent = '0%';
-  $('#t2').textContent = 'Waiting for blood cartridge...';
-  $('#p2').textContent = 'Insert your sample cartridge into the reader bay, or trigger a live sensor feed below.';
-  $('#rs').textContent = 'Sensor status: Standby — Ready for microfluidic input';
-  $('#live').innerHTML = '';
-  show('s1');
-}
-
-function handleRegisterDialogClick(event) {
-  if (event.target === $('#registerDialog')) {
-    closeRegistration();
-  }
-}
+$('#historyDate').onchange = () => {
+  appState.selectedHistoryId = $('#historyDate').value;
+  renderHistoryPanel();
+};
 
 $('#qs').innerHTML = [
   'Why is hemoglobin low?',
   'Explain my WBC count',
   'What tests should I do next?'
-].map((q) => `<button type="button">${q}</button>`).join('');
-
-document.querySelectorAll('#qs button').forEach((btn) => {
-  btn.onclick = () => askAssistant(btn.textContent);
+].map((question) => `<button type="button">${escapeHtml(question)}</button>`).join('');
+$('#qs').querySelectorAll('button').forEach((button) => {
+  button.onclick = () => askAssistant(button.textContent);
 });
-
-$('#f').onsubmit = (e) => {
-  e.preventDefault();
-  const val = $('#q').value.trim();
-  if (val) {
-    askAssistant(val);
-    $('#q').value = '';
-  }
+$('#f').onsubmit = (event) => {
+  event.preventDefault();
+  const query = $('#q').value.trim();
+  if (!query) return;
+  askAssistant(query);
+  $('#q').value = '';
 };
 
 $('#petsvg').innerHTML = orbitAvatarSVG();
+renderHistoryPanel();
+updateSoundToggle();
 if (!window.AudioContext) {
   $('#soundToggle').disabled = true;
   $('#soundToggle').textContent = 'Sound unavailable';
   $('#soundToggle').setAttribute('aria-label', 'Sound effects are not supported in this browser');
   $('#soundToggle').setAttribute('aria-pressed', 'false');
 }
-
-$('#registerForm').onsubmit = (event) => event.preventDefault();
-$('#reader').onclick = handleCardTap;
-$('#openRegister').onclick = openRegistration;
-$('#closeRegister').onclick = closeRegistration;
-$('#registerDialog').addEventListener('click', handleRegisterDialogClick);
-$('#tapToRegister').onclick = startCardRegistration;
-$('#simulateRegister').onclick = simulateCardRegistration;
-window.addEventListener('vital:nfc-read', handleNfcLogin);
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
-    if (event.target === document.body || event.target === document.documentElement) {
-      event.preventDefault();
-      handleCardTap();
-    }
-  }
-});

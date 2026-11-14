@@ -2,21 +2,21 @@
 
 ## Status
 
-**Draft — frontend context captured; project scope and product-owner confirmation are still pending.**
+**Prototype — the current demo includes vital signs, blood analysis, radiation monitoring, and historical comparison.**
 
 ## Project
 
-**VITAL — Crew Blood Analysis.** The frontend presents a prototype for astronaut and crew health monitoring through blood-sample analysis.
+**VITAL — Astronaut Health Monitoring.** The frontend presents vital signs, blood analysis, and radiation-monitoring measurements for a single demo profile.
 
 ## Objective
 
-Provide crew members and flight-support personnel with an understandable view of blood-sample indicators, healthy ranges, follow-up tasks, and results that may need closer review.
+Provide crew members and flight-support personnel with an understandable view of current and historical vital signs, blood measurements, radiation indicators, and configured reference ranges.
 
 **Evidence:** `html/index.html`, `js/app.js`, and `js/data.js`.
 
 ## Target Users
 
-- Crew members using an NFC card and blood-sample analyzer.
+- Crew members viewing the AST-001 demo profile through the tap-to-open entry screen.
 - Flight surgeons or medical personnel reviewing health results.
 - Administrators monitoring enrolled crew, analyzers, samples, and flagged results.
 
@@ -24,34 +24,34 @@ These user groups are observed from the frontend screens and are not yet approve
 
 ## Problem Statement
 
-Crew blood-analysis results need to be presented in a clear, actionable way without implying that the prototype diagnoses medical conditions. The frontend emphasizes understandable explanations, healthy ranges, follow-up missions, and confirmation with a flight surgeon.
+Crew health measurements need to be presented clearly without implying that the prototype diagnoses medical conditions. The dashboard emphasizes source values, configured ranges, historical comparisons, and review with a flight surgeon.
 
 ## Proposed Solution
 
-A VITAL workflow that supports NFC sign-in or registration, blood-sample reading, a health dashboard, an overall Orbit score, follow-up missions, and the Orbi explanatory assistant. The current frontend simulates readings and uses static data.
+A VITAL workflow that opens the AST-001 demo profile and presents available data from the supplied Earth-baseline database and in-flight workbook. The browser bundle contains only this profile, with no profile selector or other crew records. This is demo behavior, not a production authentication or per-user authorization system. Orbit remains available as an explanatory assistant.
 
 ## NASA Space Apps Challenge Alignment
 
 - Challenge or prompt: _To be supplied._
-- Observed domain dataset: `astronaut-earth-baseline-1.db`.
+- Observed domain datasets: `astronaut-earth-baseline-1.db`, `astronaut_earth_baseline_data.xlsx`, and `astronaut_space_flight_data.xlsx`.
 - Dataset contents observed: astronaut profiles, CBC blood data, biomarkers, vitals, dosimetry/biodosimetry, reference ranges, and clinical decision rules.
-- Current integration status: the dataset is present but is not connected to the current backend or frontend.
+- Current integration status: a single AST-001 demo profile with five baseline and five in-flight snapshots is bundled for the frontend; other astronaut records are not included.
 - Required attribution or usage constraints: _To be supplied._
 
 ## Scope
 
 ### Observed Frontend Scope
 
-- NFC card sign-in and crew-card registration.
-- Simulated blood-sample analyzer workflow.
-- Blood metric groups for red blood cells, white blood cells, and platelets.
-- Healthy-range indicators and an overall Orbit score.
-- Follow-up missions with XP progression.
-- Orbi assistant explanations and quick questions.
-- Admin overview of crew, analyzers, samples, and flagged results.
+- Tap-to-open AST-001 demo profile.
+- Vital signs with configured thresholds and status indicators.
+- Blood analysis summary, counts, biomarkers, differential, and reference-range status.
+- Radiation exposure and biodosimetry measurements.
+- Pre-flight baseline comparison, mission-day history, and trend chart.
+- Orbit assistant explanations and quick questions.
+- Responsive browser interface with light and dark themes.
 - Responsive, accessible browser interface with reduced-motion support and light/dark themes.
 
-These items describe the existing prototype behavior; they are not yet approved requirements.
+The demo data is date-only; sample IDs and measurement times are not present in the supplied files. Production identity and per-user authorization are not connected.
 
 ### In Scope
 
