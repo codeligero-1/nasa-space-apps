@@ -8,7 +8,8 @@ const appState = {
   registrationReader: null,
   registrationAbortController: null,
   soundsEnabled: true,
-  audioContext: null
+  audioContext: null,
+  assistantVisible: false
 };
 
 let D = window.VITAL_DATA.metrics;
@@ -46,12 +47,16 @@ function playTone(frequency, duration, volume, delay = 0) {
 
 function playSound(name, progress = 0) {
   if (name === 'click') {
-    playTone(520, 0.045, 0.035);
+    playTone(520, 0.045, 0.07);
   } else if (name === 'fill') {
-    playTone(440 + progress * 150, 0.12, 0.055);
+    playTone(440 + progress * 150, 0.12, 0.11);
   } else if (name === 'login') {
-    playTone(660, 0.18, 0.07);
-    playTone(880, 0.24, 0.07, 0.12);
+    playTone(523, 0.28, 0.11);
+    playTone(659, 0.28, 0.11, 0.11);
+    playTone(784, 0.38, 0.11, 0.22);
+  } else if (name === 'assistant') {
+    playTone(740, 0.14, 0.07);
+    playTone(988, 0.2, 0.07, 0.09);
   }
 }
 
@@ -63,6 +68,23 @@ function updateSoundToggle() {
     'aria-label',
     appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'
   );
+}
+
+function watchAssistantVisibility() {
+  if (!('IntersectionObserver' in window)) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.intersectionRatio >= 0.45) {
+        if (!appState.assistantVisible) playSound('assistant');
+        appState.assistantVisible = true;
+      } else if (entry.intersectionRatio <= 0.15) {
+        appState.assistantVisible = false;
+      }
+    });
+  }, { threshold: [0, 0.15, 0.45] });
+
+  observer.observe($('#orbitCard'));
 }
 
 function show(screenId) {
@@ -510,8 +532,11 @@ function renderMissionList() {
         appState.xp += MIS[idx][2];
         toast('Mission logged');
         say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
-      } else {
-        checkbox.checked = true;
+      } else if (!checkbox.checked && appState.done.has(idx)) {
+        appState.done.delete(idx);
+        appState.xp -= MIS[idx][2];
+        toast('Mission unchecked');
+        say(`Removed "${MIS[idx][0]}" from your medical telemetry.`);
       }
       renderMissionList();
     };
@@ -607,6 +632,7 @@ $('#f').onsubmit = (e) => {
 };
 
 $('#petsvg').innerHTML = orbitAvatarSVG();
+watchAssistantVisibility();
 if (!window.AudioContext) {
   $('#soundToggle').disabled = true;
   $('#soundToggle').textContent = 'Sound unavailable';
