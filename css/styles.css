@@ -845,6 +845,90 @@ button {
   margin-top: 22px;
 }
 
+.radiation-panel {
+  margin-top: 16px;
+}
+
+.radiation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radiation-heading h2 {
+  font-size: 23px;
+}
+
+.radiation-intro,
+.radiation-note {
+  color: var(--mute);
+  font-size: 14px;
+}
+
+.radiation-summary {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--warnbg);
+  color: var(--warn);
+  border-radius: 12px;
+}
+
+.radiation-summary p {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.radiation-streams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.radiation-stream {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.radiation-stream h3 {
+  font-size: 17px;
+}
+
+.radiation-stream > p {
+  margin: 4px 0 12px;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.radiation-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 10px;
+}
+
+.radiation-metric {
+  min-width: 0;
+}
+
+.radiation-metric .d > span {
+  display: block;
+}
+
+.radiation-metric .d > span + span {
+  margin-top: 6px;
+}
+
+.radiation-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+
 .grp > h3 {
   font-size: 20px;
   margin-bottom: 3px;
