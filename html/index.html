@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HemoDeck – Crew Blood Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="logo"><i></i>HemoDeck</div>
+  <div class="sp"></div>
+  <div class="xp hide" id="xpbox"><span class="lvl" id="lvl">Level 1</span><div class="bar" aria-label="Experience"><b id="xpb"></b></div><span id="xpt" style="font-size:14px;color:var(--mute)"></span></div>
+  <button class="btn ghost sm hide" id="out">Sign out</button>
+</header>
+
+<!-- Onboarding 1 -->
+<main class="stage" id="s1"><div>
+  <div class="seg" role="group" aria-label="Sign-in type">
+    <button id="mLocal" aria-pressed="true">Crew member</button>
+    <button id="mAdmin" aria-pressed="false">Mainframe admin</button>
+  </div>
+  <h1 id="t1">Tap your card to start</h1>
+  <p id="p1">Hold your NFC card on the reader. Your personal blood profile loads on this device only.</p>
+  <button class="reader" id="reader" aria-label="Simulate NFC card tap"><div class="nfc">NASA CREW<span></span></div></button>
+  <button class="btn" id="tap">Demo: tap card</button>
+  <p class="note">Waiting for the NFC reader…</p>
+</div></main>
+
+<!-- Onboarding 2 -->
+<main class="stage hide" id="s2"><div>
+  <div class="steps"><span>Signed in</span>›<b>Sample</b>›<span>Dashboard</span></div>
+  <h1 id="t2">Waiting for your blood sample</h1>
+  <p id="p2">Insert the cartridge into the analyzer. HemoDeck starts reading when the sensors detect blood.</p>
+  <div class="tube" aria-hidden="true"><i id="fill"></i></div>
+  <div class="bar" style="max-width:320px;margin:10px auto"><b id="rb"></b></div>
+  <p id="rs" style="margin-top:4px">Sensor status: idle</p>
+  <div class="live" id="live"></div>
+  <button class="btn" id="send" style="margin-top:20px">Demo: send sample from sensor</button>
+</div></main>
+
+<!-- Dashboard -->
+<div class="wrap hide" id="dash">
+  <section>
+    <div class="card hero">
+      <svg class="ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50" fill="none" stroke="#fff3" stroke-width="12"/><circle id="rc" cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s"/><text id="rt" x="60" y="70" text-anchor="middle"></text></svg>
+      <div><h2 id="hn">Crew report</h2><p id="hs"></p><div class="chips" id="hc"></div></div>
+    </div>
+    <div id="groups"></div>
+    <p class="note">Demo data for a prototype. Reference ranges are general adult values and vary by lab, age and sex. HemoDeck supports analysis and does not diagnose; confirm results with the flight surgeon.</p>
+  </section>
+  <aside class="side">
+    <div class="card"><h3>Missions</h3><p style="margin:4px 0 0;color:var(--mute);font-size:15px">Follow-up tests and tasks to understand your results. Finish them to earn XP.</p><ul class="mis" id="mis"></ul></div>
+    <div class="card pet">
+      <div class="pethd"><div id="petsvg"></div><div><h3>Orbi</h3><span style="color:var(--mute);font-size:15px">Your medical assistant</span></div></div>
+      <div id="log" aria-live="polite"></div>
+      <div class="qs" id="qs"></div>
+      <form class="in" id="f"><input id="q" placeholder="Ask Orbi about your blood" aria-label="Ask Orbi"><button class="btn sm">Send</button></form>
+    </div>
+  </aside>
+</div>
+
+<!-- Admin -->
+<main class="wrap hide" id="admin" style="grid-template-columns:1fr">
+  <div><h2 style="margin-bottom:14px">Mainframe overview</h2>
+  <div class="stats"><div><b>6</b>Crew enrolled</div><div><b>4</b>Analyzers online</div><div><b>19</b>Samples this week</div><div><b>3</b>Flags to review</div></div>
+  <div class="card"><h3 style="margin-bottom:8px">Crew results</h3>
+  <div style="overflow-x:auto"><table><thead><tr><th>Crew</th><th>Card</th><th>Last sample</th><th>Status</th><th>Orbit score</th></tr></thead><tbody id="crew"></tbody></table></div></div>
+  <div class="card" style="margin-top:20px"><h3 style="margin-bottom:8px">Analyzers</h3>
+  <div style="overflow-x:auto"><table><thead><tr><th>Device</th><th>Location</th><th>Sensors</th><th>Status</th></tr></thead><tbody>
+  <tr><td>HD-01</td><td>Lab module A</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
+  <tr><td>HD-02</td><td>Crew quarters</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
+  <tr><td>HD-03</td><td>Medical bay</td><td>Blood sensor, NFC</td><td><span class="chip c-warn">Calibrate soon</span></td></tr>
+  </tbody></table></div></div></div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="../js/data.js"></script>
+<script src="../js/app.js"></script>
+</body>
+</html>
