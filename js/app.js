@@ -9,7 +9,10 @@ const appState = {
   registrationAbortController: null,
   soundsEnabled: true,
   audioContext: null,
-  assistantVisible: false
+  assistantVisible: false,
+  voiceEnabled: false,
+  speechRecognition: null,
+  voiceQueryActive: false
 };
 
 let D = window.VITAL_DATA.metrics;
@@ -70,6 +73,106 @@ function updateSoundToggle() {
   );
 }
 
+function updateOrbitVoiceToggle() {
+  const toggle = $('#orbitVoiceToggle');
+  toggle.textContent = appState.voiceEnabled ? 'Voice on' : 'Voice off';
+  toggle.setAttribute('aria-pressed', String(appState.voiceEnabled));
+  toggle.setAttribute(
+    'aria-label',
+    appState.voiceEnabled ? 'Turn Orbit voice off' : 'Turn Orbit voice on'
+  );
+}
+
+function updateOrbitMicToggle() {
+  const toggle = $('#orbitMicToggle');
+  toggle.textContent = appState.voiceQueryActive ? 'Stop' : 'Speak';
+  toggle.setAttribute('aria-pressed', String(appState.voiceQueryActive));
+  toggle.setAttribute(
+    'aria-label',
+    appState.voiceQueryActive ? 'Stop listening to your voice query' : 'Ask Orbit by voice'
+  );
+}
+
+function setupOrbitSpeechRecognition() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const toggle = $('#orbitMicToggle');
+  if (!Recognition) {
+    toggle.disabled = true;
+    toggle.textContent = 'Unavailable';
+    toggle.setAttribute('aria-label', 'Voice input is not supported in this browser');
+    return;
+  }
+
+  let recognition;
+  try {
+    recognition = new Recognition();
+  } catch (error) {
+    console.warn('Could not initialize voice input:', error);
+    toggle.disabled = true;
+    toggle.textContent = 'Unavailable';
+    toggle.setAttribute('aria-label', 'Voice input could not be initialized');
+    return;
+  }
+  recognition.lang = navigator.language || 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.onstart = () => {
+    appState.voiceQueryActive = true;
+    updateOrbitMicToggle();
+  };
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results)
+      .slice(event.resultIndex)
+      .filter((result) => result.isFinal)
+      .map((result) => result[0].transcript.trim())
+      .join(' ');
+    if (transcript) {
+      $('#q').value = transcript;
+      askAssistant(transcript);
+      $('#q').value = '';
+    }
+  };
+  recognition.onerror = (event) => {
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      toast('Microphone access was denied. Allow microphone access to use voice input.');
+    } else if (event.error === 'no-speech') {
+      toast('No speech detected. Tap Speak and try again.');
+    } else if (event.error === 'network') {
+      toast(
+        'Voice service could not connect. Check your internet/VPN, allow microphone access, and use Chrome or Edge on localhost or HTTPS. You can type your question instead.',
+        9000
+      );
+    } else if (event.error !== 'aborted') {
+      toast(`Voice input failed: ${event.error}. Please try again.`);
+    }
+  };
+  recognition.onend = () => {
+    appState.voiceQueryActive = false;
+    updateOrbitMicToggle();
+  };
+  appState.speechRecognition = recognition;
+}
+
+function speakOrbitMessage(message) {
+  if (!appState.voiceEnabled || !('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return;
+
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(message);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onerror = (event) => {
+      if (event.error !== 'interrupted' && event.error !== 'canceled') {
+        console.warn('Could not read Orbit message:', event.error);
+      }
+    };
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.warn('Could not read Orbit message:', error);
+  }
+}
+
 function watchAssistantVisibility() {
   if (!('IntersectionObserver' in window)) return;
 
@@ -123,11 +226,11 @@ function orbitAvatarSVG() {
   `;
 }
 
-function toast(message) {
+function toast(message, duration = 2500) {
   const toastNode = $('#toast');
   toastNode.textContent = message;
   toastNode.classList.add('on');
-  setTimeout(() => toastNode.classList.remove('on'), 2500);
+  setTimeout(() => toastNode.classList.remove('on'), duration);
 }
 
 function status(value, lo, hi) {
@@ -145,6 +248,7 @@ function say(message, isUserMessage = false) {
   entry.textContent = message;
   $('#log').appendChild(entry);
   $('#log').scrollTop = 1e5;
+  if (!isUserMessage) speakOrbitMessage(message);
 }
 
 /* Onboarding 1: Crew NFC Card Tap */
@@ -559,6 +663,34 @@ $('#soundToggle').onclick = () => {
   if (appState.soundsEnabled) playSound('click');
 };
 
+$('#orbitVoiceToggle').onclick = () => {
+  appState.voiceEnabled = !appState.voiceEnabled;
+  if (!appState.voiceEnabled && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  updateOrbitVoiceToggle();
+  if (appState.voiceEnabled) {
+    const messages = document.querySelectorAll('#log .b.p');
+    const latestMessage = messages[messages.length - 1];
+    if (latestMessage) speakOrbitMessage(latestMessage.textContent);
+  }
+};
+
+$('#orbitMicToggle').onclick = () => {
+  if (!appState.speechRecognition) return;
+  if (appState.voiceQueryActive) {
+    appState.speechRecognition.stop();
+    return;
+  }
+
+  try {
+    appState.speechRecognition.start();
+  } catch (error) {
+    console.warn('Could not start voice input:', error);
+    toast('Could not start voice input. Please try again.');
+  }
+};
+
 document.addEventListener('click', (event) => {
   const control = event.target.closest('button, a, input[type="checkbox"]');
   if (control && control !== $('#soundToggle') && control !== $('#reader') && !control.disabled) {
@@ -633,6 +765,14 @@ $('#f').onsubmit = (e) => {
 
 $('#petsvg').innerHTML = orbitAvatarSVG();
 watchAssistantVisibility();
+setupOrbitSpeechRecognition();
+if ('speechSynthesis' in window && window.SpeechSynthesisUtterance) {
+  updateOrbitVoiceToggle();
+} else {
+  $('#orbitVoiceToggle').disabled = true;
+  $('#orbitVoiceToggle').textContent = 'Voice unavailable';
+  $('#orbitVoiceToggle').setAttribute('aria-label', 'Voice output is not supported in this browser');
+}
 if (!window.AudioContext) {
   $('#soundToggle').disabled = true;
   $('#soundToggle').textContent = 'Sound unavailable';
