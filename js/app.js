@@ -2,7 +2,11 @@ const $ = (selector) => document.querySelector(selector);
 
 const appState = {
   done: new Set(),
-  loginInProgress: false
+  loginInProgress: false,
+  activeTab: 'overview',
+  xp: 40,
+  registrationReader: null,
+  registrationAbortController: null
 };
 
 let D = window.VITAL_DATA.metrics;
@@ -91,6 +95,126 @@ function handleCardTap() {
   }, 1050);
 }
 
+function updateCrewProfile(name, cardId = '') {
+  const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
+  $('#activeCrewName').textContent = name;
+  $('#crewInitials').textContent = initials || 'CR';
+  $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
+}
+
+function openRegistration() {
+  $('#registrationStatus').textContent = 'Enter a name, then tap a card to register.';
+  $('#registerDialog').showModal();
+  $('#cardHolder').focus();
+}
+
+function saveRegistration(name, role, serialNumber = '') {
+  const statusNode = $('#registrationStatus');
+
+  try {
+    const storedCards = JSON.parse(localStorage.getItem('vital.registeredCards') || '[]');
+    if (!Array.isArray(storedCards)) {
+      statusNode.textContent = 'Could not save this card: the saved card list is invalid.';
+      return;
+    }
+
+    const cardId = serialNumber || `demo-${Date.now()}`;
+    storedCards.push({
+      name,
+      role,
+      cardId,
+      registeredAt: new Date().toISOString()
+    });
+    localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
+    updateCrewProfile(name, serialNumber);
+    statusNode.textContent = `${name} registered as ${role}.`;
+  } catch (error) {
+    statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
+  }
+}
+
+async function startCardRegistration() {
+  const name = $('#cardHolder').value.trim();
+  const statusNode = $('#registrationStatus');
+  if (!name) {
+    statusNode.textContent = 'Enter the card holder’s name first.';
+    $('#cardHolder').focus();
+    return;
+  }
+
+  if (!('NDEFReader' in window)) {
+    statusNode.textContent = 'NFC is unavailable in this browser. Use the demo button to register a card.';
+    return;
+  }
+
+  if (appState.registrationAbortController) {
+    statusNode.textContent = 'NFC scanning is already active. Tap a card or close this dialog to stop.';
+    return;
+  }
+
+  const controller = new AbortController();
+  appState.registrationAbortController = controller;
+  statusNode.textContent = 'Waiting for an NFC card…';
+  try {
+    const reader = new window.NDEFReader();
+    appState.registrationReader = reader;
+    reader.onreading = (event) => {
+      const textRecord = event.message.records.find((record) => record.recordType === 'text');
+      const cardText = textRecord
+        ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
+        : '';
+      const role = /admin/i.test(cardText) ? 'admin' : 'crew';
+
+      saveRegistration(name, role, event.serialNumber || '');
+      controller.abort();
+      appState.registrationReader = null;
+      appState.registrationAbortController = null;
+    };
+    reader.onreadingerror = () => {
+      statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
+    };
+
+    await reader.scan({ signal: controller.signal });
+    if (!controller.signal.aborted) {
+      statusNode.textContent = 'NFC reader ready. Tap the card to register it.';
+    }
+  } catch (error) {
+    stopCardRegistration();
+    if (error.name !== 'AbortError') {
+      statusNode.textContent = `Could not start NFC scanning: ${error.message}`;
+    }
+  }
+}
+
+function stopCardRegistration() {
+  appState.registrationAbortController?.abort();
+  appState.registrationReader = null;
+  appState.registrationAbortController = null;
+}
+
+function closeRegistration() {
+  stopCardRegistration();
+  if ($('#registerDialog').open) {
+    $('#registerDialog').close();
+  }
+}
+
+function simulateCardRegistration() {
+  const name = $('#cardHolder').value.trim();
+  if (!name) {
+    $('#registrationStatus').textContent = 'Enter the card holder’s name first.';
+    $('#cardHolder').focus();
+    return;
+  }
+  saveRegistration(name, 'crew');
+}
+
+function handleNfcLogin() {
+  if (!$('#s1').classList.contains('hide')) {
+    handleCardTap();
+  }
+}
+
 /* Onboarding 2: Vial Fill & Sensor Read */
 function prepareVialScreen() {
   const flatMetrics = D.flatMap((group) => group[2]);
@@ -146,7 +270,11 @@ function runVialCollection() {
 /* Optional .XLSX Spreadsheet Loader */
 function handleSpreadsheetUpload(event) {
   const file = event.target.files?.[0];
-  if (!file || typeof XLSX === 'undefined') return;
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    toast('Spreadsheet support is unavailable. Try reloading the page.');
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -155,24 +283,38 @@ function handleSpreadsheetUpload(event) {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet);
 
-      if (rows.length) {
-        const flat = D.flatMap((g) => g[2]);
-        rows.forEach((row) => {
-          const name = String(row.Metric || row.Parameter || row.Component || '').toLowerCase();
-          const val = parseFloat(row.Value ?? row.Result ?? row.Reading);
-          if (name && !Number.isNaN(val)) {
-            const target = flat.find((m) => m[0].toLowerCase().includes(name) || name.includes(m[0].toLowerCase()));
-            if (target) target[2] = val;
-          }
-        });
-        toast(`Loaded ${file.name} into sensor buffer`);
-        prepareVialScreen();
-        runVialCollection();
+      if (!rows.length) {
+        toast('No metric rows were found in that spreadsheet.');
+        return;
       }
-    } catch (err) {
-      toast('Could not parse spreadsheet format');
+
+      const flat = D.flatMap((group) => group[2]);
+      let updatedCount = 0;
+      rows.forEach((row) => {
+        const name = String(row.Metric || row.Parameter || row.Component || '').toLowerCase();
+        const value = parseFloat(row.Value ?? row.Result ?? row.Reading);
+        if (name && !Number.isNaN(value)) {
+          const target = flat.find((metric) => metric[0].toLowerCase().includes(name) || name.includes(metric[0].toLowerCase()));
+          if (target) {
+            target[2] = value;
+            updatedCount += 1;
+          }
+        }
+      });
+
+      if (!updatedCount) {
+        toast('No spreadsheet rows matched the known blood metrics.');
+        return;
+      }
+
+      toast(`Loaded ${updatedCount} metric${updatedCount === 1 ? '' : 's'} from ${file.name}`);
+      prepareVialScreen();
+      runVialCollection();
+    } catch (error) {
+      toast(`Could not parse spreadsheet: ${error.message}`);
     }
   };
+  reader.onerror = () => toast('Could not read the selected spreadsheet file.');
   reader.readAsArrayBuffer(file);
 }
 
@@ -184,10 +326,16 @@ function buildDashboard() {
 
   D.forEach((group) => {
     group[2].forEach((reading) => {
-      const [key] = status(reading[2], reading[3], reading[4]);
+      const [key, label] = status(reading[2], reading[3], reading[4]);
       totalReadings += 1;
       if (key === 'ok') okCount += 1;
-      if (key === 'low') issues.push(`${reading[0]} (${reading[2] < reading[3] ? 'Low' : 'High'})`);
+      if (key !== 'ok') {
+        issues.push({
+          name: reading[0],
+          status: label,
+          key
+        });
+      }
     });
   });
 
@@ -198,7 +346,7 @@ function buildDashboard() {
   }, 80);
 
   $('#hs').textContent = `${okCount} of ${totalReadings} blood biomarkers are within nominal crew range. ${issues.length} flagged for follow-up.`;
-  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-low">${issue}</span>`).join('');
+  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`).join('');
   $('#alertBadge').textContent = issues.length;
 
   $('#summaryTiles').innerHTML = `
@@ -209,6 +357,7 @@ function buildDashboard() {
 
   renderGroups();
   renderMissionList();
+  updateDashboardTab();
 
   $('#log').innerHTML = '';
   say("Hi! I'm Orbit. I analyzed your blood cartridge: Hemoglobin, Hematocrit, and Platelets sit slightly below baseline, while White Blood Cells are steady. Tap any card to inspect details or ask me a question!");
@@ -269,8 +418,20 @@ function renderGroups() {
   });
 }
 
+function updateDashboardTab() {
+  const overview = appState.activeTab === 'overview';
+  $('#summaryTiles').classList.toggle('hide', !overview);
+  $('#groups').classList.toggle('hide', overview);
+
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    const isActive = button.dataset.tab === appState.activeTab;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
 function renderMissionList() {
-  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length}`;
+  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length} • ${appState.xp} XP`;
   $('#mis').innerHTML = MIS.map((mission, index) => {
     const isDone = appState.done.has(index);
     return `
@@ -281,6 +442,7 @@ function renderMissionList() {
             ${mission[0]}
             <small>${mission[1]}</small>
           </span>
+          <em>+${mission[2]} XP</em>
         </label>
       </li>
     `;
@@ -291,7 +453,8 @@ function renderMissionList() {
       const idx = +checkbox.dataset.i;
       if (checkbox.checked && !appState.done.has(idx)) {
         appState.done.add(idx);
-        toast(`Mission logged!`);
+        appState.xp += MIS[idx][2];
+        toast(`Mission logged! +${MIS[idx][2]} XP`);
         say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
       } else {
         checkbox.checked = true;
@@ -311,38 +474,19 @@ function askAssistant(query) {
 }
 
 /* Event Bindings */
-$('#reader').onclick = handleCardTap;
 $('#send').onclick = runVialCollection;
 $('#xlsxInput').onchange = handleSpreadsheetUpload;
-$('#rescanBtn').onclick = () => { prepareVialScreen(); show('s2'); };
-
-$('#openRegister').onclick = () => {
-  $('#registerDialog').showModal();
-  $('#cardHolder').focus();
-};
-$('#closeRegister').onclick = () => $('#registerDialog').close();
-$('#tapToRegister').onclick = () => {
-  const name = $('#cardHolder').value.trim();
-  if (!name) return ($('#registrationStatus').textContent = 'Enter a crew name first.');
-  $('#registrationStatus').textContent = `Hold NFC card near reader for ${name}...`;
-};
-$('#simulateRegister').onclick = () => {
-  const name = $('#cardHolder').value.trim();
-  if (!name) return ($('#registrationStatus').textContent = 'Enter a crew name first.');
-  const initials = name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  $('#activeCrewName').textContent = name;
-  $('#crewInitials').textContent = initials || 'CR';
-  $('#registrationStatus').textContent = `Registered ${name} to localized NFC profile.`;
-  toast(`Credentials bound for ${name}`);
+$('#rescanBtn').onclick = () => {
+  appState.activeTab = 'overview';
+  prepareVialScreen();
+  show('s2');
 };
 
 document.querySelectorAll('.nav-item').forEach((btn) => {
   btn.onclick = () => {
-    document.querySelectorAll('.nav-item').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
     appState.activeTab = btn.dataset.tab;
-    $('#summaryTiles').classList.toggle('hide', appState.activeTab === 'alerts');
     renderGroups();
+    updateDashboardTab();
   };
 });
 
@@ -352,7 +496,29 @@ $('#themeToggle').onclick = () => {
   root.setAttribute('data-theme', next);
 };
 
-$('#out').onclick = () => show('s1');
+$('#out').onclick = () => resetToOnboarding();
+
+function resetToOnboarding() {
+  closeRegistration();
+  $('#s1').classList.remove('leaving');
+  $('#reader').classList.remove('reading');
+  $('#t1').textContent = 'Tap your NFC card to start';
+  $('#send').disabled = false;
+  $('#fill').style.height = '0%';
+  $('#rb').style.width = '0%';
+  $('#pctLabel').textContent = '0%';
+  $('#t2').textContent = 'Waiting for blood cartridge...';
+  $('#p2').textContent = 'Insert your sample cartridge into the reader bay, or trigger a live sensor feed below.';
+  $('#rs').textContent = 'Sensor status: Standby — Ready for microfluidic input';
+  $('#live').innerHTML = '';
+  show('s1');
+}
+
+function handleRegisterDialogClick(event) {
+  if (event.target === $('#registerDialog')) {
+    closeRegistration();
+  }
+}
 
 $('#qs').innerHTML = [
   'Why is hemoglobin low?',
@@ -374,3 +540,21 @@ $('#f').onsubmit = (e) => {
 };
 
 $('#petsvg').innerHTML = orbitAvatarSVG();
+
+$('#registerForm').onsubmit = (event) => event.preventDefault();
+$('#reader').onclick = handleCardTap;
+$('#openRegister').onclick = openRegistration;
+$('#closeRegister').onclick = closeRegistration;
+$('#registerDialog').addEventListener('click', handleRegisterDialogClick);
+$('#tapToRegister').onclick = startCardRegistration;
+$('#simulateRegister').onclick = simulateCardRegistration;
+window.addEventListener('vital:nfc-read', handleNfcLogin);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
+    if (event.target === document.body || event.target === document.documentElement) {
+      event.preventDefault();
+      handleCardTap();
+    }
+  }
+});
