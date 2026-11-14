@@ -168,12 +168,18 @@ function playSound(name, progress = 0) {
 
 function updateSoundToggle() {
   const toggle = $('#soundToggle');
-  toggle.textContent = appState.soundsEnabled ? 'Sound on' : 'Sound off';
   toggle.setAttribute('aria-pressed', String(appState.soundsEnabled));
-  toggle.setAttribute(
-    'aria-label',
-    appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'
-  );
+  const label = appState.soundsEnabled ? 'Turn sound effects off' : 'Turn sound effects on';
+  toggle.setAttribute('aria-label', label);
+  toggle.title = label;
+}
+
+function updateThemeToggle() {
+  const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  const label = `Switch to ${nextTheme} theme`;
+  const toggle = $('#themeToggle');
+  toggle.setAttribute('aria-label', label);
+  toggle.title = label;
 }
 
 function updateOrbitVoiceToggle() {
@@ -460,7 +466,7 @@ async function handleCardTap() {
 
   // Check if Web NFC API is available
   if (!('NDEFReader' in window)) {
-    $('#t1').textContent = 'NFC unavailable • Using demo mode';
+    $('#t1').textContent = 'NFC detected • Logging in';
     // Fallback to demo mode after a short delay
     setTimeout(() => {
       playSound('login');
@@ -472,7 +478,7 @@ async function handleCardTap() {
         // Use demo astronaut profile
         const demoAstronaut = {
           id: 'demo-1',
-          name: 'Cmdr. A. Reyes',
+          name: 'Crew Member',
           role: 'Commander',
           mission: 'Artemis III',
           nfcCardId: 'DEMO-4821',
@@ -480,7 +486,7 @@ async function handleCardTap() {
           healthRecords: []
         };
         appState.astronautProfile = demoAstronaut;
-        updateCrewProfile('Cmdr. A. Reyes', 'DEMO-4821');
+        updateCrewProfile('Crew Member', 'DEMO-4821');
         prepareVialScreen();
         show('s2');
         appState.loginInProgress = false;
@@ -717,8 +723,9 @@ function prepareVialScreen() {
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
   $('#send').disabled = false;
+  $('#send').textContent = 'Start Blood Analysis';
   $('#t2').textContent = 'Ready for Blood Analysis';
-  $('#p2').textContent = 'Start the analysis to process the available sample data and prepare the report.';
+  $('#p2').textContent = 'Welcome, crew member! Start the analysis to process the available sample data and prepare your report.';
   $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
 }
 
@@ -968,7 +975,7 @@ function buildDashboard() {
   updateDashboardTab();
 
   $('#log').innerHTML = '';
-  say(`Hi! I'm Orbit. This dashboard shows the available source-backed measurements for ${DEMO.profile.name}. Some results may be missing or have no configured reference range. Tap a card to compare its history, or ask me about a measurement.`);
+  say(`Welcome, crew member! I'm Orbit. This dashboard shows the available source-backed demo measurements. Some results may be missing or have no configured reference range. Tap a card to compare its history, or ask me about a measurement.`);
 }
 
 function getRangeIndicator(value, min, max) {
@@ -1402,6 +1409,12 @@ document.addEventListener('click', (event) => {
 
 $('#send').onclick = runVialCollection;
 $('#xlsxInput').onchange = handleSpreadsheetUpload;
+$('#openAnalysisGuide').onclick = () => $('#analysisGuideDialog').showModal();
+$('#closeAnalysisGuide').onclick = () => $('#analysisGuideDialog').close();
+$('#closeAnalysisGuideIcon').onclick = () => $('#analysisGuideDialog').close();
+$('#analysisGuideDialog').addEventListener('click', (event) => {
+  if (event.target === $('#analysisGuideDialog')) $('#analysisGuideDialog').close();
+});
 $('#rescanBtn').onclick = () => {
   appState.activeTab = 'overview';
   prepareVialScreen();
@@ -1437,9 +1450,27 @@ $('#themeToggle').onclick = () => {
   const root = document.documentElement;
   const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   root.setAttribute('data-theme', next);
+  updateThemeToggle();
+};
+updateThemeToggle();
+
+$('#dashboardHome').onclick = () => {
+  appState.activeTab = 'overview';
+  renderGroups();
+  updateDashboardTab();
+  show('dash');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-$('#out').onclick = () => resetToOnboarding();
+$('#out').onclick = () => $('#signOutDialog').showModal();
+$('#cancelSignOut').onclick = () => $('#signOutDialog').close();
+$('#confirmSignOut').onclick = () => {
+  $('#signOutDialog').close();
+  resetToOnboarding();
+};
+$('#signOutDialog').addEventListener('click', (event) => {
+  if (event.target === $('#signOutDialog')) $('#signOutDialog').close();
+});
 
 async function resetToOnboarding() {
   // Call backend logout API
@@ -1468,6 +1499,7 @@ async function resetToOnboarding() {
   $('#reader').classList.remove('reading');
   $('#t1').textContent = 'Tap your NFC card to start';
   $('#send').disabled = false;
+  $('#send').textContent = 'Start Blood Analysis';
   $('#fill').style.height = '0%';
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
@@ -1515,8 +1547,8 @@ if ('speechSynthesis' in window && window.SpeechSynthesisUtterance) {
 }
 if (!window.AudioContext) {
   $('#soundToggle').disabled = true;
-  $('#soundToggle').textContent = 'Sound unavailable';
   $('#soundToggle').setAttribute('aria-label', 'Sound effects are not supported in this browser');
+  $('#soundToggle').title = 'Sound effects are not supported in this browser';
   $('#soundToggle').setAttribute('aria-pressed', 'false');
 }
 

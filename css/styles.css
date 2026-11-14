@@ -1,22 +1,23 @@
 /* VITAL Design Tokens — Crew Member Portal */
 :root {
-  --bg: #FAF5F6;
+  --bg: #F7F4F5;
   --surf: #FFFFFF;
-  --surf2: #F4E6E8;
-  --sidebar: #F9D5DA;
+  --surf2: #F0E9EB;
+  --sidebar: #F1E4E7;
   --ink: #241016;
-  --mute: #6E4A53;
-  --line: #E6CDD2;
-  --accent: #8B1C1F;
-  --accent2: #C83748;
+  --mute: #5D454C;
+  --line: #D9C9CD;
+  --accent: #7A1726;
+  --accent2: #A62F43;
   --hero-grad: linear-gradient(135deg, #2A2B4A 0%, #5B1927 55%, #8B1C1F 100%);
   --ok: #13875B;
-  --warn: #B96A00;
-  --low: #C4281C;
+  --warn: #814800;
+  --low: #A71D17;
   --okbg: #DDF4EA;
   --warnbg: #FFEBCC;
   --lowbg: #FFE0DC;
   --pet: #7FE3FF;
+  color-scheme: light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -98,6 +99,15 @@ button {
   align-items: center;
   gap: 9px;
   letter-spacing: 0.03em;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  transition: color 0.18s ease;
+}
+
+.logo:hover {
+  color: var(--accent);
 }
 
 .logo-badge {
@@ -269,6 +279,48 @@ button {
   animation: planet-rotate 140s ease-in-out infinite alternate;
 }
 
+.shooting-stars {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shooting-star {
+  --fall-x: 32vw;
+  --fall-angle: 28deg;
+  position: absolute;
+  top: -8%;
+  left: 8%;
+  width: clamp(80px, 14vw, 150px);
+  height: 2px;
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 35%, rgba(255, 255, 255, 0.75) 80%, #fff 100%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.65);
+  animation: shooting-star-fall 8s linear infinite;
+}
+
+.shooting-star:nth-child(2) {
+  --fall-x: -25vw;
+  --fall-angle: -28deg;
+  left: 88%;
+  width: 105px;
+  background: linear-gradient(90deg, #fff 0%, rgba(255, 255, 255, 0.75) 20%, rgba(255, 255, 255, 0.25) 65%, transparent 100%);
+  animation-delay: 2.5s;
+  animation-duration: 9s;
+}
+
+.shooting-star:nth-child(3) {
+  --fall-x: 42vw;
+  --fall-angle: 65deg;
+  left: 38%;
+  width: 125px;
+  animation-delay: 5s;
+  animation-duration: 10s;
+}
+
 .onboarding-content {
   position: relative;
   z-index: 2;
@@ -396,43 +448,51 @@ button {
 .vial-container {
   position: relative;
   z-index: 2;
-  width: min(100% - 32px, 560px);
+  width: min(100% - 32px, 660px);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+.stage-vial {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .steps-pill {
   display: inline-flex;
-  gap: 8px;
-  padding: 5px 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 10px;
+  max-width: calc(100vw - 32px);
+  padding: 7px 16px;
   border-radius: 999px;
   background: rgba(24, 10, 16, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  font-size: 13px;
-  margin-bottom: 16px;
+  font-size: clamp(12px, 1.2vw, 14px);
+  margin-bottom: 14px;
 }
 
 .vial-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 4px 0 14px;
+  margin: 4px 0 12px;
 }
 
 .vial-rim {
-  width: 78px;
-  height: 10px;
+  width: 86px;
+  height: 11px;
   border-radius: 6px;
   border: 2.5px solid rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.15);
 }
 
 .tube {
-  width: 66px;
-  height: 155px;
-  border-radius: 0 0 34px 34px;
+  width: 72px;
+  height: 170px;
+  border-radius: 0 0 38px 38px;
   border: 2.5px solid rgba(255, 255, 255, 0.85);
   border-top: 0;
   position: relative;
@@ -502,13 +562,65 @@ button {
 }
 
 .vial-container h1 {
-  font-size: clamp(24px, 5vw, 32px);
+  font-size: clamp(26px, 5vw, 36px);
 }
 
 .vial-container p {
   margin: 6px 0 0;
-  font-size: 15px;
+  font-size: clamp(17px, 2.8vw, 20px);
+  line-height: 1.5;
   opacity: 0.9;
+}
+
+.vial-controls .btn,
+.vial-controls .register-trigger {
+  min-height: 48px;
+  padding: 12px 22px;
+  font-size: 16px;
+}
+
+.analysis-guide-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.analysis-guide-dialog h2 {
+  margin: 4px 38px 12px 0;
+  font-size: clamp(26px, 4vw, 30px);
+}
+
+.analysis-guide-kicker {
+  color: #FFB7C2;
+  font: 700 12px "Outfit", sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.analysis-guide-dialog > p {
+  margin: 12px 0;
+  color: #F4DCE0;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.analysis-guide-steps {
+  padding-left: 26px;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.analysis-guide-steps li {
+  margin: 12px 0;
+  padding-left: 4px;
+}
+
+.analysis-guide-dialog > .analysis-guide-note {
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #FFD6DC;
+  background: rgba(34, 10, 16, 0.45);
 }
 
 .analyzing-box {
@@ -525,10 +637,12 @@ button {
 
 .analyzing-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 15px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: #FFD6DC;
 }
 
@@ -539,18 +653,21 @@ button {
 
 .live {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .live div {
+  min-width: 0;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 7px 11px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 13.5px;
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  font-size: 15px;
   color: #F4DCE0;
 }
 
@@ -835,17 +952,17 @@ button {
 }
 
 .tile-card {
-  background: #3D141D;
-  color: #FCEFF2;
+  background: var(--surf2);
+  color: var(--ink);
   border-radius: 14px;
   padding: 14px 16px;
-  border: 1px solid rgba(240, 124, 138, 0.25);
+  border: 1px solid var(--line);
 }
 
 .tile-card small {
   display: block;
   font-size: 12px;
-  color: #F0A8B2;
+  color: var(--mute);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1520,34 +1637,86 @@ form.in input {
   transform: translate(-50%, 0);
 }
 
+.utility-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.76);
+  background: rgba(24, 10, 16, 0.4);
+  backdrop-filter: blur(8px);
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.utility-toggle:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(24, 10, 16, 0.68);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.utility-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle .icon-moon,
+.sound-toggle .icon-sound-off {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-moon,
+.sound-toggle[aria-pressed="false"] .icon-sound-off {
+  display: block;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-sun,
+.sound-toggle[aria-pressed="false"] .icon-sound-on {
+  display: none;
+}
+
+.top .utility-toggle {
+  color: var(--mute);
+  background: transparent;
+  border-color: transparent;
+}
+
+.top .utility-toggle:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--surf2);
+  border-color: var(--line);
+}
+
 .sound-toggle {
   position: fixed;
   top: 14px;
   right: 16px;
   z-index: 50;
-  min-height: 36px;
-  padding: 7px 13px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(24, 10, 16, 0.72);
-  font-size: 13px;
-  font-weight: 700;
-  backdrop-filter: blur(8px);
-}
-
-.sound-toggle:hover {
-  background: rgba(45, 10, 16, 0.92);
 }
 
 .sound-toggle:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.5;
+  transform: none;
 }
 
 @keyframes planet-rotate {
   to { transform: rotate(180deg); }
 }
+
+
 
 @keyframes stars-drift {
   to { background-position: 280px 280px; }
@@ -1555,6 +1724,19 @@ form.in input {
 
 @keyframes distant-stars-drift {
   to { background-position: 360px 360px; }
+}
+
+@keyframes shooting-star-fall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(var(--fall-angle)) scaleX(0.8);
+    opacity: 0;
+  }
+  10% { opacity: 0; }
+  14%, 78% { opacity: 1; }
+  90%, 100% {
+    transform: translate3d(var(--fall-x), 94vh, 0) rotate(var(--fall-angle)) scaleX(0.8);
+    opacity: 0;
+  }
 }
 
 @keyframes idle-ripple {
@@ -1577,7 +1759,8 @@ form.in input {
   .planet-top,
   .planet-bottom,
   .onboarding-screen::before,
-  .onboarding-screen::after {
+  .onboarding-screen::after,
+  .shooting-star {
     animation: none;
   }
 }
