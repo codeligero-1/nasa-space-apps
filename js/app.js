@@ -486,7 +486,7 @@ function updateDashboardTab() {
 }
 
 function renderMissionList() {
-  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length} • ${appState.xp} XP`;
+  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length}`;
   $('#mis').innerHTML = MIS.map((mission, index) => {
     const isDone = appState.done.has(index);
     return `
@@ -497,7 +497,6 @@ function renderMissionList() {
             ${mission[0]}
             <small>${mission[1]}</small>
           </span>
-          <em>+${mission[2]} XP</em>
         </label>
       </li>
     `;
@@ -509,7 +508,7 @@ function renderMissionList() {
       if (checkbox.checked && !appState.done.has(idx)) {
         appState.done.add(idx);
         appState.xp += MIS[idx][2];
-        toast(`Mission logged! +${MIS[idx][2]} XP`);
+        toast('Mission logged');
         say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
       } else {
         checkbox.checked = true;
