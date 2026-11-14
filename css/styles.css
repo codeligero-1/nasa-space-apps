@@ -1199,6 +1199,11 @@ form.in input {
   background: var(--surf);
 }
 
+.mission-dialog .dialog-close {
+  color: var(--ink);
+  background: var(--surf2);
+}
+
 .mission-dialog::backdrop {
   background: rgba(16, 13, 28, 0.72);
   backdrop-filter: blur(4px);
