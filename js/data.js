@@ -34,6 +34,90 @@ window.VITAL_DATA = {
     ]
   ],
 
+  radiation: {
+    physical: [
+      {
+        label: "Radiation detected today",
+        value: "1.2",
+        unit: "mSv/day",
+        meaning: "The amount of radiation a personal badge detected over one day.",
+        observedRange: { min: 0.722, max: 3.2 },
+        reference: null
+      },
+      {
+        label: "Radiation detected this mission",
+        value: "146",
+        unit: "mSv",
+        meaning: "The total amount detected by the personal badge since the mission began.",
+        observedRange: { min: 5.11, max: 560.42 },
+        reference: null
+      },
+      {
+        label: "Radiation measured in the cabin",
+        value: "0.03",
+        unit: "mGy",
+        meaning: "Radiation detected by a sensor in the cabin. This is not a person's personal reading.",
+        observedRange: { min: 0.664, max: 2.944 },
+        reference: null
+      }
+    ],
+    biological: [
+      {
+        label: "DNA damage signals",
+        value: "0.18",
+        unit: "foci/cell",
+        meaning: "A lab marker that can appear when a cell's DNA is damaged.",
+        observedRange: { min: 0.082, max: 1.26 },
+        reference: {
+          normalMin: 0.05,
+          normalMax: 0.2,
+          warningMin: 0.2,
+          warningMax: 0.5,
+          criticalMin: 0.5,
+          criticalMax: 2
+        }
+      },
+      {
+        label: "Unusual chromosome shapes",
+        value: "1.2",
+        unit: "per 1,000 cells",
+        meaning: "Counts uncommon chromosome shapes that can be linked to cell damage.",
+        observedRange: { min: 0.49, max: 10.25 },
+        reference: {
+          normalMin: 0.5,
+          normalMax: 1.5,
+          warningMin: 1.5,
+          warningMax: 4,
+          criticalMin: 4,
+          criticalMax: 10
+        }
+      },
+      {
+        label: "Small pieces of cell material",
+        value: "8.0",
+        unit: "per 1,000 cells",
+        meaning: "Counts cells with tiny extra pieces of genetic material.",
+        observedRange: { min: 4.26, max: 56.79 },
+        reference: {
+          normalMin: 2,
+          normalMax: 10,
+          warningMin: 10,
+          warningMax: 20,
+          criticalMin: 20,
+          criticalMax: 40
+        }
+      },
+      {
+        label: "Cell repair result",
+        value: "92",
+        unit: "%",
+        meaning: "A lab estimate of how well cells repaired DNA in this test.",
+        observedRange: { min: 70.5, max: 98.2 },
+        reference: null
+      }
+    ]
+  },
+
   missions: [
     ["Iron panel with ferritin", "Checks whether low hemoglobin comes from low iron stores", 120, [
       "Ask your flight surgeon or care team whether an iron panel with ferritin is appropriate.",

@@ -607,11 +607,25 @@ function buildDashboard() {
   `;
 
   renderGroups();
+  renderRadiationPanel();
   renderMissionList();
   updateDashboardTab();
 
   $('#log').innerHTML = '';
   say("Hi! I'm Orbit. I analyzed your blood cartridge: Hemoglobin, Hematocrit, and Platelets sit slightly below baseline, while White Blood Cells are steady. Tap any card to inspect details or ask me a question!");
+}
+
+function getRangeIndicator(value, min, max) {
+  const range = max - min;
+  const scaleMin = min - range * 0.6;
+  const scaleSpan = range * 2.2;
+  const clamp = (number) => Math.max(2, Math.min(98, ((number - scaleMin) / scaleSpan) * 100));
+
+  return {
+    left: clamp(min),
+    width: clamp(max) - clamp(min),
+    marker: clamp(value)
+  };
 }
 
 function renderGroups() {
@@ -632,9 +646,7 @@ function renderGroups() {
         <div class="rows">
           ${filtered.map((reading) => {
             const [resultKey, label] = status(reading[2], reading[3], reading[4]);
-            const span = (reading[4] - reading[3]) * 2.2;
-            const min = reading[3] - (reading[4] - reading[3]) * 0.6;
-            const clamp = (v) => Math.max(2, Math.min(98, ((v - min) / span) * 100));
+            const range = getRangeIndicator(reading[2], reading[3], reading[4]);
 
             return `
               <button class="m" type="button" aria-expanded="false">
@@ -644,8 +656,8 @@ function renderGroups() {
                 </div>
                 <div class="v">${reading[2]} <small>${reading[1]}</small></div>
                 <div class="rg">
-                  <i style="left:${clamp(reading[3])}%;width:${clamp(reading[4]) - clamp(reading[3])}%"></i>
-                  <u style="left:${clamp(reading[2])}%"></u>
+                  <i style="left:${range.left}%;width:${range.width}%"></i>
+                  <u style="left:${range.marker}%"></u>
                 </div>
                 <div class="r">
                   <span>Min ${reading[3]}</span>
@@ -669,10 +681,100 @@ function renderGroups() {
   });
 }
 
+function renderRadiationPanel() {
+  const renderMetrics = (metrics) => metrics.map((metric) => {
+    const reference = metric.reference;
+    const observedRange = metric.observedRange;
+    const value = Number(metric.value);
+    let indicator = ['warn', 'No range', 'No range is available for this reading.'];
+
+    if (reference) {
+      if (value > reference.criticalMin) {
+        indicator = ['low', 'Critical', 'This reading is above the critical level.'];
+      } else if (value > reference.warningMin && value <= reference.warningMax) {
+        indicator = ['warn', 'Warning', 'This reading is in the warning range.'];
+      } else if (value >= reference.normalMin && value <= reference.normalMax) {
+        indicator = ['ok', 'In range', 'This reading is within the usual range.'];
+      } else {
+        indicator = ['warn', 'Out of range', 'This reading is outside the usual range.'];
+      }
+    } else if (observedRange) {
+      if (value >= observedRange.min && value <= observedRange.max) {
+        indicator = ['ok', 'In range', 'This example is within the range shown.'];
+      } else {
+        indicator = ['warn', 'Outside range', 'This example is outside the range shown.'];
+      }
+    }
+
+    const barRange = reference
+      ? { min: reference.normalMin, max: reference.normalMax, label: 'Usual range' }
+      : observedRange
+        ? { min: observedRange.min, max: observedRange.max, label: 'Sample range' }
+        : null;
+
+    const rangeMarkup = barRange
+      ? (() => {
+          const range = getRangeIndicator(value, barRange.min, barRange.max);
+          return `
+            <div class="rg" aria-hidden="true">
+              <i style="left:${range.left}%;width:${range.width}%"></i>
+              <u style="left:${range.marker}%"></u>
+            </div>
+            <div class="r">
+              <span>Min ${barRange.min}</span>
+              <span>${barRange.label}</span>
+              <span>Max ${barRange.max}</span>
+            </div>
+          `;
+        })()
+      : '<div class="r"><span>No range available</span></div>';
+
+    const referenceDetails = reference
+      ? `
+          <span>Usual range: ${reference.normalMin}–${reference.normalMax} ${metric.unit}.</span>
+          <span>Warning: ${reference.warningMin}–${reference.warningMax} ${metric.unit}.</span>
+          <span>Critical: above ${reference.criticalMin} ${metric.unit}.</span>
+        `
+      : observedRange
+        ? `
+            <span>Sample range: ${observedRange.min}–${observedRange.max} ${metric.unit}.</span>
+            <span>This is an example range, not a medical limit.</span>
+          `
+        : '<span>No range is available for this reading.</span>';
+
+    return `
+      <button class="m radiation-metric" type="button" aria-expanded="false">
+        <div class="h">
+          <span class="n">${metric.label}</span>
+          <span class="chip c-${indicator[0]}">${indicator[1]}</span>
+        </div>
+        <div class="v">${metric.value} <small>${metric.unit}</small></div>
+        ${rangeMarkup}
+        <div class="d">
+          <span>${metric.meaning}</span>
+          <span>${indicator[2]}</span>
+          ${referenceDetails}
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  $('#physicalRadiationMetrics').innerHTML = renderMetrics(VITAL_DATA.radiation.physical);
+  $('#bioRadiationMetrics').innerHTML = renderMetrics(VITAL_DATA.radiation.biological);
+  document.querySelectorAll('.radiation-metric').forEach((button) => {
+    button.onclick = () => {
+      const open = button.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+    };
+  });
+}
+
 function updateDashboardTab() {
   const overview = appState.activeTab === 'overview';
+  const radiation = appState.activeTab === 'radiation';
   $('#summaryTiles').classList.toggle('hide', !overview);
-  $('#groups').classList.toggle('hide', overview);
+  $('#groups').classList.toggle('hide', overview || radiation);
+  $('#radiationPanel').classList.toggle('hide', !radiation);
 
   document.querySelectorAll('.nav-item').forEach((button) => {
     const isActive = button.dataset.tab === appState.activeTab;
