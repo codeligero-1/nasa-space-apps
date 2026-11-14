@@ -1,6 +1,11 @@
 /**
  * Database schema — define tables here
  * Run with: npm run db:init
+ *
+ * NOTE: This schema is for a JUDGING PLATFORM (users, teams, projects, criteria, scores, comments).
+ * It does NOT integrate the astronaut-earth-baseline-1.db / VITAL domain dataset.
+ * That integration is on HOLD pending explicit product approval.
+ * Do not invent integration — document or implement only after explicit product decision.
  */
 
 export const schema = `

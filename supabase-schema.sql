@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('team', 'judge', 'admin', 'public')),
   avatar_url TEXT,
-  created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now())
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Teams table
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS teams (
   description TEXT,
   project_id UUID,                        -- Reference to projects table
   created_by UUID NOT NULL REFERENCES users(id),
-  created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now())
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Team members (many-to-many)
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS team_members (
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('lead', 'member')),
-  joined_at TEXT NOT NULL DEFAULT (now()),
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (team_id, user_id)
 );
 
@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS projects (
   video_url TEXT,
   status TEXT NOT NULL CHECK (status IN ('draft', 'submitted', 'reviewing', 'scored', 'winner')) DEFAULT 'draft',
   submitted_at TIMESTAMPTZ,
-  created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now())
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Judging criteria
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS criteria (
   description TEXT,
   weight NUMERIC(3,2) NOT NULL DEFAULT 1.0,       -- Scoring weight
   max_score INTEGER NOT NULL DEFAULT 10,
-  created_at TEXT NOT NULL DEFAULT (now())
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Scores (judge -> project -> criterion)
@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS scores (
   criterion_id UUID NOT NULL REFERENCES criteria(id) ON DELETE CASCADE,
   score NUMERIC(4,2) NOT NULL,
   notes TEXT,
-  created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now()),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (project_id, judge_id, criterion_id)
 );
 
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS comments (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   is_public BOOLEAN NOT NULL DEFAULT true,   -- 1 = public, 0 = private (judge only)
-  created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now())
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Indexes for common queries

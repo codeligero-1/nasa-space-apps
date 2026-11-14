@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "type-check": "tsc --noEmit",
     "db:init": "tsx src/db/init.ts",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "test:db": "tsx src/test-db.ts",
     "test:supabase": "tsx src/test-supabase.ts",
-    "push:supabase": "tsx src/supabase-push.ts",
-    "dev": "tsx watch src/index.ts"
+    "push:supabase": "tsx src/supabase-push.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

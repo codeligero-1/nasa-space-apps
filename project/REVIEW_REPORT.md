@@ -50,6 +50,34 @@ None confirmed.
 - **Impact:** The repository has no documented data path or product behavior using the astronaut dataset.
 - **Recommended correction:** Decide and document whether the astronaut dataset is the product data source; if so, design an approved schema/API integration and tests before implementation continues.
 
+### P1-003 — Backend development command references a missing entrypoint
+
+- **Location:** `backend/package.json`
+- **Description:** The `dev` script runs `tsx watch src/index.ts`, but `backend/src/index.ts` is not present in the tracked backend files.
+- **Impact:** The documented development command fails immediately in a clean checkout.
+- **Recommended correction:** Add the approved backend entrypoint or remove/update the script until a runtime entrypoint is defined.
+
+### P1-004 — Supabase sync uses an invalid conflict target for `team_members`
+
+- **Location:** `backend/src/supabase-push.ts`
+- **Description:** Every table is upserted with `onConflict: 'id'`, but `team_members` has a composite primary key `(team_id, user_id)` and no `id` column.
+- **Impact:** Synchronization of the team-members table will fail or target a nonexistent column.
+- **Recommended correction:** Use the composite conflict target for `team_members` and `id` for tables that have an `id` column; validate against the generated schema.
+
+### P2-003 — Database path comment and implementation disagree
+
+- **Location:** `backend/src/db/connection.ts`
+- **Description:** The comment documents `backend/data/app.db`, while the current path calculation resolves to `backend/src/data/app.db`.
+- **Impact:** Operators may inspect or back up the wrong database file, and environment behavior is unclear.
+- **Recommended correction:** Choose one canonical location and align the code, comment, documentation, and tests.
+
+### P2-004 — PostgreSQL schema conversion leaves timestamp columns as text
+
+- **Location:** `backend/src/supabase-push.ts`, generated `supabase-schema.sql`
+- **Description:** The conversion first changes `datetime('now')` to `now()`, preventing later timestamp-type replacements from matching. Generated `created_at`, `updated_at`, and `joined_at` columns remain `TEXT DEFAULT (now())`.
+- **Impact:** Supabase receives timestamp values with an inconsistent schema and weaker type guarantees.
+- **Recommended correction:** Make the conversion deterministic, generate `TIMESTAMPTZ` columns, and validate the generated SQL before synchronization.
+
 ## 7. Minor Improvements
 
 None at this stage.
@@ -63,11 +91,14 @@ The backend has a dependency manifest and Supabase integration that reads creden
 1. Complete `PROJECT_BRIEF.md` and `REQUIREMENTS.md` with Project Owner-approved scope.
 2. Update `ARCHITECTURE.md` and `FILE_OPERATION_PLAN.md` to reflect the actual backend and astronaut dataset decision.
 3. Resolve the TypeScript errors and add a passing type-check command.
-4. Add or intentionally remove the migration workflow and document the decision.
-5. Define Supabase schema, RLS, credentials, and deployment behavior before production use.
-6. Record implementation changes in `FILE_CHANGE_REPORT.md`.
-7. Run tests and attach commands and results to `REVIEW_REQUEST.md`.
-8. Request a new independent review with the complete diff and evidence.
+4. Fix or remove the missing `backend/src/index.ts` development entrypoint.
+5. Add or intentionally remove the migration workflow and document the decision.
+6. Fix the Supabase composite-key upsert and timestamp conversion, then validate the generated schema.
+7. Align the database path, comments, documentation, and tests.
+8. Define Supabase schema, RLS, credentials, and deployment behavior before production use.
+9. Record implementation changes in `FILE_CHANGE_REPORT.md`.
+10. Run tests and attach commands and results to `REVIEW_REQUEST.md`.
+11. Request a new independent review with the complete diff and evidence.
 
 ## 10. Final Verdict
 
