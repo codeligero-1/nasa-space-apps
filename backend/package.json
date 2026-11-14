@@ -9,7 +9,10 @@
     "test:db": "tsx src/test-db.ts",
     "test:supabase": "tsx src/test-supabase.ts",
     "push:supabase": "tsx src/supabase-push.ts",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit false --outDir dist",
+    "start": "node dist/index.js",
+    "test:admin": "tsx --test src/admin-auth.test.ts src/server.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
