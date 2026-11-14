@@ -265,6 +265,16 @@
     </form>
   </dialog>
 
+  <dialog class="register-dialog mission-dialog" id="missionDialog" aria-labelledby="missionDialogTitle">
+    <button class="dialog-close" id="closeMissionDialog" type="button" aria-label="Close mission instructions">&times;</button>
+    <h2 id="missionDialogTitle"></h2>
+    <p id="missionDialogSummary"></p>
+    <ol class="mission-instructions" id="missionInstructions"></ol>
+    <div class="dialog-actions">
+      <button class="btn" id="readMissionInstructions" type="button">Read aloud</button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status"></div>
 
   <script src="../js/data.js"></script>

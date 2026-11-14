@@ -12,7 +12,8 @@ const appState = {
   assistantVisible: false,
   voiceEnabled: false,
   speechRecognition: null,
-  voiceQueryActive: false
+  voiceQueryActive: false,
+  missionSpeaking: false
 };
 
 let D = window.VITAL_DATA.metrics;
@@ -151,6 +152,75 @@ function setupOrbitSpeechRecognition() {
     updateOrbitMicToggle();
   };
   appState.speechRecognition = recognition;
+}
+
+function stopMissionSpeech() {
+  if (appState.missionSpeaking && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  appState.missionSpeaking = false;
+  updateMissionSpeechButton();
+}
+
+function updateMissionSpeechButton() {
+  const button = $('#readMissionInstructions');
+  button.textContent = appState.missionSpeaking ? 'Stop reading' : 'Read aloud';
+  button.setAttribute('aria-pressed', String(appState.missionSpeaking));
+}
+
+function openMissionGuide(index) {
+  const [title, summary, , instructions] = MIS[index];
+  $('#missionDialogTitle').textContent = title;
+  $('#missionDialogSummary').textContent = summary;
+  $('#missionInstructions').replaceChildren(
+    ...instructions.map((instruction) => {
+      const item = document.createElement('li');
+      item.textContent = instruction;
+      return item;
+    })
+  );
+  stopMissionSpeech();
+  $('#missionDialog').showModal();
+}
+
+function readMissionGuide() {
+  if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return;
+  if (appState.missionSpeaking) {
+    stopMissionSpeech();
+    return;
+  }
+
+  const instructions = Array.from($('#missionInstructions').children)
+    .map((item) => item.textContent)
+    .join(' ');
+
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(
+      `${$('#missionDialogTitle').textContent}. ${$('#missionDialogSummary').textContent}. ${instructions}`
+    );
+    utterance.rate = 1;
+    utterance.onend = () => {
+      appState.missionSpeaking = false;
+      updateMissionSpeechButton();
+    };
+    utterance.onerror = (event) => {
+      appState.missionSpeaking = false;
+      updateMissionSpeechButton();
+      if (event.error !== 'interrupted' && event.error !== 'canceled') {
+        console.warn('Could not read mission instructions:', event.error);
+        toast('Could not read these instructions aloud. Please try again.');
+      }
+    };
+    appState.missionSpeaking = true;
+    updateMissionSpeechButton();
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    appState.missionSpeaking = false;
+    updateMissionSpeechButton();
+    console.warn('Could not read mission instructions:', error);
+    toast('Could not read these instructions aloud. Please try again.');
+  }
 }
 
 function speakOrbitMessage(message) {
@@ -617,16 +687,20 @@ function renderMissionList() {
     const isDone = appState.done.has(index);
     return `
       <li class="${isDone ? 'done' : ''}">
-        <label>
-          <input type="checkbox" data-i="${index}" ${isDone ? 'checked' : ''}>
-          <span>
+        <input type="checkbox" data-i="${index}" aria-label="Mark ${mission[0]} complete" ${isDone ? 'checked' : ''}>
+        <button class="mission-open" type="button" data-mission="${index}" aria-label="View instructions for ${mission[0]}">
+          <strong>
             ${mission[0]}
-            <small>${mission[1]}</small>
-          </span>
-        </label>
+          </strong>
+          <small>${mission[1]}</small>
+        </button>
       </li>
     `;
   }).join('');
+
+  document.querySelectorAll('#mis .mission-open').forEach((button) => {
+    button.onclick = () => openMissionGuide(+button.dataset.mission);
+  });
 
   document.querySelectorAll('#mis input').forEach((checkbox) => {
     checkbox.onchange = () => {
@@ -690,6 +764,17 @@ $('#orbitMicToggle').onclick = () => {
     toast('Could not start voice input. Please try again.');
   }
 };
+
+$('#closeMissionDialog').onclick = () => $('#missionDialog').close();
+$('#missionDialog').addEventListener('click', (event) => {
+  if (event.target === $('#missionDialog')) $('#missionDialog').close();
+});
+$('#missionDialog').addEventListener('close', stopMissionSpeech);
+$('#readMissionInstructions').onclick = readMissionGuide;
+if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) {
+  $('#readMissionInstructions').disabled = true;
+  $('#readMissionInstructions').textContent = 'Voice unavailable';
+}
 
 document.addEventListener('click', (event) => {
   const control = event.target.closest('button, a, input[type="checkbox"]');

@@ -35,11 +35,32 @@ window.VITAL_DATA = {
   ],
 
   missions: [
-    ["Iron panel with ferritin", "Checks whether low hemoglobin comes from low iron stores", 120],
-    ["Reticulocyte count", "Shows how fast bone marrow is making new red cells", 90],
-    ["Blood smear review", "A lab tech inspects cell shape and platelet clumping", 90],
-    ["Repeat blood count in 2 weeks", "Confirms whether the changes persist", 60],
-    ["Log hydration and sleep for 3 days", "Context that helps explain this week’s numbers", 30]
+    ["Iron panel with ferritin", "Checks whether low hemoglobin comes from low iron stores", 120, [
+      "Ask your flight surgeon or care team whether an iron panel with ferritin is appropriate.",
+      "If they order it, follow their instructions for the blood draw and any preparation.",
+      "Review the results with your care team and record the date and follow-up plan.",
+      "Do not start iron supplements unless your care team recommends them."
+    ]],
+    ["Reticulocyte count", "Shows how fast bone marrow is making new red cells", 90, [
+      "Ask your care team whether a reticulocyte count should be added to your blood work.",
+      "If ordered, have the sample collected according to the clinic’s instructions.",
+      "Record the result and discuss what it means alongside your other blood counts."
+    ]],
+    ["Blood smear review", "A lab tech inspects cell shape and platelet clumping", 90, [
+      "Ask your care team whether a peripheral blood smear review is appropriate.",
+      "The laboratory examines a blood sample under a microscope; your care team arranges the test.",
+      "Ask the clinician to explain any findings, including whether platelet clumping affected the sample."
+    ]],
+    ["Repeat blood count in 2 weeks", "Confirms whether the changes persist", 60, [
+      "Coordinate the repeat blood count date with your care team, aiming for about two weeks if they agree.",
+      "Follow the clinic’s instructions for sample collection.",
+      "Compare the new result with this scan with your clinician and note any recommended follow-up."
+    ]],
+    ["Log hydration and sleep for 3 days", "Context that helps explain this week’s numbers", 30, [
+      "For three days, record your sleep and fluid intake using the format recommended by your care team.",
+      "Note the time, amount, and any relevant changes in routine or symptoms.",
+      "Share the log with your care team; follow their guidance on hydration rather than changing intake based on this log alone."
+    ]]
   ],
 
   crew: [
