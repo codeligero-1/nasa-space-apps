@@ -1,40 +1,50 @@
-// Shared DOM helper and app state.
 const $ = (selector) => document.querySelector(selector);
 
 const appState = {
-  xp: 40,
   done: new Set(),
   loginInProgress: false,
+  activeTab: 'overview',
+  xp: 40,
   registrationReader: null,
   registrationAbortController: null
 };
 
-const D = window.VITAL_DATA.metrics;
+let D = window.VITAL_DATA.metrics;
 const MIS = window.VITAL_DATA.missions;
-const C = window.VITAL_DATA.crew;
 const KB = window.VITAL_DATA.chatKnowledge;
 
-// Toggle the visible screen while keeping the UI state centralized.
 function show(screenId) {
-  ['s1', 's2', 'dash', 'admin'].forEach((id) => {
+  ['s1', 's2', 'dash'].forEach((id) => {
     $('#' + id).classList.toggle('hide', id !== screenId);
   });
-  $('#siteHeader').classList.toggle('hide', screenId === 's1');
+  $('#siteHeader').classList.toggle('hide', screenId === 's1' || screenId === 's2');
 }
 
-// Visual helper used by the health assistant card.
-function pet(color = '#FFB84D') {
+/* Cute Cartoon Floating Astronaut Head ("Orbit") */
+function orbitAvatarSVG() {
   return `
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <line x1="50" y1="12" x2="50" y2="2" stroke="${color}" stroke-width="3"/>
-      <circle cx="50" cy="4" r="4" fill="#E5361B"/>
-      <ellipse cx="50" cy="60" rx="36" ry="34" fill="${color}"/>
-      <rect x="26" y="40" width="48" height="30" rx="15" fill="#0F1B3D"/>
-      <ellipse class="eye blink" cx="40" cy="55" rx="5" ry="6" fill="#7FE3FF"/>
-      <ellipse class="eye blink" cx="60" cy="55" rx="5" ry="6" fill="#7FE3FF"/>
-      <path d="M45 64q5 4 10 0" stroke="#7FE3FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <circle cx="20" cy="66" r="7" fill="${color}"/>
-      <circle cx="80" cy="66" r="7" fill="${color}"/>
+    <svg viewBox="0 0 110 110" aria-hidden="true">
+      <defs>
+        <linearGradient id="helmetShell" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#DCE4F5"/>
+        </linearGradient>
+        <linearGradient id="visorGlass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2A2B4A"/>
+          <stop offset="100%" stop-color="#141629"/>
+        </linearGradient>
+      </defs>
+      <line x1="55" y1="16" x2="55" y2="6" stroke="#F07C8A" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="55" cy="5" r="4.5" fill="#FF5A67"/>
+      <rect x="12" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
+      <rect x="88" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
+      <rect x="19" y="16" width="72" height="72" rx="34" fill="url(#helmetShell)" stroke="#9BA4D9" stroke-width="2"/>
+      <rect x="27" y="34" width="56" height="38" rx="18" fill="url(#visorGlass)"/>
+      <path d="M35 41 Q55 37 73 42" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse class="eye blink" cx="43" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/>
+      <ellipse class="eye blink" cx="67" cy="53" rx="5" ry="6.5" fill="#7FE3FF"/>
+      <path d="M49 62 Q55 67 61 62" stroke="#7FE3FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M29 86 Q55 95 81 86 L77 96 Q55 103 33 96 Z" fill="#8B1C1F"/>
     </svg>
   `;
 }
@@ -43,30 +53,16 @@ function toast(message) {
   const toastNode = $('#toast');
   toastNode.textContent = message;
   toastNode.classList.add('on');
-  setTimeout(() => toastNode.classList.remove('on'), 2400);
+  setTimeout(() => toastNode.classList.remove('on'), 2500);
 }
 
 function status(value, lo, hi) {
-  if (value < lo) {
-    return ['low', 'Low'];
-  }
-  if (value > hi) {
-    return ['low', 'High'];
-  }
-  if ((value - lo) < (hi - lo) * .08 || (hi - value) < (hi - lo) * .08) {
-    return ['warn', 'Near edge'];
+  if (value < lo) return ['low', 'Low'];
+  if (value > hi) return ['low', 'High'];
+  if ((value - lo) < (hi - lo) * 0.08 || (hi - value) < (hi - lo) * 0.08) {
+    return ['warn', 'Borderline'];
   }
   return ['ok', 'In range'];
-}
-
-function level() {
-  return 1 + Math.floor(appState.xp / 150);
-}
-
-function setXP() {
-  $('#lvl').textContent = 'Level ' + level();
-  $('#xpb').style.width = (appState.xp % 150) / 150 * 100 + '%';
-  $('#xpt').textContent = appState.xp + ' XP';
 }
 
 function say(message, isUserMessage = false) {
@@ -77,37 +73,33 @@ function say(message, isUserMessage = false) {
   $('#log').scrollTop = 1e5;
 }
 
-function handleCardTap(isAdmin = false) {
-  if (appState.loginInProgress) {
-    return;
-  }
-
+/* Onboarding 1: Crew NFC Card Tap */
+function handleCardTap() {
+  if (appState.loginInProgress) return;
   appState.loginInProgress = true;
+
   const reader = $('#reader');
   reader.classList.add('reading');
-  $('#t1').textContent = 'Card read. Welcome aboard';
+  $('#t1').textContent = 'NFC Card Verified • Welcome Aboard';
 
   setTimeout(() => {
     $('#s1').classList.add('leaving');
     setTimeout(() => {
       reader.classList.remove('reading');
       $('#s1').classList.remove('leaving');
-      $('#t1').textContent = 'Tap your card to start';
-      show(isAdmin ? 'admin' : 's2');
-      if (isAdmin) {
-        $('#out').classList.remove('hide');
-      }
+      $('#t1').textContent = 'Tap your NFC card to start';
+      prepareVialScreen();
+      show('s2');
       appState.loginInProgress = false;
     }, 350);
-  }, 1200);
+  }, 1050);
 }
 
-// Physical-reader integrations can dispatch this event with { role: 'admin' } or { role: 'crew' }.
-function handleNfcLogin(event) {
-  if ($('#s1').classList.contains('hide')) {
-    return;
-  }
-  handleCardTap(event.detail?.role === 'admin');
+function updateCrewProfile(name, cardId = '') {
+  const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
+  $('#activeCrewName').textContent = name;
+  $('#crewInitials').textContent = initials || 'CR';
+  $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
 }
 
 function openRegistration() {
@@ -126,13 +118,15 @@ function saveRegistration(name, role, serialNumber = '') {
       return;
     }
 
+    const cardId = serialNumber || `demo-${Date.now()}`;
     storedCards.push({
       name,
       role,
-      cardId: serialNumber || `demo-${Date.now()}`,
+      cardId,
       registeredAt: new Date().toISOString()
     });
     localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
+    updateCrewProfile(name, serialNumber);
     statusNode.textContent = `${name} registered as ${role}.`;
   } catch (error) {
     statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
@@ -153,33 +147,55 @@ async function startCardRegistration() {
     return;
   }
 
+  if (appState.registrationAbortController) {
+    statusNode.textContent = 'NFC scanning is already active. Tap a card or close this dialog to stop.';
+    return;
+  }
+
   const controller = new AbortController();
   appState.registrationAbortController = controller;
-  appState.registrationReader = new window.NDEFReader();
-  appState.registrationReader.onreading = (event) => {
-    const textRecord = event.message.records.find((record) => record.recordType === 'text');
-    const cardText = textRecord
-      ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
-      : '';
-    const role = /admin/i.test(cardText) ? 'admin' : 'crew';
-
-    saveRegistration(name, role, event.serialNumber || '');
-    controller.abort();
-    appState.registrationReader = null;
-    appState.registrationAbortController = null;
-  };
-  appState.registrationReader.onreadingerror = () => {
-    statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
-  };
-
   statusNode.textContent = 'Waiting for an NFC card…';
   try {
-    await appState.registrationReader.scan({ signal: controller.signal });
-    statusNode.textContent = 'NFC reader ready. Tap the card to register it.';
+    const reader = new window.NDEFReader();
+    appState.registrationReader = reader;
+    reader.onreading = (event) => {
+      const textRecord = event.message.records.find((record) => record.recordType === 'text');
+      const cardText = textRecord
+        ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
+        : '';
+      const role = /admin/i.test(cardText) ? 'admin' : 'crew';
+
+      saveRegistration(name, role, event.serialNumber || '');
+      controller.abort();
+      appState.registrationReader = null;
+      appState.registrationAbortController = null;
+    };
+    reader.onreadingerror = () => {
+      statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
+    };
+
+    await reader.scan({ signal: controller.signal });
+    if (!controller.signal.aborted) {
+      statusNode.textContent = 'NFC reader ready. Tap the card to register it.';
+    }
   } catch (error) {
-    statusNode.textContent = `Could not start NFC scanning: ${error.message}`;
-    appState.registrationReader = null;
-    appState.registrationAbortController = null;
+    stopCardRegistration();
+    if (error.name !== 'AbortError') {
+      statusNode.textContent = `Could not start NFC scanning: ${error.message}`;
+    }
+  }
+}
+
+function stopCardRegistration() {
+  appState.registrationAbortController?.abort();
+  appState.registrationReader = null;
+  appState.registrationAbortController = null;
+}
+
+function closeRegistration() {
+  stopCardRegistration();
+  if ($('#registerDialog').open) {
+    $('#registerDialog').close();
   }
 }
 
@@ -193,14 +209,229 @@ function simulateCardRegistration() {
   saveRegistration(name, 'crew');
 }
 
-function closeRegistration() {
-  appState.registrationAbortController?.abort();
-  appState.registrationReader = null;
-  appState.registrationAbortController = null;
-  $('#registerDialog').close();
+function handleNfcLogin() {
+  if (!$('#s1').classList.contains('hide')) {
+    handleCardTap();
+  }
+}
+
+/* Onboarding 2: Vial Fill & Sensor Read */
+function prepareVialScreen() {
+  const flatMetrics = D.flatMap((group) => group[2]);
+  $('#live').innerHTML = flatMetrics.slice(0, 6).map((metric, index) => {
+    return `<div id="l${index}"><span>${metric[0]}</span><b>Waiting…</b></div>`;
+  }).join('');
+
+  $('#fill').style.height = '0%';
+  $('#rb').style.width = '0%';
+  $('#pctLabel').textContent = '0%';
+  $('#send').disabled = false;
+  $('#t2').textContent = 'Waiting for blood cartridge...';
+  $('#rs').textContent = 'Sensor status: Standby — Ready for microfluidic input';
+}
+
+function runVialCollection() {
+  const flatMetrics = D.flatMap((group) => group[2]).slice(0, 6);
+  $('#send').disabled = true;
+  $('#t2').textContent = 'Collecting & analyzing blood sample...';
+  $('#p2').textContent = 'Microfluidic optical sensors are reading cellular components.';
+  $('#rs').textContent = 'Sensor status: Blood detected • Spectroscopic scan active';
+
+  let step = 0;
+  const totalSteps = flatMetrics.length;
+
+  const timer = setInterval(() => {
+    if (step < totalSteps) {
+      const item = flatMetrics[step];
+      const pct = Math.round(((step + 1) / totalSteps) * 100);
+      $('#fill').style.height = Math.min(88, pct * 0.88) + '%';
+      $('#rb').style.width = pct + '%';
+      $('#pctLabel').textContent = pct + '%';
+
+      const cell = $('#l' + step);
+      if (cell) {
+        cell.classList.add('done');
+        cell.querySelector('b').textContent = `${item[2]} ${item[1]}`;
+      }
+      step += 1;
+      return;
+    }
+
+    clearInterval(timer);
+    $('#rs').textContent = 'Analysis complete • Generating crew telemetry report';
+    setTimeout(() => {
+      buildDashboard();
+      show('dash');
+      toast('Blood sample analyzed');
+    }, 650);
+  }, 420);
+}
+
+/* Optional .XLSX Spreadsheet Loader */
+function handleSpreadsheetUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    toast('Spreadsheet support is unavailable. Try reloading the page.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (!rows.length) {
+        toast('No metric rows were found in that spreadsheet.');
+        return;
+      }
+
+      const flat = D.flatMap((group) => group[2]);
+      let updatedCount = 0;
+      rows.forEach((row) => {
+        const name = String(row.Metric || row.Parameter || row.Component || '').toLowerCase();
+        const value = parseFloat(row.Value ?? row.Result ?? row.Reading);
+        if (name && !Number.isNaN(value)) {
+          const target = flat.find((metric) => metric[0].toLowerCase().includes(name) || name.includes(metric[0].toLowerCase()));
+          if (target) {
+            target[2] = value;
+            updatedCount += 1;
+          }
+        }
+      });
+
+      if (!updatedCount) {
+        toast('No spreadsheet rows matched the known blood metrics.');
+        return;
+      }
+
+      toast(`Loaded ${updatedCount} metric${updatedCount === 1 ? '' : 's'} from ${file.name}`);
+      prepareVialScreen();
+      runVialCollection();
+    } catch (error) {
+      toast(`Could not parse spreadsheet: ${error.message}`);
+    }
+  };
+  reader.onerror = () => toast('Could not read the selected spreadsheet file.');
+  reader.readAsArrayBuffer(file);
+}
+
+/* Dashboard Builder */
+function buildDashboard() {
+  let okCount = 0;
+  let totalReadings = 0;
+  const issues = [];
+
+  D.forEach((group) => {
+    group[2].forEach((reading) => {
+      const [key, label] = status(reading[2], reading[3], reading[4]);
+      totalReadings += 1;
+      if (key === 'ok') okCount += 1;
+      if (key !== 'ok') {
+        issues.push({
+          name: reading[0],
+          status: label,
+          key
+        });
+      }
+    });
+  });
+
+  const score = Math.round((okCount / totalReadings) * 100);
+  $('#rt').textContent = score + '%';
+  setTimeout(() => {
+    $('#rc').style.strokeDashoffset = 314 * (1 - score / 100);
+  }, 80);
+
+  $('#hs').textContent = `${okCount} of ${totalReadings} blood biomarkers are within nominal crew range. ${issues.length} flagged for follow-up.`;
+  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`).join('');
+  $('#alertBadge').textContent = issues.length;
+
+  $('#summaryTiles').innerHTML = `
+    <div class="tile-card"><small>In-Range Biomarkers</small><strong>${okCount} / ${totalReadings}</strong></div>
+    <div class="tile-card"><small>Flagged Indicators</small><strong>${issues.length} Alerts</strong></div>
+    <div class="tile-card"><small>Cartridge Status</small><strong>Verified</strong></div>
+  `;
+
+  renderGroups();
+  renderMissionList();
+  updateDashboardTab();
+
+  $('#log').innerHTML = '';
+  say("Hi! I'm Orbit. I analyzed your blood cartridge: Hemoglobin, Hematocrit, and Platelets sit slightly below baseline, while White Blood Cells are steady. Tap any card to inspect details or ask me a question!");
+}
+
+function renderGroups() {
+  const filterAlertsOnly = appState.activeTab === 'alerts';
+
+  $('#groups').innerHTML = D.map((group) => {
+    const filtered = group[2].filter((reading) => {
+      if (!filterAlertsOnly) return true;
+      return status(reading[2], reading[3], reading[4])[0] !== 'ok';
+    });
+
+    if (!filtered.length) return '';
+
+    return `
+      <div class="grp">
+        <h3>${group[0]}</h3>
+        <p>${group[1]}</p>
+        <div class="rows">
+          ${filtered.map((reading) => {
+            const [resultKey, label] = status(reading[2], reading[3], reading[4]);
+            const span = (reading[4] - reading[3]) * 2.2;
+            const min = reading[3] - (reading[4] - reading[3]) * 0.6;
+            const clamp = (v) => Math.max(2, Math.min(98, ((v - min) / span) * 100));
+
+            return `
+              <button class="m" type="button" aria-expanded="false">
+                <div class="h">
+                  <span class="n">${reading[0]}</span>
+                  <span class="chip c-${resultKey}">${label}</span>
+                </div>
+                <div class="v">${reading[2]} <small>${reading[1]}</small></div>
+                <div class="rg">
+                  <i style="left:${clamp(reading[3])}%;width:${clamp(reading[4]) - clamp(reading[3])}%"></i>
+                  <u style="left:${clamp(reading[2])}%"></u>
+                </div>
+                <div class="r">
+                  <span>Min ${reading[3]}</span>
+                  <span>Nominal Range</span>
+                  <span>Max ${reading[4]}</span>
+                </div>
+                <div class="d">${reading[5]}</div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.m').forEach((button) => {
+    button.onclick = () => {
+      const open = button.classList.toggle('open');
+      button.setAttribute('aria-expanded', open);
+    };
+  });
+}
+
+function updateDashboardTab() {
+  const overview = appState.activeTab === 'overview';
+  $('#summaryTiles').classList.toggle('hide', !overview);
+  $('#groups').classList.toggle('hide', overview);
+
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    const isActive = button.dataset.tab === appState.activeTab;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
 }
 
 function renderMissionList() {
+  $('#missionCountChip').textContent = `${appState.done.size} / ${MIS.length} • ${appState.xp} XP`;
   $('#mis').innerHTML = MIS.map((mission, index) => {
     const isDone = appState.done.has(index);
     return `
@@ -219,225 +450,102 @@ function renderMissionList() {
 
   document.querySelectorAll('#mis input').forEach((checkbox) => {
     checkbox.onchange = () => {
-      const missionIndex = +checkbox.dataset.i;
-
-      if (checkbox.checked && !appState.done.has(missionIndex)) {
-        appState.done.add(missionIndex);
-        const previousLevel = level();
-        appState.xp += MIS[missionIndex][2];
-        toast(`Mission complete. +${MIS[missionIndex][2]} XP`);
-
-        if (level() > previousLevel) {
-          setTimeout(() => toast(`Level up! You’re now level ${level()}`), 2600);
-        }
-
-        say('Nice work. I added that to your record.');
+      const idx = +checkbox.dataset.i;
+      if (checkbox.checked && !appState.done.has(idx)) {
+        appState.done.add(idx);
+        appState.xp += MIS[idx][2];
+        toast(`Mission logged! +${MIS[idx][2]} XP`);
+        say(`Logged "${MIS[idx][0]}" to your medical telemetry.`);
       } else {
         checkbox.checked = true;
       }
-
       renderMissionList();
-      setXP();
     };
   });
 }
 
-// Build the dashboard cards and calculate the combined orbit score.
-function buildDashboard() {
-  let okCount = 0;
-  let totalReadings = 0;
-  const issues = [];
-
-  $('#groups').innerHTML = D.map((group) => {
-    return `
-      <div class="grp">
-        <h3>${group[0]}</h3>
-        <p>${group[1]}</p>
-        <div class="rows">
-          ${group[2].map((reading) => {
-            const [resultKey, label] = status(reading[2], reading[3], reading[4]);
-            totalReadings += 1;
-
-            if (resultKey === 'ok') {
-              okCount += 1;
-            }
-
-            if (resultKey === 'low') {
-              issues.push(reading[0] + ' ' + (reading[2] < reading[3] ? 'low' : 'high'));
-            }
-
-            const span = (reading[4] - reading[3]) * 2.2;
-            const min = reading[3] - (reading[4] - reading[3]) * .6;
-            const clampPercentage = (value) => Math.max(2, Math.min(98, (value - min) / span * 100));
-
-            return `
-              <button class="m" aria-expanded="false">
-                <div class="h">
-                  <span class="n">${reading[0]}</span>
-                  <span class="chip c-${resultKey}">${label}</span>
-                </div>
-                <div class="v">${reading[2]} <small>${reading[1]}</small></div>
-                <div class="rg">
-                  <i style="left:${clampPercentage(reading[3])}%;width:${clampPercentage(reading[4]) - clampPercentage(reading[3])}%"></i>
-                  <u style="left:${clampPercentage(reading[2])}%"></u>
-                </div>
-                <div class="r">
-                  <span>${reading[3]}</span>
-                  <span>Healthy range</span>
-                  <span>${reading[4]}</span>
-                </div>
-                <div class="d">${reading[5]}</div>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  document.querySelectorAll('.m').forEach((button) => {
-    button.onclick = () => {
-      const isOpen = button.classList.toggle('open');
-      button.setAttribute('aria-expanded', isOpen);
-    };
-  });
-
-  const score = Math.round(okCount / totalReadings * 100);
-  $('#rt').textContent = score;
-  setTimeout(() => $('#rc').style.strokeDashoffset = 314 * (1 - score / 100), 100);
-
-  $('#hs').textContent = `${okCount} of ${totalReadings} readings are in range. ${issues.length} need a closer look.`;
-  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-low">${issue}</span>`).join('');
-  $('#hn').textContent = 'Your Orbit score';
-
-  renderMissionList();
-  setXP();
-  $('#log').innerHTML = '';
-  say('Hi, I’m Orbi. I read your sample: hemoglobin, hematocrit and platelets sit below range, while the rest looks steady. Tap a question or ask me anything.');
-}
-
-// Keep the assistant responses readable and maintainable by centralizing the keyword lookup.
 function askAssistant(query) {
   say(query, true);
-
   const match = KB.find(([pattern]) => pattern.test(query.toLowerCase()));
-  const answer = match ? match[1] : 'I can help with hemoglobin, platelets, white cells, your score or what test to do next. Which would you like?';
-
-  setTimeout(() => say(answer), 500);
+  const answer = match
+    ? match[1]
+    : 'I can break down your Hemoglobin, Hematocrit, White Blood Cells, Platelets, or recommend follow-up tests. What would you like to inspect?';
+  setTimeout(() => say(answer), 420);
 }
 
-// Simulate the blood sample workflow and animate the sensor reading.
-function simulateSampleRead() {
-  const flatMetrics = D.flatMap((group) => group[2]);
-  $('#live').innerHTML = flatMetrics.slice(0, 8).map((metric, index) => {
-    return `<div id="l${index}"><span>${metric[0]}</span><b>…</b></div>`;
-  }).join('');
+/* Event Bindings */
+$('#send').onclick = runVialCollection;
+$('#xlsxInput').onchange = handleSpreadsheetUpload;
+$('#rescanBtn').onclick = () => {
+  appState.activeTab = 'overview';
+  prepareVialScreen();
+  show('s2');
+};
 
-  let sending = false;
-
-  $('#send').onclick = () => {
-    if (sending) {
-      return;
-    }
-
-    sending = true;
-    $('#send').disabled = true;
-    $('#t2').textContent = 'Reading your sample';
-    $('#p2').textContent = 'Keep the cartridge in place.';
-    $('#rs').textContent = 'Sensor status: blood detected';
-    $('#fill').style.height = '85%';
-
-    let index = 0;
-    const timer = setInterval(() => {
-      if (index < 8) {
-        const item = flatMetrics[index];
-        $('#l' + index).classList.add('done');
-        $('#l' + index + ' b').textContent = item[2] + ' ' + item[1];
-        index += 1;
-        $('#rb').style.width = (index / 8 * 100) + '%';
-        return;
-      }
-
-      clearInterval(timer);
-      $('#rs').textContent = 'Sample read. Building your report';
-      $('#rb').style.width = '100%';
-
-      setTimeout(() => {
-        buildDashboard();
-        show('dash');
-        $('#xpbox').classList.remove('hide');
-        $('#out').classList.remove('hide');
-        sending = false;
-        setTimeout(() => toast('First scan complete. +40 XP'), 400);
-      }, 900);
-    }, 450);
+document.querySelectorAll('.nav-item').forEach((btn) => {
+  btn.onclick = () => {
+    appState.activeTab = btn.dataset.tab;
+    renderGroups();
+    updateDashboardTab();
   };
-}
+});
 
-function bindQuickQuestions() {
-  $('#qs').innerHTML = [
-    'Why is my hemoglobin low?',
-    'What about platelets?',
-    'What should I test next?'
-  ].map((question) => `<button type="button">${question}</button>`).join('');
+$('#themeToggle').onclick = () => {
+  const root = document.documentElement;
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+};
 
-  document.querySelectorAll('#qs button').forEach((button) => {
-    button.onclick = () => askAssistant(button.textContent);
-  });
-
-  $('#f').onsubmit = (event) => {
-    event.preventDefault();
-    const value = $('#q').value.trim();
-    if (value) {
-      askAssistant(value);
-      $('#q').value = '';
-    }
-  };
-}
-
-function populateAdminTable() {
-  $('#crew').innerHTML = C.map((crewMember) => {
-    const [name, card, lastSample, statusType, orbitScore] = crewMember;
-    const lab = { ok: 'Normal', warn: 'Review', low: 'Flagged' };
-    return `
-      <tr>
-        <td>${name}</td>
-        <td>${card}</td>
-        <td>${lastSample}</td>
-        <td><span class="chip c-${statusType}">${lab[statusType]}</span></td>
-        <td>${orbitScore}</td>
-      </tr>
-    `;
-  }).join('');
-}
+$('#out').onclick = () => resetToOnboarding();
 
 function resetToOnboarding() {
-  $('#xpbox').classList.add('hide');
-  $('#out').classList.add('hide');
+  closeRegistration();
+  $('#s1').classList.remove('leaving');
+  $('#reader').classList.remove('reading');
+  $('#t1').textContent = 'Tap your NFC card to start';
   $('#send').disabled = false;
-  $('#rb').style.width = '0';
-  $('#fill').style.height = '0';
-  $('#t2').textContent = 'Waiting for your blood sample';
-  $('#p2').textContent = 'Insert the cartridge into the analyzer. VITAL starts reading when the sensors detect blood.';
-  $('#rs').textContent = 'Sensor status: idle';
-
-  document.querySelectorAll('#live div').forEach((entry) => {
-    entry.classList.remove('done');
-    entry.lastChild.textContent = '…';
-  });
-
+  $('#fill').style.height = '0%';
+  $('#rb').style.width = '0%';
+  $('#pctLabel').textContent = '0%';
+  $('#t2').textContent = 'Waiting for blood cartridge...';
+  $('#p2').textContent = 'Insert your sample cartridge into the reader bay, or trigger a live sensor feed below.';
+  $('#rs').textContent = 'Sensor status: Standby — Ready for microfluidic input';
+  $('#live').innerHTML = '';
   show('s1');
 }
 
-// ---------- Initial app startup ----------
-$('#reader').onclick = (event) => handleCardTap(event.shiftKey);
-$('#openRegister').onclick = openRegistration;
-$('#closeRegister').onclick = closeRegistration;
-$('#registerDialog').addEventListener('click', (event) => {
+function handleRegisterDialogClick(event) {
   if (event.target === $('#registerDialog')) {
     closeRegistration();
   }
+}
+
+$('#qs').innerHTML = [
+  'Why is hemoglobin low?',
+  'Explain my WBC count',
+  'What tests should I do next?'
+].map((q) => `<button type="button">${q}</button>`).join('');
+
+document.querySelectorAll('#qs button').forEach((btn) => {
+  btn.onclick = () => askAssistant(btn.textContent);
 });
+
+$('#f').onsubmit = (e) => {
+  e.preventDefault();
+  const val = $('#q').value.trim();
+  if (val) {
+    askAssistant(val);
+    $('#q').value = '';
+  }
+};
+
+$('#petsvg').innerHTML = orbitAvatarSVG();
+
+$('#registerForm').onsubmit = (event) => event.preventDefault();
+$('#reader').onclick = handleCardTap;
+$('#openRegister').onclick = openRegistration;
+$('#closeRegister').onclick = closeRegistration;
+$('#registerDialog').addEventListener('click', handleRegisterDialogClick);
 $('#tapToRegister').onclick = startCardRegistration;
 $('#simulateRegister').onclick = simulateCardRegistration;
 window.addEventListener('vital:nfc-read', handleNfcLogin);
@@ -446,15 +554,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
     if (event.target === document.body || event.target === document.documentElement) {
       event.preventDefault();
-      handleCardTap(event.shiftKey);
+      handleCardTap();
     }
   }
 });
-
-$('#petsvg').innerHTML = pet();
-$('#out').onclick = resetToOnboarding;
-
-bindQuickQuestions();
-populateAdminTable();
-simulateSampleRead();
-setXP();
