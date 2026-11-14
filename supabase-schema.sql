@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT NOT NULL DEFAULT (now()),
   updated_at TEXT NOT NULL DEFAULT (now())
 );
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Teams table
 CREATE TABLE IF NOT EXISTS teams (

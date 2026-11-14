@@ -11,12 +11,11 @@ const appState = {
 
 const D = window.VITAL_DATA.metrics;
 const MIS = window.VITAL_DATA.missions;
-const C = window.VITAL_DATA.crew;
 const KB = window.VITAL_DATA.chatKnowledge;
 
 // Toggle the visible screen while keeping the UI state centralized.
 function show(screenId) {
-  ['s1', 's2', 'dash', 'admin'].forEach((id) => {
+  ['s1', 's2', 'dash'].forEach((id) => {
     $('#' + id).classList.toggle('hide', id !== screenId);
   });
   $('#siteHeader').classList.toggle('hide', screenId === 's1');
@@ -77,7 +76,7 @@ function say(message, isUserMessage = false) {
   $('#log').scrollTop = 1e5;
 }
 
-function handleCardTap(isAdmin = false) {
+function handleCardTap() {
   if (appState.loginInProgress) {
     return;
   }
@@ -93,21 +92,20 @@ function handleCardTap(isAdmin = false) {
       reader.classList.remove('reading');
       $('#s1').classList.remove('leaving');
       $('#t1').textContent = 'Tap your card to start';
-      show(isAdmin ? 'admin' : 's2');
-      if (isAdmin) {
-        $('#out').classList.remove('hide');
-      }
+      show('s2');
       appState.loginInProgress = false;
     }, 350);
   }, 1200);
 }
 
-// Physical-reader integrations can dispatch this event with { role: 'admin' } or { role: 'crew' }.
 function handleNfcLogin(event) {
   if ($('#s1').classList.contains('hide')) {
     return;
   }
-  handleCardTap(event.detail?.role === 'admin');
+  if (event.detail?.role && event.detail.role !== 'crew') {
+    return;
+  }
+  handleCardTap();
 }
 
 function openRegistration() {
@@ -116,7 +114,7 @@ function openRegistration() {
   $('#cardHolder').focus();
 }
 
-function saveRegistration(name, role, serialNumber = '') {
+function saveRegistration(name, serialNumber = '') {
   const statusNode = $('#registrationStatus');
 
   try {
@@ -128,12 +126,12 @@ function saveRegistration(name, role, serialNumber = '') {
 
     storedCards.push({
       name,
-      role,
+      role: 'crew',
       cardId: serialNumber || `demo-${Date.now()}`,
       registeredAt: new Date().toISOString()
     });
     localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
-    statusNode.textContent = `${name} registered as ${role}.`;
+    statusNode.textContent = `${name} registered as crew.`;
   } catch (error) {
     statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
   }
@@ -157,13 +155,7 @@ async function startCardRegistration() {
   appState.registrationAbortController = controller;
   appState.registrationReader = new window.NDEFReader();
   appState.registrationReader.onreading = (event) => {
-    const textRecord = event.message.records.find((record) => record.recordType === 'text');
-    const cardText = textRecord
-      ? new TextDecoder(textRecord.encoding || 'utf-8').decode(textRecord.data)
-      : '';
-    const role = /admin/i.test(cardText) ? 'admin' : 'crew';
-
-    saveRegistration(name, role, event.serialNumber || '');
+    saveRegistration(name, event.serialNumber || '');
     controller.abort();
     appState.registrationReader = null;
     appState.registrationAbortController = null;
@@ -190,7 +182,7 @@ function simulateCardRegistration() {
     $('#cardHolder').focus();
     return;
   }
-  saveRegistration(name, 'crew');
+  saveRegistration(name);
 }
 
 function closeRegistration() {
@@ -395,22 +387,6 @@ function bindQuickQuestions() {
   };
 }
 
-function populateAdminTable() {
-  $('#crew').innerHTML = C.map((crewMember) => {
-    const [name, card, lastSample, statusType, orbitScore] = crewMember;
-    const lab = { ok: 'Normal', warn: 'Review', low: 'Flagged' };
-    return `
-      <tr>
-        <td>${name}</td>
-        <td>${card}</td>
-        <td>${lastSample}</td>
-        <td><span class="chip c-${statusType}">${lab[statusType]}</span></td>
-        <td>${orbitScore}</td>
-      </tr>
-    `;
-  }).join('');
-}
-
 function resetToOnboarding() {
   $('#xpbox').classList.add('hide');
   $('#out').classList.add('hide');
@@ -430,7 +406,7 @@ function resetToOnboarding() {
 }
 
 // ---------- Initial app startup ----------
-$('#reader').onclick = (event) => handleCardTap(event.shiftKey);
+$('#reader').onclick = () => handleCardTap();
 $('#openRegister').onclick = openRegistration;
 $('#closeRegister').onclick = closeRegistration;
 $('#registerDialog').addEventListener('click', (event) => {
@@ -446,7 +422,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
     if (event.target === document.body || event.target === document.documentElement) {
       event.preventDefault();
-      handleCardTap(event.shiftKey);
+      handleCardTap();
     }
   }
 });
@@ -455,6 +431,5 @@ $('#petsvg').innerHTML = pet();
 $('#out').onclick = resetToOnboarding;
 
 bindQuickQuestions();
-populateAdminTable();
 simulateSampleRead();
 setXP();
