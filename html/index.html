@@ -3,53 +3,86 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>VITAL – Astronaut Health Monitoring</title>
+  <title>VITAL – Crew Blood Analysis</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon/vital.svg">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <!-- SheetJS for optional live .xlsx sample file ingestion -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 </head>
 <body>
+
+  <!-- Top Telemetry Header (Shown on Crew Dashboard) -->
+<!-- Top Telemetry Header (With Custom VITAL Helmet Logo) -->
   <header class="top hide" id="siteHeader">
     <div class="logo">
       <span class="logo-helmet" aria-hidden="true">
         <svg viewBox="0 0 110 100" width="38" height="35">
+          <!-- Helmet Dome -->
           <path d="M22 48a33 33 0 0 1 66 0v15H22z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+          <!-- Ear Pods -->
           <path d="M20 50h-4a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h6M90 50h4a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+          <!-- Visor -->
           <rect x="22" y="43" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="3.2"/>
+          <!-- Heartbeat Line forming the "V" -->
           <path d="M25 63h7l3-6 4 15 4-24 4 28 4-15 3 2h31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- "ITAL" inside Visor -->
           <text x="69" y="59" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700" letter-spacing="1.5" font-family="Outfit, sans-serif">ITAL</text>
+          <!-- Collar Rim -->
           <path d="M24 82q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
         </svg>
       </span>
       <span>VITAL</span>
       <span class="mode-pill">CREW PORTAL</span>
     </div>
+
     <div class="sp"></div>
-    <button class="btn ghost sm" id="themeToggle" type="button" title="Switch light or dark theme">Theme</button>
+
+    <button class="btn ghost sm" id="themeToggle" type="button" title="Switch Light / Dark Theme">Theme</button>
     <button class="btn ghost sm" id="out" type="button">Sign out</button>
   </header>
 
-  <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true" aria-label="Turn sound effects off">Sound on</button>
+  <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true" aria-label="Turn sound effects off">
+    Sound on
+  </button>
 
+  <!-- =========================================================
+       ONBOARDING 1: NFC CARD TAP LOGIN (CREW MEMBER)
+       ========================================================= -->
   <main class="onboarding-screen" id="s1">
+    <!-- Top-Right Ringed Planet SVG -->
     <svg class="planet planet-top" viewBox="0 0 420 340" aria-hidden="true">
-      <defs><linearGradient id="planetGrad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3B3D6B"/><stop offset="100%" stop-color="#1E1F3A"/></linearGradient></defs>
+      <defs>
+        <linearGradient id="planetGrad1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3B3D6B"/>
+          <stop offset="100%" stop-color="#1E1F3A"/>
+        </linearGradient>
+      </defs>
       <circle cx="290" cy="110" r="115" fill="url(#planetGrad1)" stroke="#9BA4D9" stroke-opacity="0.35" stroke-width="2"/>
       <ellipse cx="290" cy="115" rx="195" ry="38" transform="rotate(-24 290 115)" fill="none" stroke="#FFFFFF" stroke-opacity="0.65" stroke-width="3"/>
       <ellipse cx="290" cy="115" rx="175" ry="28" transform="rotate(-24 290 115)" fill="none" stroke="#F07C8A" stroke-opacity="0.45" stroke-width="1.5"/>
     </svg>
+
+    <!-- Bottom-Left Ringed Planet SVG -->
     <svg class="planet planet-bottom" viewBox="0 0 420 340" aria-hidden="true">
-      <defs><linearGradient id="planetGrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2E3059"/><stop offset="100%" stop-color="#181930"/></linearGradient></defs>
+      <defs>
+        <linearGradient id="planetGrad2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2E3059"/>
+          <stop offset="100%" stop-color="#181930"/>
+        </linearGradient>
+      </defs>
       <circle cx="115" cy="230" r="105" fill="url(#planetGrad2)" stroke="#9BA4D9" stroke-opacity="0.35" stroke-width="2"/>
       <ellipse cx="115" cy="225" rx="185" ry="34" transform="rotate(-22 115 225)" fill="none" stroke="#FFFFFF" stroke-opacity="0.65" stroke-width="3"/>
     </svg>
+
     <div class="onboarding-content">
-      <button class="vital-reader" id="reader" type="button" aria-label="Tap to open the AST-001 demo profile">
+      <button class="vital-reader" id="reader" type="button" aria-label="Tap your NFC card to start">
         <svg viewBox="0 0 110 110" role="img" aria-label="VITAL astronaut helmet with heartbeat">
           <path d="M22 51a33 33 0 0 1 66 0v15h-7M27 66h-5V51" fill="none" stroke="currentColor" stroke-width="1.5"/>
           <path d="M20 53h-4a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h6M90 53h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
           <rect x="22" y="46" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <path class="ecg-line" d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2M57 66h24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="ecg-line" id="ecg-line" d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M57 64h24" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <text x="58" y="64" text-anchor="start" fill="currentColor" font-size="7" font-family="Outfit, sans-serif">ITAL</text>
           <path d="M24 85q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="1.5"/>
         </svg>
@@ -57,105 +90,228 @@
         <span class="ripple-ring" aria-hidden="true"></span>
         <span class="ripple-ring" aria-hidden="true"></span>
       </button>
+
       <p class="brand-name">VITAL</p>
       <p class="tagline">Every Indicator Matters. Every Life Counts.</p>
-      <h1 id="t1">Tap to open your VITAL profile</h1>
-      <p class="hint-sub">Crew health monitoring · ARTEMIS-V</p>
-      <p class="profile-preview">Demo profile · AST-001 · Alex Vance</p>
-      <p class="auth-status" id="authStatus" role="status" aria-live="polite"></p>
+      <h1 id="t1">Tap your NFC card to start</h1>
+      <p class="hint-sub">Place your crew ID badge against the reader to begin your scan</p>
+
+      <div class="onboard-actions">
+        <button class="register-trigger" id="openRegister" type="button">Register Your Credentials</button>
+      </div>
     </div>
   </main>
 
+  <!-- =========================================================
+       ONBOARDING 2: BLOOD CARTRIDGE VIAL FILLING & SENSOR READ
+       ========================================================= -->
+  <main class="onboarding-screen stage-vial hide" id="s2">
+    <div class="vial-container">
+      <div class="steps-pill">
+        <span>1. NFC Verified</span>
+        <span>›</span>
+        <b>2. Blood Sensor Ingestion</b>
+        <span>›</span>
+        <span>3. Analysis</span>
+      </div>
+
+      <!-- Animated Glass Test Tube / Vial -->
+      <div class="vial-wrapper" aria-hidden="true">
+        <div class="vial-rim"></div>
+        <div class="tube">
+          <div class="tube-graduations">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <i id="fill">
+            <span class="wave"></span>
+            <span class="bubble b1"></span>
+            <span class="bubble b2"></span>
+            <span class="bubble b3"></span>
+          </i>
+        </div>
+      </div>
+
+      <h1 id="t2">Waiting for blood cartridge...</h1>
+      <p id="p2">Insert your sample cartridge into the reader bay, or trigger a live sensor feed below.</p>
+
+      <div class="analyzing-box">
+        <div class="analyzing-header">
+          <span id="rs">Sensor status: Standby — Ready for microfluidic input</span>
+          <span id="pctLabel">0%</span>
+        </div>
+        <div class="bar dark-bar"><b id="rb"></b></div>
+        <div class="live" id="live"></div>
+      </div>
+
+      <div class="vial-controls">
+        <button class="btn pulse-btn" id="send" type="button">Start Sensor Collection</button>
+        <label class="register-trigger file-upload-btn" for="xlsxInput">
+          Load .XLSX Sample Data
+          <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" hidden>
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <!-- =========================================================
+       CREW MEMBER DASHBOARD (LOCALIZED VIEW)
+       ========================================================= -->
   <div class="app-shell hide" id="dash">
+    <!-- Navigation Rail (Fixed Overlap Bug!) -->
     <nav class="sidebar" aria-label="Dashboard sections">
       <div class="crew-card-mini">
-        <div class="crew-avatar" id="crewInitials">AV</div>
-        <div><strong id="activeCrewName">Crew member</strong><small id="activeCardId">Mission profile</small></div>
+        <div class="crew-avatar" id="crewInitials">AR</div>
+        <div>
+          <strong id="activeCrewName">Cmdr. A. Reyes</strong>
+          <small id="activeCardId">NFC •••• 4821</small>
+        </div>
       </div>
+
       <div class="nav-links">
-        <button class="nav-item active" data-tab="overview" type="button"><span class="nav-dot"></span> Overview</button>
-        <button class="nav-item" data-tab="vitals" type="button"><span class="nav-dot"></span> Vital Signs</button>
-        <button class="nav-item" data-tab="blood" type="button"><span class="nav-dot"></span> Blood Analysis</button>
-        <button class="nav-item" data-tab="radiation" type="button"><span class="nav-dot"></span> Radiation Monitoring</button>
-        <button class="nav-item" data-tab="history" type="button"><span class="nav-dot"></span> History &amp; Trends</button>
+        <button class="nav-item active" data-tab="overview" type="button">
+          <span class="nav-dot"></span> Overview
+        </button>
+        <button class="nav-item" data-tab="analytics" type="button">
+          <span class="nav-dot"></span> Blood Breakdown
+        </button>
+        <button class="nav-item" data-tab="alerts" type="button">
+          <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
+        </button>
+        <button class="nav-item" data-tab="radiation" type="button">
+          <span class="nav-dot"></span> Radiation
+        </button>
       </div>
-      <div class="sidebar-footer"><span class="demo-label">DEMO PROFILE · AST-001</span></div>
+
+      <div class="sidebar-footer">
+        <button class="btn ghost sm" id="rescanBtn" type="button">New Blood Scan</button>
+      </div>
     </nav>
 
+    <!-- Center Main Content Area -->
     <main class="main-content">
+      <!-- Hero Banner -->
       <div class="card hero">
         <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
           <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="11"/>
-          <circle id="rc" cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
-          <text id="rt" x="60" y="68" text-anchor="middle">FD 365</text>
+          <circle id="rc" cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease"/>
+          <text id="rt" x="60" y="69" text-anchor="middle">--</text>
         </svg>
         <div>
-          <div class="hero-kicker">PERSONAL HEALTH TELEMETRY · ARTEMIS-V</div>
-          <h2 id="hn">Crew Health Overview</h2>
+          <div class="hero-kicker">PERSONAL TELEMETRY • CARTRIDGE SCAN</div>
+          <h2 id="hn">Orbit Health Index</h2>
           <p id="hs"></p>
           <div class="chips" id="hc"></div>
         </div>
       </div>
 
-      <section class="dashboard-section" id="overviewSection" aria-labelledby="overviewTitle">
-        <div class="section-title"><h2 id="overviewTitle">Health Overview</h2><p id="overviewUpdated"></p></div>
-        <div class="summary-tiles" id="overviewCards"></div>
-        <div class="overview-grid" id="overviewDetails"></div>
-      </section>
+      <!-- Summary Quick Tiles -->
+      <div class="summary-tiles" id="summaryTiles"></div>
 
-      <section class="dashboard-section hide" id="vitalsSection" aria-labelledby="vitalsTitle">
-        <div class="section-title"><div><h2 id="vitalsTitle">Vital Signs Overview</h2><p>Latest readings with configured normal, warning, and critical thresholds.</p></div><p class="updated-at" id="vitalsUpdated"></p></div>
-        <div class="summary-tiles" id="vitalsSummary"></div>
-        <div class="metric-groups" id="vitalsGroups"></div>
-      </section>
+      <!-- Categorized Blood Components -->
+      <div id="groups"></div>
 
-      <section class="dashboard-section hide" id="bloodSection" aria-labelledby="bloodTitle">
-        <div class="section-title"><div><h2 id="bloodTitle">Blood Analysis Summary</h2><p>CBC, differential, biomarkers, and electrolytes from the latest available sample.</p></div><p class="updated-at" id="bloodUpdated"></p></div>
-        <div class="summary-tiles" id="bloodSummaryTiles"></div>
-        <div class="sample-meta" id="bloodMetadata"></div>
-        <div class="metric-groups" id="bloodGroups"></div>
-      </section>
-
-      <section class="dashboard-section hide" id="radiationSection" aria-labelledby="radiationTitle">
-        <div class="section-title"><div><h2 id="radiationTitle">Radiation Monitoring</h2><p>Exposure and biodosimetry values; status is shown only where applicable reference ranges are configured.</p></div><p class="updated-at" id="radiationUpdated"></p></div>
-        <div class="summary-tiles" id="radiationSummary"></div>
-        <div class="metric-groups" id="radiationGroups"></div>
-      </section>
-
-      <section class="dashboard-section hide trend-panel" id="historySection" aria-labelledby="historyTitle">
-        <div class="section-title"><div><h2 id="historyTitle">History &amp; Baseline Comparison</h2><p>Compare the latest in-flight result with your latest pre-flight baseline and earlier mission days.</p></div></div>
-        <div class="history-controls">
-          <label>Health area<select id="historyCategory" aria-label="Select a health area"></select></label>
-          <label>Parameter<select id="historyMetric" aria-label="Select a parameter"></select></label>
-          <label>Previous test date<select id="historyDate" aria-label="Select a previous test date"></select></label>
+      <section class="radiation-panel hide" id="radiationPanel" aria-labelledby="radiationTitle">
+        <div class="radiation-heading">
+          <div>
+            <div class="hero-kicker">MISSION EXPOSURE MONITORING</div>
+            <h2 id="radiationTitle">Radiation &amp; Biodosimetry</h2>
+          </div>
+          <span class="chip c-warn">SAMPLE READINGS</span>
         </div>
-        <div id="historyComparison" class="history-comparison"></div>
-        <div id="trendChart" class="trend-chart" role="img" aria-label="Historical measurements chart"></div>
-        <p class="history-empty" id="historyEmpty"></p>
+        <div class="radiation-summary">
+          <strong>Quick read</strong>
+          <p>These are example readings. The indicators compare each reading with the range shown; they are not a diagnosis or proof that someone is safe.</p>
+        </div>
+        <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
+
+        <div class="radiation-streams">
+          <section class="radiation-stream" aria-labelledby="physicalDoseTitle">
+            <h3 id="physicalDoseTitle">Radiation measured by sensors</h3>
+            <p>How much radiation the personal badge and cabin sensor detected.</p>
+            <div class="radiation-metrics" id="physicalRadiationMetrics"></div>
+          </section>
+
+          <section class="radiation-stream" aria-labelledby="bioDoseTitle">
+            <h3 id="bioDoseTitle">What lab tests found in cells</h3>
+            <p>Blood tests look for possible signs of cell damage and repair. They do not measure radiation directly.</p>
+            <div class="radiation-metrics" id="bioRadiationMetrics"></div>
+          </section>
+        </div>
+
+        <p class="radiation-note">Example readings only—not live sensor data or a medical assessment. Ask a qualified medical professional to interpret real results.</p>
       </section>
 
-      <p class="note">Demo measurements are sourced from the supplied AST-001 Earth-baseline database and in-flight workbook. Source files do not include test times or blood sample IDs; these are shown as unavailable. VITAL provides analytical decision support and does not replace flight-surgeon assessment.</p>
+      <p class="note">
+        Prototype telemetry for NASA Space Apps. Reference ranges represent standard adult values and vary by mission duration, microgravity fluid shifts, age, and sex. VITAL provides analytical decision support and does not replace flight surgeon diagnosis.
+      </p>
     </main>
 
+    <!-- Right Column: Gamified Missions & Floating Orbit AI Assistant -->
     <aside class="side">
+      <div class="card">
+        <div class="card-head-row">
+          <h3>Diagnostic Missions</h3>
+          <span class="chip c-warn" id="missionCountChip">0 / 5</span>
+        </div>
+        <p class="sub-copy">Complete recommended follow-up tests and crew logs to investigate flagged biomarkers.</p>
+        <ul class="mis" id="mis"></ul>
+      </div>
+
+      <!-- Orbit AI Assistant Card -->
       <div class="card pet" id="orbitCard">
         <div class="pethd">
           <div class="orbit-avatar-wrap" id="petsvg"></div>
-          <div><div class="orbit-title-row"><h3>Orbit</h3><span class="online-pill">AI AGENT</span></div><span class="sub-copy">Crew Medical Telemetry Companion</span></div>
+          <div class="orbit-heading">
+            <div class="orbit-title-row">
+              <h3>Orbit</h3>
+              <span class="online-pill">AI AGENT</span>
+            </div>
+            <span class="sub-copy">Crew Medical Telemetry Companion</span>
+          </div>
+          <button class="orbit-voice-toggle" id="orbitVoiceToggle" type="button" aria-pressed="false" aria-label="Turn Orbit voice on">Voice off</button>
         </div>
+
         <div id="log" aria-live="polite"></div>
         <div class="qs" id="qs"></div>
+
         <form class="in" id="f">
           <input id="q" placeholder="Ask Orbit about hemoglobin, WBC, tests..." aria-label="Ask Orbit">
+          <button class="btn ghost sm orbit-mic-toggle" id="orbitMicToggle" type="button" aria-pressed="false" aria-label="Ask Orbit by voice" title="Ask Orbit by voice">Speak</button>
           <button class="btn sm" type="submit">Send</button>
         </form>
       </div>
     </aside>
   </div>
 
+  <!-- NFC Registration Dialog -->
+  <dialog class="register-dialog" id="registerDialog" aria-labelledby="registerTitle">
+    <form id="registerForm">
+      <button class="dialog-close" id="closeRegister" type="button" aria-label="Close registration">&times;</button>
+      <h2 id="registerTitle">Register Crew Credentials</h2>
+      <p>Enter your name, then tap your NFC card to bind your localized crew profile.</p>
+      <label for="cardHolder">Card holder's name</label>
+      <input id="cardHolder" name="cardHolder" placeholder="e.g., Cmdr. Annika Pasaje" autocomplete="name" required>
+      <p class="registration-status" id="registrationStatus" role="status">Ready to register a crew card.</p>
+      <div class="dialog-actions">
+        <button class="btn" id="tapToRegister" type="button">Tap NFC Card</button>
+        <button class="register-trigger" id="simulateRegister" type="button">Demo: Simulate Card Tap</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="register-dialog mission-dialog" id="missionDialog" aria-labelledby="missionDialogTitle">
+    <button class="dialog-close" id="closeMissionDialog" type="button" aria-label="Close mission instructions">&times;</button>
+    <h2 id="missionDialogTitle"></h2>
+    <p id="missionDialogSummary"></p>
+    <ol class="mission-instructions" id="missionInstructions"></ol>
+    <div class="dialog-actions">
+      <button class="btn" id="readMissionInstructions" type="button">Read aloud</button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status"></div>
+
   <script src="../js/data.js"></script>
-  <script src="../js/demo-health-data.js"></script>
   <script src="../js/app.js"></script>
 </body>
-</html>
+</html> 
