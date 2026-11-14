@@ -1009,6 +1009,31 @@ button {
   align-items: center;
 }
 
+.orbit-heading {
+  min-width: 0;
+}
+
+.orbit-voice-toggle {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surf2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.orbit-voice-toggle:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.orbit-voice-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .orbit-avatar-wrap {
   width: 74px;
   height: 74px;
@@ -1099,6 +1124,12 @@ form.in input {
   color: var(--ink);
   font: inherit;
   font-size: 14px;
+}
+
+.orbit-mic-toggle {
+  flex-shrink: 0;
+  padding-right: 12px;
+  padding-left: 12px;
 }
 
 .note {

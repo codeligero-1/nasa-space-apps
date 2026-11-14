@@ -227,13 +227,14 @@
       <div class="card pet" id="orbitCard">
         <div class="pethd">
           <div class="orbit-avatar-wrap" id="petsvg"></div>
-          <div>
+          <div class="orbit-heading">
             <div class="orbit-title-row">
               <h3>Orbit</h3>
               <span class="online-pill">AI AGENT</span>
             </div>
             <span class="sub-copy">Crew Medical Telemetry Companion</span>
           </div>
+          <button class="orbit-voice-toggle" id="orbitVoiceToggle" type="button" aria-pressed="false" aria-label="Turn Orbit voice on">Voice off</button>
         </div>
 
         <div id="log" aria-live="polite"></div>
@@ -241,6 +242,7 @@
 
         <form class="in" id="f">
           <input id="q" placeholder="Ask Orbit about hemoglobin, WBC, tests..." aria-label="Ask Orbit">
+          <button class="btn ghost sm orbit-mic-toggle" id="orbitMicToggle" type="button" aria-pressed="false" aria-label="Ask Orbit by voice" title="Ask Orbit by voice">Speak</button>
           <button class="btn sm" type="submit">Send</button>
         </form>
       </div>
