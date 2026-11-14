@@ -40,3 +40,7 @@ coverage/
 
 # Supabase local dev (if using CLI)
 .supabase/
+# Test/temp files
+backend/*.mjs
+backend/supabase/
+supabase/
