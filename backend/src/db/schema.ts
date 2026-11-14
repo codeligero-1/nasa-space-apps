@@ -6,6 +6,8 @@
  * It does NOT integrate the astronaut-earth-baseline-1.db / VITAL domain dataset.
  * That integration is on HOLD pending explicit product approval.
  * Do not invent integration — document or implement only after explicit product decision.
+ *
+ * VITAL Astronaut tables added for NFC-based authentication and health records.
  */
 
 export const schema = `
@@ -92,6 +94,27 @@ CREATE TABLE IF NOT EXISTS comments (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Astronauts table (VITAL - NFC-based authentication)
+CREATE TABLE IF NOT EXISTS astronauts (
+  id TEXT PRIMARY KEY,                    -- UUID
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,                     -- e.g., 'Commander', 'Pilot', 'Mission Specialist'
+  mission TEXT NOT NULL,                  -- e.g., 'Artemis III', 'ISS Expedition 72'
+  nfc_card_id TEXT UNIQUE NOT NULL,       -- NFC card serial number
+  avatar_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Health records table (VITAL - linked to astronauts)
+CREATE TABLE IF NOT EXISTS health_records (
+  id TEXT PRIMARY KEY,                    -- UUID
+  astronaut_id TEXT NOT NULL REFERENCES astronauts(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('blood', 'vitals', 'radiation')),
+  data TEXT NOT NULL,                     -- JSON blob with measurement data
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_projects_team ON projects(team_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
@@ -99,6 +122,9 @@ CREATE INDEX IF NOT EXISTS idx_scores_project ON scores(project_id);
 CREATE INDEX IF NOT EXISTS idx_scores_judge ON scores(judge_id);
 CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_astronauts_nfc ON astronauts(nfc_card_id);
+CREATE INDEX IF NOT EXISTS idx_health_records_astronaut ON health_records(astronaut_id);
+CREATE INDEX IF NOT EXISTS idx_health_records_type ON health_records(type);
 `;
 
 export type User = {
@@ -163,4 +189,24 @@ export type Comment = {
   is_public: number
   created_at: string
   updated_at: string
+}
+
+// VITAL Astronaut types
+export type Astronaut = {
+  id: string
+  name: string
+  role: string
+  mission: string
+  nfc_card_id: string
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type HealthRecord = {
+  id: string
+  astronaut_id: string
+  type: 'blood' | 'vitals' | 'radiation'
+  data: string // JSON string
+  recorded_at: string
 }

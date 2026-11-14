@@ -8,8 +8,14 @@ import {
   type AdminAuthProvider,
   type AdminSessionCredentials
 } from './admin-auth.js'
+import {
+  type AstronautAuthProvider,
+  type AstronautSessionCredentials,
+  type VerifyNfcResult
+} from './astronaut-auth.js'
 
 const SESSION_COOKIE = 'vital_admin_session'
+const ASTRONAUT_SESSION_COOKIE = 'vital_astro_session'
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000
 const REMEMBERED_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_BODY_BYTES = 8 * 1024
@@ -29,6 +35,10 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ')
 
 interface StoredSession extends AdminSessionCredentials {
+  expiresAt: number
+}
+
+interface StoredAstronautSession extends AstronautSessionCredentials {
   expiresAt: number
 }
 
@@ -77,8 +87,23 @@ function cookieHeader(value: string, maxAgeSeconds?: number): string {
   return attributes.join('; ')
 }
 
+function astronautCookieHeader(value: string, maxAgeSeconds?: number): string {
+  const attributes = [`${ASTRONAUT_SESSION_COOKIE}=${value}`, 'Path=/', 'HttpOnly', 'SameSite=Strict']
+  if (process.env.NODE_ENV === 'production') {
+    attributes.push('Secure')
+  }
+  if (maxAgeSeconds !== undefined) {
+    attributes.push(`Max-Age=${maxAgeSeconds}`)
+  }
+  return attributes.join('; ')
+}
+
 function expiredCookieHeader(): string {
   return cookieHeader('', 0)
+}
+
+function expiredAstronautCookieHeader(): string {
+  return astronautCookieHeader('', 0)
 }
 
 function getSessionId(request: IncomingMessage): string | null {
@@ -90,6 +115,22 @@ function getSessionId(request: IncomingMessage): string | null {
   for (const part of cookie.split(';')) {
     const separatorIndex = part.indexOf('=')
     if (separatorIndex < 0 || part.slice(0, separatorIndex).trim() !== SESSION_COOKIE) {
+      continue
+    }
+    return part.slice(separatorIndex + 1).trim() || null
+  }
+  return null
+}
+
+function getAstronautSessionId(request: IncomingMessage): string | null {
+  const cookie = request.headers.cookie
+  if (!cookie) {
+    return null
+  }
+
+  for (const part of cookie.split(';')) {
+    const separatorIndex = part.indexOf('=')
+    if (separatorIndex < 0 || part.slice(0, separatorIndex).trim() !== ASTRONAUT_SESSION_COOKIE) {
       continue
     }
     return part.slice(separatorIndex + 1).trim() || null
@@ -290,12 +331,44 @@ async function getValidSession(
   return updated
 }
 
+async function getValidAstronautSession(
+  request: IncomingMessage,
+  response: ServerResponse,
+  sessions: Map<string, StoredAstronautSession>,
+  authProvider: AstronautAuthProvider
+): Promise<StoredAstronautSession | null> {
+  const sessionId = getAstronautSessionId(request)
+  if (!sessionId) {
+    return null
+  }
+
+  const stored = sessions.get(sessionId)
+  if (!stored || stored.expiresAt <= Date.now()) {
+    sessions.delete(sessionId)
+    response.setHeader('Set-Cookie', expiredAstronautCookieHeader())
+    return null
+  }
+
+  const validated = await authProvider.validateSession(stored)
+  if (!validated || validated.astronautId !== stored.astronautId) {
+    sessions.delete(sessionId)
+    response.setHeader('Set-Cookie', expiredAstronautCookieHeader())
+    return null
+  }
+
+  const updated: StoredAstronautSession = { ...validated, expiresAt: stored.expiresAt }
+  sessions.set(sessionId, updated)
+  return updated
+}
+
 async function handleRequest(
   request: IncomingMessage,
   response: ServerResponse,
   projectRoot: string,
   authProvider: AdminAuthProvider,
+  astronautAuthProvider: AstronautAuthProvider,
   sessions: Map<string, StoredSession>,
+  astronautSessions: Map<string, StoredAstronautSession>,
   rateLimits: Map<string, LoginRateLimit>
 ): Promise<void> {
   setSecurityHeaders(response)
@@ -392,6 +465,113 @@ async function handleRequest(
     return
   }
 
+  // ============================================================
+  // ASTRONAUT AUTHENTICATION ENDPOINTS (NFC-based)
+  // ============================================================
+
+  if (method === 'POST' && pathname === '/api/astronaut/verify-nfc') {
+    requireSameOrigin(request)
+
+    if (!request.headers['content-type']?.toLowerCase().startsWith('application/json')) {
+      throw new HttpError(415, 'Request must use JSON.')
+    }
+
+    const body = await readJsonBody(request)
+    if (!body || typeof body !== 'object') {
+      throw new HttpError(400, 'Request body must be a JSON object.')
+    }
+
+    const bodyObj = body as Record<string, unknown>
+    const nfcCardId = typeof bodyObj.nfcCardId === 'string' ? bodyObj.nfcCardId.trim().toUpperCase() : ''
+    if (!nfcCardId) {
+      throw new HttpError(400, 'NFC card ID is required.')
+    }
+
+    // Verify NFC card and get astronaut profile with session
+    const result = await astronautAuthProvider.verifyNfcCard(nfcCardId)
+    if (!result) {
+      sendJson(response, 401, { error: 'Unregistered NFC card. Access denied.' })
+      return
+    }
+
+    // Extract astronaut profile and session credentials from VerifyNfcResult
+    const { astronautProfile, astronautId, nfcCardId: cardId, accessToken, refreshToken } = result
+
+    // Create astronaut session
+    const sessionId = randomBytes(32).toString('hex')
+    const ttl = SESSION_TTL_MS
+    astronautSessions.set(sessionId, { astronautId, nfcCardId: cardId, accessToken, refreshToken, expiresAt: Date.now() + ttl })
+    response.setHeader('Set-Cookie', astronautCookieHeader(sessionId, Math.floor(ttl / 1000)))
+
+    sendJson(response, 200, {
+      ok: true,
+      astronaut: astronautProfile
+    })
+    return
+  }
+
+  if (method === 'GET' && pathname === '/api/astronaut/session') {
+    const session = await getValidAstronautSession(request, response, astronautSessions, astronautAuthProvider)
+    if (!session) {
+      sendJson(response, 200, { authenticated: false })
+      return
+    }
+
+    // Get astronaut profile for the session
+    const result = await astronautAuthProvider.verifyNfcCard(session.nfcCardId)
+    if (!result) {
+      sendJson(response, 200, { authenticated: false })
+      return
+    }
+
+    sendJson(response, 200, {
+      authenticated: true,
+      astronaut: result.astronautProfile
+    })
+    return
+  }
+
+  if (method === 'POST' && pathname === '/api/astronaut/logout') {
+    requireSameOrigin(request)
+    const sessionId = getAstronautSessionId(request)
+    const session = sessionId ? astronautSessions.get(sessionId) : undefined
+    if (sessionId) {
+      astronautSessions.delete(sessionId)
+    }
+    response.setHeader('Set-Cookie', expiredAstronautCookieHeader())
+
+    if (session) {
+      try {
+        await astronautAuthProvider.signOut(session)
+      } catch (error) {
+        console.error('[astronaut-auth] Sign-out failed after local session revocation.', error)
+      }
+    }
+
+    sendJson(response, 200, { ok: true })
+    return
+  }
+
+  if (method === 'GET' && pathname === '/api/astronaut/profile') {
+    const session = await getValidAstronautSession(request, response, astronautSessions, astronautAuthProvider)
+    if (!session) {
+      sendJson(response, 401, { error: 'Not authenticated.' })
+      return
+    }
+
+    const result = await astronautAuthProvider.verifyNfcCard(session.nfcCardId)
+    if (!result) {
+      sendJson(response, 401, { error: 'Astronaut not found.' })
+      return
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      astronaut: result.astronautProfile
+    })
+    return
+  }
+
   const assetPath = method === 'GET'
     ? resolvePublicAsset(projectRoot, pathname)
     : null
@@ -408,13 +588,15 @@ async function handleRequest(
 
 export function createAdminServer(
   authProvider: AdminAuthProvider,
+  astronautAuthProvider: AstronautAuthProvider,
   projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 ): Server {
   const sessions = new Map<string, StoredSession>()
+  const astronautSessions = new Map<string, StoredAstronautSession>()
   const rateLimits = new Map<string, LoginRateLimit>()
 
   return createServer((request, response) => {
-    void handleRequest(request, response, projectRoot, authProvider, sessions, rateLimits)
+    void handleRequest(request, response, projectRoot, authProvider, astronautAuthProvider, sessions, astronautSessions, rateLimits)
       .catch((error: unknown) => {
         if (response.headersSent) {
           response.destroy()
@@ -427,7 +609,7 @@ export function createAdminServer(
             ? 503
             : 500
         if (status >= 500) {
-          console.error('[admin-auth] Request failed.', error)
+          console.error('[auth] Request failed.', error)
         }
         if (request.url?.startsWith('/api/')) {
           sendJson(response, status, {
