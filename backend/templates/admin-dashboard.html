@@ -1,77 +1,279 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-admin-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="VITAL administrator dashboard.">
-  <title>Admin Dashboard | VITAL</title>
+  <meta name="description" content="VITAL administrator crew health dashboard.">
+  <title>Crew Dashboard | VITAL Admin</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon/vital.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/data.js" defer></script>
   <script src="/js/admin-dashboard.js" defer></script>
 </head>
 <body class="admin-dashboard-page">
-  <header class="admin-dashboard-header">
-    <a class="admin-dashboard-brand" href="/admin/dashboard" aria-label="VITAL administrator dashboard">
-      <svg viewBox="0 0 110 110" aria-hidden="true">
-        <path d="M22 51a33 33 0 0 1 66 0v15h-7M27 66h-5V51" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M20 53h-4a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h6M90 53h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="22" y="46" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M57 64h24" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <text x="58" y="64" text-anchor="start" fill="currentColor" font-size="7" font-family="Outfit, sans-serif">ITAL</text>
-        <path d="M24 85q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <button class="admin-mobile-overlay" id="adminMobileOverlay" type="button" aria-label="Close navigation" tabindex="-1"></button>
+
+  <aside class="admin-sidebar" id="adminSidebar">
+    <a class="admin-sidebar-brand" href="/admin/dashboard" aria-label="VITAL administrator dashboard">
+      <svg class="admin-sidebar-logo" viewBox="0 0 110 100" role="img" aria-label="VITAL astronaut helmet logo">
+        <path d="M22 48a33 33 0 0 1 66 0v15H22z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+        <path d="M20 50h-4a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h6M90 50h4a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+        <rect x="22" y="43" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="3.2"/>
+        <path d="M25 63h7l3-6 4 15 4-24 4 28 4-15 3 2h31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="69" y="59" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700" letter-spacing="1.5" font-family="Outfit, sans-serif">ITAL</text>
+        <path d="M24 82q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
       </svg>
-      <span>VITAL <small>ADMIN</small></span>
+      <span class="admin-brand-word">VITAL</span>
     </a>
-    <div class="admin-dashboard-account">
-      <span id="adminEmail"></span>
-      <button class="admin-logout-button" id="adminLogoutButton" type="button">Sign out</button>
+
+    <nav class="admin-nav" aria-label="Administrator sections">
+      <p class="admin-nav-label">WORKSPACE</p>
+      <button class="admin-nav-item is-active" type="button" data-page="crew" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20"></path><circle cx="9" cy="7" r="4"></circle><path d="M17 11a4 4 0 0 0 0-8m5 17v-1.5a4.5 4.5 0 0 0-3.5-4.4"></path></svg>
+        <span>Crew</span>
+      </button>
+      <button class="admin-nav-item" type="button" data-page="analytics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"></path></svg>
+        <span>Analytics</span>
+      </button>
+      <button class="admin-nav-item" type="button" data-page="alerts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12h4"></path></svg>
+        <span>Alerts</span>
+        <span class="admin-nav-count" id="adminAlertCount">0</span>
+      </button>
+      <button class="admin-nav-item" type="button" data-page="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19.4 15 .1.1 1.2 1-1.4 2.4-1.5-.6a8 8 0 0 1-1.4.8l-.3 1.6h-2.8l-.3-1.6a8 8 0 0 1-1.4-.8l-1.5.6-1.4-2.4 1.2-1a8 8 0 0 1 0-1.7l-1.2-1 1.4-2.4 1.5.6a8 8 0 0 1 1.4-.8l.3-1.6h2.8l.3 1.6a8 8 0 0 1 1.4.8l1.5-.6 1.4 2.4-1.2 1a8 8 0 0 1 0 1.6Z" transform="translate(-1 -1)"></path></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <div class="admin-sidebar-footer">
+      <div class="admin-sidebar-orbit" aria-hidden="true"></div>
+      <button class="admin-nav-item admin-nav-logout" id="adminSidebarLogout" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3"></path><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"></path></svg>
+        <span>Log Out</span>
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <p class="admin-dashboard-status" id="adminDashboardStatus" role="status" aria-live="polite">Verifying administrator access…</p>
-  <main class="admin-dashboard-main hide" id="adminDashboard">
-    <div class="admin-dashboard-title">
-      <div>
-        <p class="admin-eyebrow">VITAL OPERATIONS</p>
-        <h1>Mainframe overview</h1>
+  <div class="admin-dashboard-app">
+    <header class="admin-topbar">
+      <div class="admin-topbar-context">
+        <button class="admin-mobile-menu" id="adminMobileMenu" type="button" aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <div class="admin-breadcrumb" id="adminBreadcrumb"><span>Dashboard</span><span class="admin-breadcrumb-divider">/</span><strong>Crew</strong></div>
       </div>
-      <span class="admin-dashboard-badge">ADMINISTRATOR</span>
-    </div>
-
-    <section class="stats admin-dashboard-stats" aria-label="Overview statistics">
-      <div><b>6</b>Crew enrolled</div>
-      <div><b>4</b>Analyzers online</div>
-      <div><b>19</b>Samples this week</div>
-      <div><b>3</b>Flags to review</div>
-    </section>
-
-    <section class="card admin-dashboard-card">
-      <h2>Crew results</h2>
-      <div class="admin-table-scroll">
-        <table>
-          <thead><tr><th>Crew</th><th>Card</th><th>Last sample</th><th>Status</th><th>Orbit score</th></tr></thead>
-          <tbody id="adminCrewResults"></tbody>
-        </table>
+      <svg class="admin-topbar-ecg" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 19h35l8-2 7 3 9-2 5-12 6 24 8-18 5 7h37" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="admin-account-menu">
+        <button class="admin-account-trigger" id="adminAccountTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+          <span class="admin-account-name">Admin</span>
+          <svg class="admin-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"></path></svg>
+          <span class="admin-profile-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path></svg>
+          </span>
+        </button>
+        <div class="admin-account-dropdown" id="adminAccountDropdown" hidden>
+          <span class="admin-dropdown-label">Signed in as</span>
+          <strong id="adminEmail"></strong>
+          <button type="button" id="adminDropdownSettings">Account settings</button>
+          <button type="button" id="adminDropdownLogout">Log out</button>
+        </div>
       </div>
-    </section>
+    </header>
 
-    <section class="card admin-dashboard-card">
-      <h2>Analyzers</h2>
-      <div class="admin-table-scroll">
-        <table>
-          <thead><tr><th>Device</th><th>Location</th><th>Sensors</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td>HD-01</td><td>Lab module A</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
-            <tr><td>HD-02</td><td>Crew quarters</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
-            <tr><td>HD-03</td><td>Medical bay</td><td>Blood sensor, NFC</td><td><span class="chip c-warn">Calibrate soon</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+    <p class="admin-dashboard-status" id="adminDashboardStatus" role="status" aria-live="polite">Verifying administrator access…</p>
+
+    <main class="admin-dashboard-main hide" id="adminDashboard">
+      <section class="admin-page is-visible" id="adminPage-crew" data-page-panel="crew" aria-labelledby="crewPageTitle">
+        <div class="admin-page-title-row">
+          <div>
+            <h1 id="crewPageTitle">Crew Dashboard</h1>
+            <p class="admin-page-subtitle">Monitor crew health status and recent samples.</p>
+          </div>
+        </div>
+
+        <div class="admin-metric-grid" id="adminMetricGrid" aria-label="Crew health overview"></div>
+
+        <section class="admin-panel admin-crew-panel" aria-labelledby="crewListTitle">
+          <div class="admin-panel-heading">
+            <div class="admin-panel-title">
+              <span class="admin-panel-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20"></path><circle cx="9" cy="7" r="4"></circle><path d="M17 11a4 4 0 0 0 0-8m5 17v-1.5a4.5 4.5 0 0 0-3.5-4.4"></path></svg>
+              </span>
+              <h2 id="crewListTitle">Crew List</h2>
+              <span class="admin-record-count" id="adminCrewCount">0 records</span>
+            </div>
+            <div class="admin-table-tools">
+              <label class="admin-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+                <input id="adminCrewSearch" type="search" placeholder="Search crew…" autocomplete="off" aria-label="Search crew members">
+              </label>
+              <label class="admin-status-filter">
+                <span class="visually-hidden">Filter by health status</span>
+                <select id="adminStatusFilter">
+                  <option value="all">All Statuses</option>
+                  <option value="normal">Normal</option>
+                  <option value="review">Under Review</option>
+                  <option value="flagged">Flagged</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="admin-table-scroll">
+            <table class="admin-crew-table">
+              <thead>
+                <tr>
+                  <th scope="col" aria-sort="none"><button class="admin-sort-button" type="button" data-sort="name">Name <span aria-hidden="true"></span></button></th>
+                  <th scope="col">Card</th>
+                  <th scope="col" aria-sort="none"><button class="admin-sort-button" type="button" data-sort="sample">Last Sample <span aria-hidden="true"></span></button></th>
+                  <th scope="col">Status</th>
+                  <th scope="col" aria-sort="none"><button class="admin-sort-button" type="button" data-sort="score">Orbit Score <span aria-hidden="true"></span></button></th>
+                  <th scope="col" class="admin-actions-heading">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminCrewResults"></tbody>
+            </table>
+            <div class="admin-table-empty" id="adminTableEmpty" hidden>No crew members match your search or filters.</div>
+          </div>
+        </section>
+      </section>
+
+      <section class="admin-page" id="adminPage-detail" data-page-panel="detail" aria-labelledby="crewDetailTitle" hidden>
+        <button class="admin-back-link" id="adminBackToCrew" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"></path></svg>
+          Back to Crew
+        </button>
+        <div class="admin-detail-header">
+          <div class="admin-detail-avatar" id="adminDetailAvatar" aria-hidden="true"></div>
+          <div class="admin-detail-heading">
+            <p class="admin-eyebrow">CREW PROFILE</p>
+            <h1 id="crewDetailTitle"></h1>
+            <p id="adminDetailCard"></p>
+          </div>
+          <span id="adminDetailStatus" class="admin-status-badge"></span>
+        </div>
+        <div class="admin-detail-grid">
+          <article class="admin-detail-card">
+            <span class="admin-detail-label">Latest sample</span>
+            <strong id="adminDetailSample"></strong>
+          </article>
+          <article class="admin-detail-card">
+            <span class="admin-detail-label">Orbit Score</span>
+            <strong id="adminDetailScore"></strong>
+            <span class="admin-detail-caption">Current score on record</span>
+          </article>
+        </div>
+        <section class="admin-panel admin-history-panel">
+          <div class="admin-panel-title">
+            <span class="admin-panel-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"></path><path d="M3 3v5h5m4-1v5l3 2"></path></svg>
+            </span>
+            <h2>Readings &amp; status history</h2>
+          </div>
+          <p class="admin-history-empty">No historical readings or status changes are available for this crew record.</p>
+        </section>
+      </section>
+
+      <section class="admin-page" id="adminPage-analytics" data-page-panel="analytics" aria-labelledby="analyticsPageTitle" hidden>
+        <div class="admin-page-title-row">
+          <div>
+            <h1 id="analyticsPageTitle">Crew Analytics</h1>
+            <p class="admin-page-subtitle">An overview of the crew records currently on file.</p>
+          </div>
+        </div>
+        <div class="admin-analytics-grid">
+          <section class="admin-panel admin-chart-panel">
+            <div class="admin-panel-heading">
+              <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">◉</span><h2>Status distribution</h2></div>
+              <span class="admin-chart-caption" id="adminAnalyticsTotal"></span>
+            </div>
+            <div class="admin-distribution" id="adminStatusDistribution"></div>
+          </section>
+          <section class="admin-panel admin-chart-panel">
+            <div class="admin-panel-heading">
+              <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">⌁</span><h2>Orbit Score distribution</h2></div>
+              <span class="admin-chart-caption">Current records</span>
+            </div>
+            <div class="admin-score-chart" id="adminScoreDistribution"></div>
+          </section>
+        </div>
+        <section class="admin-panel admin-history-panel">
+          <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">↗</span><h2>Monitoring trends</h2></div>
+          <p class="admin-history-empty">Trend charts will be available when historical crew samples are recorded. No trend data is available yet.</p>
+        </section>
+      </section>
+
+      <section class="admin-page" id="adminPage-alerts" data-page-panel="alerts" aria-labelledby="alertsPageTitle" hidden>
+        <div class="admin-page-title-row">
+          <div>
+            <h1 id="alertsPageTitle">Crew Alerts</h1>
+            <p class="admin-page-subtitle">Current records marked for administrative attention.</p>
+          </div>
+        </div>
+        <section class="admin-panel admin-alert-panel">
+          <div class="admin-panel-title">
+            <span class="admin-panel-icon admin-icon-rose" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3 2.7 19h18.6L12 3Z"></path><path d="M12 9v4m0 3h.01"></path></svg>
+            </span>
+            <h2>Needs attention</h2>
+            <span class="admin-record-count" id="adminAlertsCount"></span>
+          </div>
+          <div class="admin-alert-list" id="adminAlertList"></div>
+        </section>
+        <section class="admin-panel admin-history-panel">
+          <div class="admin-panel-title"><span class="admin-panel-icon" aria-hidden="true">✓</span><h2>Resolved</h2></div>
+          <p class="admin-history-empty">No resolved alert history is available.</p>
+        </section>
+      </section>
+
+      <section class="admin-page" id="adminPage-settings" data-page-panel="settings" aria-labelledby="settingsPageTitle" hidden>
+        <div class="admin-page-title-row">
+          <div>
+            <h1 id="settingsPageTitle">Settings</h1>
+            <p class="admin-page-subtitle">Manage administrator preferences for this device.</p>
+          </div>
+        </div>
+        <section class="admin-panel admin-settings-panel">
+          <div class="admin-panel-heading">
+            <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">◉</span><h2>Account information</h2></div>
+          </div>
+          <div class="admin-setting-row">
+            <div><strong>Administrator account</strong><p>Signed in account used to access the VITAL dashboard.</p></div>
+            <span class="admin-setting-value" id="adminSettingsEmail"></span>
+          </div>
+        </section>
+        <section class="admin-panel admin-settings-panel">
+          <div class="admin-panel-heading">
+            <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">◐</span><h2>Appearance</h2></div>
+          </div>
+          <div class="admin-setting-row">
+            <div><strong>Color theme</strong><p>Choose the dashboard appearance for this device.</p></div>
+            <div class="admin-theme-choice" role="group" aria-label="Color theme">
+              <button type="button" data-theme-choice="light">Light</button>
+              <button type="button" data-theme-choice="dark">Dark</button>
+            </div>
+          </div>
+        </section>
+        <section class="admin-panel admin-settings-panel">
+          <div class="admin-panel-heading">
+            <div class="admin-panel-title"><span class="admin-panel-icon admin-icon-rose" aria-hidden="true">♧</span><h2>Notifications</h2></div>
+          </div>
+          <label class="admin-setting-row admin-notification-setting">
+            <span><strong>Administrative reminders</strong><p>Save your preference for administrative reminders on this device.</p></span>
+            <span class="admin-switch-wrap">
+              <input id="adminNotificationsToggle" type="checkbox">
+              <span class="admin-switch" aria-hidden="true"></span>
+            </span>
+          </label>
+        </section>
+        <button class="admin-settings-logout" id="adminSettingsLogout" type="button">Log out of VITAL Admin</button>
+      </section>
+    </main>
+  </div>
 </body>
 </html>

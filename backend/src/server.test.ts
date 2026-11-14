@@ -90,7 +90,7 @@ test('admin routes require an authorized session and logout revokes it', async (
     headers: { Cookie: sessionCookie }
   })
   assert.equal(dashboardResponse.status, 200)
-  assert.match(await dashboardResponse.text(), /Mainframe overview/)
+  assert.match(await dashboardResponse.text(), /Crew Dashboard/)
 
   const sessionResponse = await fetch(`${origin}/api/admin/session`, {
     headers: { Cookie: sessionCookie }

@@ -11,6 +11,10 @@ The Node server serves the existing crew application at `/`, the separate admini
 
 The `Username` field accepts the administrator's email address. Sign-in requires a valid Supabase Auth password, a confirmed email, an account that is not banned or deleted, and a matching `public.users` row whose `role` is exactly `admin`. The role is checked again on every dashboard/API session request. No public admin registration endpoint exists.
 
+## Administrator dashboard
+
+The protected dashboard at `/admin/dashboard` provides crew search, health-status filters, sorting by name, latest sample, or Orbit Score, and per-crew detail views. Summary metrics, status distribution, score buckets, and the alerts list are derived from the crew records in `js/data.js`. Historical sample readings, status transitions, resolved alerts, and notification delivery are not currently available, so the dashboard shows clear empty states instead of fabricated history. Theme and the notification preference are stored locally on the administrator's device.
+
 ## Provisioning an administrator
 
 Create or invite an administrator in Supabase Auth using the trusted Supabase dashboard or another private operator workflow. After confirming the account, create or update its profile so its ID exactly matches the Auth user ID:
