@@ -154,4 +154,143 @@ async function seed() {
   console.log('[db:seed] Done!')
 }
 
-seed()
+// Seed astronaut data for VITAL
+async function seedAstronauts() {
+  const db = await getDb()
+  console.log('[db:seed] Seeding astronaut data...')
+
+  const now = new Date().toISOString()
+
+  // Sample astronauts with NFC card IDs
+  const astronauts = [
+    {
+      id: randomUUID(),
+      name: 'Cmdr. A. Reyes',
+      role: 'Commander',
+      mission: 'Artemis III',
+      nfc_card_id: '04A3B2C1D4E5F6',  // Example NFC card serial
+      avatar_url: null
+    },
+    {
+      id: randomUUID(),
+      name: 'Pilot M. Chen',
+      role: 'Pilot',
+      mission: 'Artemis III',
+      nfc_card_id: '04B4C3D2E5F6A7',
+      avatar_url: null
+    },
+    {
+      id: randomUUID(),
+      name: 'Dr. S. Okonkwo',
+      role: 'Mission Specialist',
+      mission: 'ISS Expedition 72',
+      nfc_card_id: '04C5D4E3F6A7B8',
+      avatar_url: null
+    },
+    {
+      id: randomUUID(),
+      name: 'Eng. K. Tanaka',
+      role: 'Flight Engineer',
+      mission: 'Artemis IV',
+      nfc_card_id: '04D6E5F4A7B8C9',
+      avatar_url: null
+    },
+  ]
+
+  const insertAstronaut = db.prepare(`
+    INSERT OR IGNORE INTO astronauts (id, name, role, mission, nfc_card_id, avatar_url, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+
+  for (const a of astronauts) {
+    insertAstronaut.run([a.id, a.name, a.role, a.mission, a.nfc_card_id, a.avatar_url, now, now])
+  }
+  insertAstronaut.free()
+  console.log(`[db:seed] ✅ ${astronauts.length} astronauts`)
+
+  // Sample health records
+  const healthRecords = [
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'blood' as const,
+      data: JSON.stringify({
+        hemoglobin: 14.2,
+        wbc: 6.8,
+        rbc: 4.8,
+        platelets: 245,
+        hematocrit: 42,
+        glucose: 92
+      }),
+      recorded_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'vitals' as const,
+      data: JSON.stringify({
+        heart_rate: 68,
+        blood_pressure: '118/76',
+        spo2: 98,
+        temperature: 36.8,
+        respiratory_rate: 14
+      }),
+      recorded_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'radiation' as const,
+      data: JSON.stringify({
+        cumulative_dose: 12.5,
+        dose_rate: 0.05,
+        chromosomal_aberrations: 0.8
+      }),
+      recorded_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[1].id,
+      type: 'blood' as const,
+      data: JSON.stringify({
+        hemoglobin: 13.8,
+        wbc: 7.2,
+        rbc: 4.6,
+        platelets: 280,
+        hematocrit: 41,
+        glucose: 88
+      }),
+      recorded_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[2].id,
+      type: 'vitals' as const,
+      data: JSON.stringify({
+        heart_rate: 72,
+        blood_pressure: '120/80',
+        spo2: 99,
+        temperature: 36.9,
+        respiratory_rate: 15
+      }),
+      recorded_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() // 4 hours ago
+    },
+  ]
+
+  const insertHealthRecord = db.prepare(`
+    INSERT OR IGNORE INTO health_records (id, astronaut_id, type, data, recorded_at)
+    VALUES (?, ?, ?, ?, ?)
+  `)
+
+  for (const h of healthRecords) {
+    insertHealthRecord.run([h.id, h.astronaut_id, h.type, h.data, h.recorded_at])
+  }
+  insertHealthRecord.free()
+  console.log(`[db:seed] ✅ ${healthRecords.length} health records`)
+
+  saveDb()
+  console.log('[db:seed] Astronaut data done!')
+}
+
+// Run both seeds
+seed().then(() => seedAstronauts())

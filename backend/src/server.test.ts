@@ -3,6 +3,7 @@ import { once } from 'node:events'
 import test from 'node:test'
 import type { AddressInfo } from 'node:net'
 import type { AdminAuthProvider, AdminSessionCredentials } from './admin-auth.js'
+import type { AstronautAuthProvider } from './astronaut-auth.js'
 import { createAdminServer } from './server.js'
 
 const approvedCredentials: AdminSessionCredentials = {
@@ -10,6 +11,13 @@ const approvedCredentials: AdminSessionCredentials = {
   email: 'admin@example.test',
   accessToken: 'test-access-token',
   refreshToken: 'test-refresh-token'
+}
+
+// Mock astronaut auth provider for testing
+const mockAstronautAuthProvider: AstronautAuthProvider = {
+  async verifyNfcCard() { return null },
+  async validateSession() { return null },
+  async signOut() { }
 }
 
 test('admin routes require an authorized session and logout revokes it', async (context) => {
@@ -27,7 +35,7 @@ test('admin routes require an authorized session and logout revokes it', async (
       signOutCount += 1
     }
   }
-  const server = createAdminServer(provider)
+  const server = createAdminServer(provider, mockAstronautAuthProvider)
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
   context.after(async () => {

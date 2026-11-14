@@ -1,5 +1,8 @@
 import { createAdminServer } from './server.js';
 import { createSupabaseAdminAuthProvider } from './admin-auth.js';
+import { createSupabaseAstronautAuthProvider } from './astronaut-auth.js';
+import { createSqliteAstronautAuthProvider } from './astronaut-auth.js';
+import { getDb } from './db/connection.js';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -9,17 +12,42 @@ config({ path: resolve(__dirname, '..', '..', '.env') });
 
 const port = Number(process.env.PORT || 3000);
 const projectRoot = resolve(__dirname, '..', '..');
+const isProduction = process.env.NODE_ENV === 'production';
 
-const authProvider = createSupabaseAdminAuthProvider(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let adminAuthProvider;
+let astronautAuthProvider;
 
-const server = createAdminServer(authProvider, projectRoot);
+if (isProduction) {
+  adminAuthProvider = createSupabaseAdminAuthProvider(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  astronautAuthProvider = createSupabaseAstronautAuthProvider(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+} else {
+  // Development: Use SQLite for astronaut auth, Supabase for admin (if configured)
+  const db = await getDb();
+
+  adminAuthProvider = createSupabaseAdminAuthProvider(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  astronautAuthProvider = createSqliteAstronautAuthProvider(db);
+}
+
+const server = createAdminServer(adminAuthProvider, astronautAuthProvider, projectRoot);
 
 server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server on http://localhost:${port}`);
   console.log(`   Main:       http://localhost:${port}/`);
   console.log(`   Admin:      http://localhost:${port}/admin/login`);
+  console.log(`   Astronaut API: http://localhost:${port}/api/astronaut/verify-nfc`);
+  console.log(`   Mode:       ${isProduction ? 'Production (Supabase)' : 'Development (SQLite)'}`);
 });

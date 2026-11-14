@@ -13,7 +13,8 @@ const appState = {
   voiceEnabled: false,
   speechRecognition: null,
   voiceQueryActive: false,
-  missionSpeaking: false
+  missionSpeaking: false,
+  astronautProfile: null
 };
 
 let D = window.VITAL_DATA.metrics;
@@ -322,27 +323,140 @@ function say(message, isUserMessage = false) {
 }
 
 /* Onboarding 1: Crew NFC Card Tap */
-function handleCardTap() {
+async function handleCardTap() {
   if (appState.loginInProgress) return;
   appState.loginInProgress = true;
   playSound('click');
 
   const reader = $('#reader');
   reader.classList.add('reading');
-  $('#t1').textContent = 'NFC Card Verified • Welcome Aboard';
+  $('#t1').textContent = 'Reading NFC card…';
 
-  setTimeout(() => {
-    playSound('login');
-    $('#s1').classList.add('leaving');
+  // Check if Web NFC API is available
+  if (!('NDEFReader' in window)) {
+    $('#t1').textContent = 'NFC unavailable • Using demo mode';
+    // Fallback to demo mode after a short delay
     setTimeout(() => {
+      playSound('login');
+      $('#s1').classList.add('leaving');
+      setTimeout(() => {
+        reader.classList.remove('reading');
+        $('#s1').classList.remove('leaving');
+        $('#t1').textContent = 'Tap your NFC card to start';
+        // Use demo astronaut profile
+        const demoAstronaut = {
+          id: 'demo-1',
+          name: 'Cmdr. A. Reyes',
+          role: 'Commander',
+          mission: 'Artemis III',
+          nfcCardId: 'DEMO-4821',
+          avatarUrl: null,
+          healthRecords: []
+        };
+        appState.astronautProfile = demoAstronaut;
+        updateCrewProfile('Cmdr. A. Reyes', 'DEMO-4821');
+        prepareVialScreen();
+        show('s2');
+        appState.loginInProgress = false;
+      }, 350);
+    }, 1050);
+    return;
+  }
+
+  // Use Web NFC API to read the card
+  const controller = new AbortController();
+  try {
+    const nfcReader = new window.NDEFReader();
+    nfcReader.onreading = async (event) => {
+      const serialNumber = event.serialNumber || '';
+      controller.abort();
+
+      // Verify NFC card with backend
+      try {
+        const response = await fetch('/api/astronaut/verify-nfc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // Include session cookies
+          body: JSON.stringify({ nfcCardId: serialNumber.toUpperCase() })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          // Unregistered card
+          reader.classList.remove('reading');
+          reader.classList.add('error');
+          $('#t1').textContent = data.error || 'Unregistered NFC card • Access denied';
+          playSound('error');
+
+          setTimeout(() => {
+            reader.classList.remove('error');
+            $('#t1').textContent = 'Tap your NFC card to start';
+            appState.loginInProgress = false;
+          }, 3000);
+          return;
+        }
+
+        // Success - got astronaut profile
+        const astronaut = data.astronaut;
+        appState.astronautProfile = astronaut;
+        updateCrewProfile(astronaut.name, astronaut.nfcCardId);
+
+        playSound('login');
+        $('#s1').classList.add('leaving');
+        setTimeout(() => {
+          reader.classList.remove('reading');
+          $('#s1').classList.remove('leaving');
+          $('#t1').textContent = 'Tap your NFC card to start';
+          prepareVialScreen();
+          show('s2');
+          appState.loginInProgress = false;
+        }, 350);
+      } catch (error) {
+        console.error('NFC verification failed:', error);
+        reader.classList.remove('reading');
+        reader.classList.add('error');
+        $('#t1').textContent = 'Verification failed • Try again';
+        playSound('error');
+
+        setTimeout(() => {
+          reader.classList.remove('error');
+          $('#t1').textContent = 'Tap your NFC card to start';
+          appState.loginInProgress = false;
+        }, 3000);
+      }
+    };
+
+    nfcReader.onreadingerror = () => {
+      controller.abort();
       reader.classList.remove('reading');
-      $('#s1').classList.remove('leaving');
-      $('#t1').textContent = 'Tap your NFC card to start';
-      prepareVialScreen();
-      show('s2');
-      appState.loginInProgress = false;
-    }, 350);
-  }, 1050);
+      reader.classList.add('error');
+      $('#t1').textContent = 'Could not read card • Try again';
+      playSound('error');
+
+      setTimeout(() => {
+        reader.classList.remove('error');
+        $('#t1').textContent = 'Tap your NFC card to start';
+        appState.loginInProgress = false;
+      }, 3000);
+    };
+
+    await nfcReader.scan({ signal: controller.signal });
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('NFC scan failed:', error);
+      reader.classList.remove('reading');
+      reader.classList.add('error');
+      $('#t1').textContent = 'NFC scan failed • Try again';
+      playSound('error');
+
+      setTimeout(() => {
+        reader.classList.remove('error');
+        $('#t1').textContent = 'Tap your NFC card to start';
+        appState.loginInProgress = false;
+      }, 3000);
+    }
+  }
 }
 
 function updateCrewProfile(name, cardId = '') {
@@ -909,7 +1023,21 @@ $('#themeToggle').onclick = () => {
 
 $('#out').onclick = () => resetToOnboarding();
 
-function resetToOnboarding() {
+async function resetToOnboarding() {
+  // Call backend logout API
+  try {
+    await fetch('/api/astronaut/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.warn('Backend logout failed:', error);
+  }
+
+  // Clear astronaut profile
+  appState.astronautProfile = null;
+
   closeRegistration();
   $('#s1').classList.remove('leaving');
   $('#reader').classList.remove('reading');
