@@ -1,0 +1,8 @@
+{
+  "name": "vital-health-dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/serve-dashboard.js",
+    "start": "node scripts/serve-dashboard.js"
+  }
+}
