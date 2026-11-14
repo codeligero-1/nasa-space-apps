@@ -959,14 +959,6 @@ button {
   font-size: 12.5px;
 }
 
-.mis em {
-  margin-left: auto;
-  font: 700 13px "Outfit", sans-serif;
-  color: var(--accent);
-  font-style: normal;
-  white-space: nowrap;
-}
-
 .mis li.done label {
   opacity: 0.6;
   text-decoration: line-through;
