@@ -138,11 +138,16 @@ async function pushData() {
       return converted
     })
 
-    // Upsert in batches
+    // Upsert in batches - use correct conflict target per table
+    const conflictTargets: Record<string, string> = {
+      team_members: 'team_id,user_id',
+    }
+    const conflictTarget = conflictTargets[table] ?? 'id'
+
     const batchSize = 100
     for (let i = 0; i < pgRows.length; i += batchSize) {
       const batch = pgRows.slice(i, i + batchSize)
-      const { error } = await admin.from(table).upsert(batch, { onConflict: 'id' })
+      const { error } = await admin.from(table).upsert(batch, { onConflict: conflictTarget })
       if (error) {
         console.error(`  ❌ Failed:`, error.message)
         if (error.code === 'PGRST116') {
