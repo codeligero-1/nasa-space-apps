@@ -828,8 +828,8 @@ th {
   position: relative;
   display: grid;
   place-items: center;
-  width: 110px;
-  height: 110px;
+  width: min(220px, 58vw, 34vh);
+  aspect-ratio: 1;
   flex: 0 0 auto;
   padding: 0;
   border: 1px solid #ffffff70;
@@ -843,16 +843,22 @@ th {
   isolation: isolate;
 }
 
-.vital-reader::before {
+.vital-reader::before,
+.vital-reader::after {
   position: absolute;
   z-index: -1;
   inset: -7px;
   border: 1px solid #fff9;
   border-radius: inherit;
   content: "";
-  opacity: 0;
-  animation: idle-ripple 4s ease-out infinite;
+  box-shadow: 0 0 14px #fff9, inset 0 0 8px #fff4;
+  animation: idle-ripple 2.8s ease-out infinite;
+  animation-fill-mode: backwards;
   pointer-events: none;
+}
+
+.vital-reader::after {
+  animation-delay: 1.4s;
 }
 
 .vital-reader svg {
@@ -874,7 +880,8 @@ th {
   box-shadow: 0 0 0 8px #ffffff1c, 0 0 34px 12px #fff9, 0 8px 26px #160d1e50;
 }
 
-.vital-reader.reading::before {
+.vital-reader.reading::before,
+.vital-reader.reading::after {
   animation: none;
 }
 
@@ -909,7 +916,7 @@ th {
 }
 
 .brand-name {
-  margin: 8px 0 0;
+  margin: clamp(24px, 4vh, 36px) 0 0;
   color: #fff;
   font: 700 clamp(30px, 7vw, 38px)/1.1 Outfit, "Plus Jakarta Sans", sans-serif;
   letter-spacing: .04em;
@@ -1025,8 +1032,9 @@ th {
 }
 
 @keyframes idle-ripple {
-  0% { transform: scale(.94); opacity: .35; }
-  75%, 100% { transform: scale(1.45); opacity: 0; }
+  0% { transform: scale(.88); opacity: 0; }
+  10% { opacity: .8; }
+  100% { transform: scale(1.65); opacity: 0; }
 }
 
 @keyframes tap-ripple {
@@ -1074,6 +1082,7 @@ th {
   }
 
   .vital-reader::before,
+  .vital-reader::after,
   .vital-reader.reading .ripple-ring {
     display: none;
     animation: none;
