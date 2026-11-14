@@ -177,6 +177,9 @@
         <button class="nav-item" data-tab="alerts" type="button">
           <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
         </button>
+        <button class="nav-item" data-tab="radiation" type="button">
+          <span class="nav-dot"></span> Radiation
+        </button>
       </div>
 
       <div class="sidebar-footer">
@@ -206,6 +209,37 @@
 
       <!-- Categorized Blood Components -->
       <div id="groups"></div>
+
+      <section class="radiation-panel hide" id="radiationPanel" aria-labelledby="radiationTitle">
+        <div class="radiation-heading">
+          <div>
+            <div class="hero-kicker">MISSION EXPOSURE MONITORING</div>
+            <h2 id="radiationTitle">Radiation &amp; Biodosimetry</h2>
+          </div>
+          <span class="chip c-warn">SAMPLE READINGS</span>
+        </div>
+        <div class="radiation-summary">
+          <strong>Quick read</strong>
+          <p>These are example readings. The indicators compare each reading with the range shown; they are not a diagnosis or proof that someone is safe.</p>
+        </div>
+        <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
+
+        <div class="radiation-streams">
+          <section class="radiation-stream" aria-labelledby="physicalDoseTitle">
+            <h3 id="physicalDoseTitle">Radiation measured by sensors</h3>
+            <p>How much radiation the personal badge and cabin sensor detected.</p>
+            <div class="radiation-metrics" id="physicalRadiationMetrics"></div>
+          </section>
+
+          <section class="radiation-stream" aria-labelledby="bioDoseTitle">
+            <h3 id="bioDoseTitle">What lab tests found in cells</h3>
+            <p>Blood tests look for possible signs of cell damage and repair. They do not measure radiation directly.</p>
+            <div class="radiation-metrics" id="bioRadiationMetrics"></div>
+          </section>
+        </div>
+
+        <p class="radiation-note">Example readings only—not live sensor data or a medical assessment. Ask a qualified medical professional to interpret real results.</p>
+      </section>
 
       <p class="note">
         Prototype telemetry for NASA Space Apps. Reference ranges represent standard adult values and vary by mission duration, microgravity fluid shifts, age, and sex. VITAL provides analytical decision support and does not replace flight surgeon diagnosis.
