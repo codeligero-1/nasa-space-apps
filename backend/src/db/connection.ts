@@ -40,12 +40,12 @@ export async function getDb(): Promise<Database> {
     console.log(`[db] Connected to ${dbPath}`)
 
     // Enable foreign keys
-    db.exec('PRAGMA foreign_keys = ON;')
+    db!.exec('PRAGMA foreign_keys = ON;')
 
     // Auto-save on changes (simple approach - save after each write)
     // For production, consider debouncing or explicit save calls
   }
-  return db
+  return db!
 }
 
 /**
