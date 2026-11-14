@@ -83,6 +83,7 @@ button {
   align-items: center;
   gap: 12px;
   padding: 12px 22px;
+  padding-right: 150px;
   background: var(--surf);
   border-bottom: 1px solid var(--line);
   position: sticky;
@@ -1148,6 +1149,31 @@ form.in input {
 
 .toast.on {
   transform: translate(-50%, 0);
+}
+
+.sound-toggle {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 50;
+  min-height: 36px;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(24, 10, 16, 0.72);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.sound-toggle:hover {
+  background: rgba(45, 10, 16, 0.92);
+}
+
+.sound-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 @keyframes idle-ripple {
