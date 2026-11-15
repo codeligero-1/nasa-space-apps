@@ -11,6 +11,7 @@ Checked items are implemented in the static prototype and were verified in the b
 ## 1. Login and Astronaut Identification
 
 - [x] The NFC reader detects the astronaut's NFC card.
+- [x] New crew credentials can be registered with a name and card, then continue to onboarding.
 - [x] The system displays the correct astronaut profile after scanning.
 - [x] Astronaut information is displayed correctly.
 - [x] Unregistered NFC cards are rejected.
