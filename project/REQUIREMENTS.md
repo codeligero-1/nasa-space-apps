@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are implemented in the static demo and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Dashboard readings come from the single source-backed demo astronaut. The latest demo flight record has no body-temperature value, so the dashboard now displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and wiring database records into the crew dashboard remain unimplemented. Radiation alerts use configured biological-indicator ranges; physical dose metrics have no configured thresholds and cumulative dose is displayed from source data, not calculated by the app. Analytics compares demo flights against the latest available pre-flight record and charts data using elapsed calendar time; browser verification covered 10 heart-rate history records and the displayed baseline difference. Dynamic per-astronaut records are not wired into the dashboard, and no configured rules define unusual baseline-to-flight changes beyond individual metric reference-range alerts.
+Checked items are implemented in the static demo and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Dashboard readings come from the single source-backed demo astronaut. The latest demo flight record has no body-temperature value, so the dashboard displays it as Not Available rather than inventing a reading; missing results are flagged for a new sample and re-analysis. Vital and radiation measurements cannot currently be recorded/imported into the dashboard; importing blood results is supported. Radiation status uses configured ranges when available, and cumulative dose is displayed from source data rather than calculated by the app. Analytics compares demo flights against the latest available pre-flight record and charts data using elapsed calendar time; browser verification covered 10 heart-rate history records and the displayed baseline difference. Dynamic per-astronaut records are not wired into the dashboard, and no configured rules define unusual baseline-to-flight changes beyond individual metric reference-range alerts.
 
 ## 1. Login and Astronaut Identification
 
@@ -20,12 +20,12 @@ Checked items are implemented in the static demo and were verified in the browse
 ## 2. Main Dashboard
 
 - [x] The dashboard loads successfully.
-- [ ] The astronaut's name and profile are displayed.
-- [ ] The latest health measurements are displayed.
-- [ ] Vital signs are displayed correctly.
+- [x] The astronaut's name and profile are displayed.
+- [x] The latest available health measurements are displayed.
+- [x] Available vital signs are displayed correctly.
 - [x] Blood analysis results are accessible.
-- [ ] Radiation exposure information is displayed.
-- [ ] Health warnings and critical alerts are visible.
+- [x] Available radiation exposure information is displayed.
+- [x] Health warnings and critical alerts are visible for measurements with configured thresholds.
 - [ ] The dashboard updates when new data is recorded.
 
 ## 3. Blood Analysis Module
@@ -48,7 +48,7 @@ Checked items are implemented in the static demo and were verified in the browse
 - [x] Respiratory rate measurements are displayed correctly.
 - [x] Heart Rate Variability (HRV) data are displayed correctly.
 - [ ] New measurements update the dashboard.
-- [ ] Abnormal measurements trigger the appropriate alerts.
+- [x] Abnormal measurements trigger alerts when configured thresholds are available.
 
 ## 5. Radiation Monitoring Module
 

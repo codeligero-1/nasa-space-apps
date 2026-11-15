@@ -14,24 +14,41 @@ const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
 const dashboardHealthData = window.VITAL_DEMO_DATA;
 const healthSummary = window.VITAL_HEALTH_SUMMARY;
 
-const fallbackCrewMembers = [
-  { name: 'Alex Vance', card: 'NFC-4821', lastSample: 'Today, 09:14', status: 'low', orbitScore: 72 },
-  { name: 'Maya Chen', card: 'NFC-1934', lastSample: 'Today, 08:42', status: 'low', orbitScore: 84 },
-  { name: 'Noah Patel', card: 'NFC-2806', lastSample: 'Yesterday, 16:20', status: 'warn', orbitScore: 81 },
-  { name: 'Lena Ortiz', card: 'NFC-7710', lastSample: 'Today, 07:55', status: 'ok', orbitScore: 94 },
-  { name: 'Ravi Singh', card: 'NFC-5218', lastSample: 'Nov 13, 11:32', status: 'low', orbitScore: 76 },
-  { name: 'Talia Brooks', card: 'NFC-6315', lastSample: 'Nov 12, 14:06', status: 'ok', orbitScore: 92 }
-];
+function getCrewMembersWithDashboardData() {
+  const profile = dashboardHealthData?.profile;
+  const records = dashboardHealthData?.records;
+  if (!profile?.name || !Array.isArray(records) || records.length === 0) return [];
 
-const crewMembers = Array.isArray(window.VITAL_DATA?.crew) && window.VITAL_DATA.crew.length
-  ? window.VITAL_DATA.crew.map(([name, card, lastSample, status, orbitScore]) => ({
-    name,
-    card,
-    lastSample,
+  const latestRecord = records
+    .filter((record) => /^\d{4}-\d{2}-\d{2}$/.test(record.date || ''))
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .pop();
+  if (!latestRecord) return [];
+
+  const summary = healthSummary.summarize(
+    profile,
+    records,
+    window.VITAL_DATA.metrics,
+    dashboardHealthData.ranges
+  );
+  const rated = summary?.counts.rated || 0;
+  const score = rated ? Math.round((summary.counts.normal / rated) * 100) : null;
+  const status = summary?.counts.critical || summary?.counts.low || summary?.counts.high
+    ? 'low'
+    : summary?.counts.warning || summary?.counts.borderline ? 'warn' : 'ok';
+
+  return [{
+    name: profile.name,
+    card: profile.astronautId || '',
+    lastSample: new Date(`${latestRecord.date}T00:00:00`).toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric'
+    }),
     status,
-    orbitScore
-  }))
-  : fallbackCrewMembers;
+    orbitScore: score === null ? '—' : score
+  }];
+}
+
+const crewMembers = getCrewMembersWithDashboardData();
 
 let hasThemeOverride = false;
 

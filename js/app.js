@@ -949,11 +949,15 @@ function handleSpreadsheetUpload(event) {
 function buildDashboard() {
   const counts = { ok: 0, low: 0, high: 0, warn: 0, na: 0 };
   const issues = [];
+  const missing = [];
 
   D.forEach((group) => {
     group[2].forEach((reading) => {
       const [key, label] = statusForReading(reading);
       counts[key] += 1;
+      if (key === 'na' && label === 'Not Available') {
+        missing.push(reading[0]);
+      }
       if (key === 'low' || key === 'warn') {
         issues.push({
           name: reading[0],
@@ -972,14 +976,16 @@ function buildDashboard() {
   }, 80);
 
   $('#hs').textContent = ratedCount
-    ? `${counts.ok} of ${ratedCount} measurements with configured ranges are normal. ${issues.length} low, high, warning, critical, or borderline results.`
-    : 'No measurements with configured reference ranges are available.';
-  $('#hc').innerHTML = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`).join('');
-  $('#alertBadge').textContent = issues.length;
+    ? `${counts.ok} of ${ratedCount} measurements with configured ranges are normal. ${issues.length} low, high, warning, critical, or borderline results. ${missing.length} results need a new sample and re-analysis.`
+    : `No measurements with configured reference ranges are available. ${missing.length} results need a new sample and re-analysis.`;
+  const issueChips = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`);
+  const missingChips = missing.map((name) => `<span class="chip c-na">${name} (Submit new sample for re-analysis)</span>`);
+  $('#hc').innerHTML = [...issueChips, ...missingChips].join('');
+  $('#alertBadge').textContent = issues.length + missing.length;
 
   $('#summaryTiles').innerHTML = `
     <div class="tile-card"><small>Vital Measurements Available</small><strong>${D.filter((group) => group[3] === 'vitals').flatMap((group) => group[2]).filter((reading) => Number.isFinite(reading[2])).length}</strong></div>
-    <div class="tile-card"><small>Flagged Results</small><strong>${issues.length}</strong></div>
+    <div class="tile-card"><small>Flagged or Needs Re-analysis</small><strong>${issues.length + missing.length}</strong></div>
     <div class="tile-card"><small>Latest Vital Record</small><strong>${timeNote(currentRecord)}</strong></div>
   `;
 
@@ -1125,7 +1131,8 @@ function renderGroups() {
     .map((group) => {
       const filtered = group[2].filter((reading) => {
         if (!Number.isFinite(reading[2])) {
-          return appState.activeTab === 'overview' && group[3] === 'vitals';
+          return appState.activeTab === 'overview' && group[3] === 'vitals'
+            || filterAlertsOnly && statusForReading(reading)[1] === 'Not Available';
         }
         if (!filterAlertsOnly) return true;
         const key = statusForReading(reading)[0];
@@ -1134,15 +1141,27 @@ function renderGroups() {
 
       if (!filtered.length) return '';
 
+      const alertMissing = filterAlertsOnly
+        ? filtered.filter((reading) => statusForReading(reading)[1] === 'Not Available')
+        : [];
+
       return `
         <div class="grp">
           <h3>${group[0]}</h3>
           <p>${group[1]}</p>
+          ${alertMissing.length ? `<p class="missing-sample-prompt">${alertMissing.map((reading) => reading[0]).join(', ')} ${alertMissing.length === 1 ? 'result needs' : 'results need'} a new sample for re-analysis. Start a new blood analysis and submit the sample or its results.</p><button class="btn missing-sample-action" data-sample-analysis type="button">Start new analysis</button>` : ''}
           <div class="rows">${filtered.map((reading) => renderMetricCard(reading)).join('')}</div>
         </div>
       `;
     }).join('');
   bindMetricCards($('#groups'));
+  $('#groups').querySelectorAll('[data-sample-analysis]').forEach((button) => {
+    button.onclick = () => {
+      show('s2');
+      prepareVialScreen();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
 }
 
 function renderRadiationPanel() {
@@ -1854,6 +1873,9 @@ function handleRegisterDialogClick(event) {
     closeRegistration();
   }
 }
+
+// Quick suggestions for Orbit Assistant removed - using dynamic input only
+$('#qs').innerHTML = '';
 
 // PET AI Quick Suggestions
 $('#petAiQuickSuggestions').innerHTML = [
