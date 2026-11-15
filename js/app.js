@@ -104,22 +104,23 @@ function formatNumber(value, metric) {
 
 function formatDate(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return 'Date not supplied';
+  if (!match) return '';
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
     .toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function timeNote(record) {
-  if (!record?.date) return 'Date and time not supplied';
-  return `${formatDate(record.date)} · ${record.time ? `Time ${record.time}` : 'Time not supplied'}`;
+  if (!record?.date) return '';
+  return `${formatDate(record.date)}${record.time ? ` · Time ${record.time}` : ''}`;
 }
 
 function currentTestMetadata(section = 'blood') {
   const record = section === 'blood' ? activeBloodRecord : currentRecord;
-  if (section === 'blood' && appState.importedFile) {
-    return `Imported file: ${appState.importedFile} · ${timeNote(record)} · Sample ID: ${record.sampleId || 'Not provided'}`;
-  }
-  return `${timeNote(record)} · Sample ID: ${record.sampleId || 'Not provided'}`;
+  return [
+    section === 'blood' && appState.importedFile ? `Imported file: ${appState.importedFile}` : '',
+    timeNote(record),
+    record?.sampleId ? `Sample ID: ${record.sampleId}` : ''
+  ].filter(Boolean).join(' · ');
 }
 
 function playTone(frequency, duration, volume, delay = 0) {
@@ -477,16 +478,16 @@ async function handleCardTap() {
         $('#t1').textContent = 'Tap your NFC card to start';
         // Use demo astronaut profile
         const demoAstronaut = {
-          id: 'demo-1',
-          name: 'Crew Member',
+          id: DEMO.profile.astronautId,
+          name: DEMO.profile.name,
           role: 'Commander',
-          mission: 'Artemis III',
+          mission: DEMO.profile.missionCode,
           nfcCardId: 'DEMO-4821',
           avatarUrl: null,
           healthRecords: []
         };
         appState.astronautProfile = demoAstronaut;
-        updateCrewProfile('Crew Member', 'DEMO-4821');
+        updateCrewProfile(demoAstronaut.name, demoAstronaut.nfcCardId);
         prepareVialScreen();
         show('s2');
         appState.loginInProgress = false;
@@ -531,6 +532,20 @@ async function handleCardTap() {
 
         // Success - got astronaut profile
         const astronaut = data.astronaut;
+        if (!astronaut || astronaut.id !== DEMO.profile.astronautId) {
+          reader.classList.remove('reading');
+          reader.classList.add('error');
+          $('#t1').textContent = `No demo health data is linked to ${astronaut?.name || 'this crew member'}.`;
+          playSound('error');
+
+          setTimeout(() => {
+            reader.classList.remove('error');
+            $('#t1').textContent = 'Tap your NFC card to start';
+            appState.loginInProgress = false;
+          }, 3000);
+          return;
+        }
+
         appState.astronautProfile = astronaut;
         updateCrewProfile(astronaut.name, astronaut.nfcCardId);
 
@@ -711,39 +726,47 @@ function handleNfcLogin() {
 }
 
 /* Onboarding 2: Vial Fill & Sensor Read */
-function prepareVialScreen() {
-  const flatMetrics = D
+function availableOnboardingBloodReadings() {
+  return D
     .filter((group) => group[3] === 'blood')
-    .flatMap((group) => group[2]);
-  $('#live').innerHTML = flatMetrics.slice(0, 6).map((metric, index) => {
+    .flatMap((group) => group[2])
+    .filter((reading) => Number.isFinite(reading[2]))
+    .slice(0, 6);
+}
+
+function prepareVialScreen() {
+  const crewName = appState.astronautProfile?.name || DEMO.profile.name;
+  const flatMetrics = availableOnboardingBloodReadings();
+  $('#live').innerHTML = flatMetrics.map((metric, index) => {
     return `<div id="l${index}"><span>${metric[0]}</span><b>Waiting…</b></div>`;
   }).join('');
 
   $('#fill').style.height = '0%';
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
-  $('#send').disabled = false;
-  $('#send').textContent = 'Start Blood Analysis';
-  $('#t2').textContent = 'Ready for Blood Analysis';
-  $('#p2').textContent = 'Welcome, crew member! Start the analysis to process the available sample data and prepare your report.';
-  $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
+  $('#send').disabled = flatMetrics.length === 0;
+  $('#send').textContent = flatMetrics.length ? 'Start Blood Analysis' : 'No Sample Results';
+  $('#t2').textContent = flatMetrics.length ? `Ready for ${crewName}'s Blood Analysis` : `No blood results for ${crewName}`;
+  $('#p2').textContent = flatMetrics.length
+    ? `Theoretical demo record for ${crewName}. Only recorded blood measurements are shown.`
+    : `No recorded blood measurements are linked to ${crewName}.`;
+  $('#rs').textContent = flatMetrics.length
+    ? `Analysis ready • ${flatMetrics.length} recorded measurements for ${crewName}`
+    : 'Analysis unavailable • No recorded measurements';
 }
 
 function runVialCollection() {
-  const flatMetrics = D
-    .filter((group) => group[3] === 'blood')
-    .flatMap((group) => group[2])
-    .slice(0, 6);
+  const flatMetrics = availableOnboardingBloodReadings();
   if (!flatMetrics.length) {
-    toast('No blood measurements are available in this record.');
+    $('#rs').textContent = 'Analysis unavailable • No recorded measurements';
     return;
   }
 
   $('#send').disabled = true;
   $('#send').textContent = 'Analyzing...';
   $('#t2').textContent = 'Analyzing Blood Sample...';
-  $('#p2').textContent = 'Processing the available sample data and preparing your report.';
-  $('#rs').textContent = 'Demo analysis in progress • Preparing source-backed results';
+  $('#p2').textContent = `Processing ${flatMetrics.length} recorded measurements for ${appState.astronautProfile?.name || DEMO.profile.name}.`;
+  $('#rs').textContent = 'Demo analysis in progress • Preparing recorded results';
 
   let step = 0;
   const totalSteps = flatMetrics.length;
@@ -975,7 +998,7 @@ function buildDashboard() {
   updateDashboardTab();
 
   $('#log').innerHTML = '';
-  say(`Welcome, crew member! I'm Orbit. This dashboard shows the available source-backed demo measurements. Some results may be missing or have no configured reference range. Tap a card to compare its history, or ask me about a measurement.`);
+  say(`Welcome, ${appState.astronautProfile?.name || DEMO.profile.name}. I'm Orbit. This dashboard shows recorded demo measurements for this crew profile. Metrics without a recorded value are omitted. Tap a card to compare its history, or ask me about a measurement.`);
 }
 
 function getRangeIndicator(value, min, max) {
@@ -1036,10 +1059,10 @@ function renderMetricCard(reading, extraClass = '') {
         </div>
       ` : '<div class="r"><span>Min —</span><span>Reference range not configured</span><span>Max —</span></div>'}
       <div class="d">
-        <span>Pre-flight baseline: ${formatNumber(baseline, metric)} ${metric.unit}</span>
-        <span>Current value: ${formatNumber(current, metric)} ${metric.unit}</span>
-        <span>Difference from baseline: ${formatNumber(difference, metric)} ${metric.unit}</span>
-        <span>Change: ${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} · ${trend}</span>
+        ${Number.isFinite(baseline) ? `<span>Pre-flight baseline: ${formatNumber(baseline, metric)} ${metric.unit}</span>` : ''}
+        ${Number.isFinite(current) ? `<span>Current value: ${formatNumber(current, metric)} ${metric.unit}</span>` : ''}
+        ${Number.isFinite(difference) ? `<span>Difference from baseline: ${formatNumber(difference, metric)} ${metric.unit}</span>` : ''}
+        ${Number.isFinite(percentChange) ? `<span>Change: ${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}% · ${trend}</span>` : ''}
         <span>${metric.section === 'radiation' ? 'Source measurement; interpretation requires mission-specific guidance.' : 'Compared with the latest available pre-flight measurement.'}</span>
       </div>
     </button>
@@ -1088,7 +1111,7 @@ function renderBloodSummary() {
   $('#bloodAssessment').textContent = assessment;
   $('#bloodSummaryMeta').textContent = currentTestMetadata('blood');
   $('#bloodCounts').innerHTML = `
-    <div class="blood-count"><small>Parameters measured</small><strong>${counts.measured} / ${readings.length}</strong></div>
+    <div class="blood-count"><small>Parameters measured</small><strong>${counts.measured}</strong></div>
     <div class="blood-count"><small>Normal</small><strong>${counts.normal}</strong></div>
     <div class="blood-count"><small>Low</small><strong>${counts.low}</strong></div>
     <div class="blood-count"><small>High</small><strong>${counts.high}</strong></div>
@@ -1108,6 +1131,7 @@ function renderGroups() {
     .filter((group) => !sectionFilter || group[3] === sectionFilter)
     .map((group) => {
       const filtered = group[2].filter((reading) => {
+        if (!Number.isFinite(reading[2])) return false;
         if (!filterAlertsOnly) return true;
         const key = statusForReading(reading)[0];
         return key === 'low' || key === 'warn';
@@ -1132,6 +1156,7 @@ function renderRadiationPanel() {
   const biological = radiationGroups.filter((group) => group[0] === 'Biological Response');
   const renderMetrics = (groups) => groups
     .flatMap((group) => group[2])
+    .filter((reading) => Number.isFinite(reading[2]))
     .map((reading) => renderMetricCard(reading, 'radiation-metric'))
     .join('');
 
@@ -1164,7 +1189,11 @@ function renderHistoryPanel() {
   const metricSelect = $('#historyMetric');
   const category = categorySelect.value || appState.historyCategory;
   appState.historyCategory = category;
-  const metrics = metricDefinitions.filter((metric) => metric.section === category);
+  const records = historyRecords(category);
+  const metrics = metricDefinitions.filter((metric) => (
+    metric.section === category
+    && records.some((record) => Number.isFinite(metricValue(record, metric)))
+  ));
   if (!metrics.some((metric) => metric.id === appState.historyMetric)) {
     appState.historyMetric = metrics[0]?.id || '';
   }
@@ -1178,10 +1207,18 @@ function renderHistoryPanel() {
   });
   metricSelect.value = appState.historyMetric;
 
-  const records = historyRecords(category);
+  if (!metrics.length) {
+    $('#historyDate').innerHTML = '';
+    $('#historyComparison').textContent = 'No recorded measurements are available for this category.';
+    $('#historyChart').textContent = 'No historical measurements to chart.';
+    return;
+  }
+
+  const metric = metrics.find((item) => item.id === appState.historyMetric);
+  const metricRecords = records.filter((record) => Number.isFinite(metricValue(record, metric)));
   const dateSelect = $('#historyDate');
   dateSelect.innerHTML = '';
-  records.forEach((record) => {
+  metricRecords.forEach((record) => {
     const option = document.createElement('option');
     option.value = record.id;
     const recordType = record.id.startsWith('imported-')
@@ -1192,29 +1229,27 @@ function renderHistoryPanel() {
     option.textContent = `${timeNote(record)} · ${recordType}`;
     dateSelect.appendChild(option);
   });
-  if (!records.some((record) => record.id === appState.historyDate)) {
-    appState.historyDate = records[records.length - 1]?.id || '';
+  if (!metricRecords.some((record) => record.id === appState.historyDate)) {
+    appState.historyDate = metricRecords[metricRecords.length - 1]?.id || '';
   }
   dateSelect.value = appState.historyDate;
 
-  const metric = metrics.find((item) => item.id === appState.historyMetric);
-  if (!metric || !records.length) {
+  if (!metric || !metricRecords.length) {
     $('#historyComparison').textContent = 'No dated history is available for this category.';
     $('#historyChart').textContent = 'No historical measurements to chart.';
     return;
   }
 
-  const selectedRecord = records.find((record) => record.id === appState.historyDate) || records[records.length - 1];
+  const selectedRecord = metricRecords.find((record) => record.id === appState.historyDate) || metricRecords[metricRecords.length - 1];
   const selectedValue = metricValue(selectedRecord, metric);
   const baseline = metricValue(baselineRecord, metric);
   const difference = Number.isFinite(selectedValue) && Number.isFinite(baseline) ? selectedValue - baseline : null;
   const percentChange = Number.isFinite(difference) && baseline !== 0 ? (difference / baseline) * 100 : null;
-  const trend = !Number.isFinite(difference) ? 'Not available' : difference > 0 ? 'Increased' : difference < 0 ? 'Decreased' : 'Unchanged';
   $('#historyComparison').innerHTML = `
     <div><small>Selected test · ${timeNote(selectedRecord)}</small><strong>${formatNumber(selectedValue, metric)} ${metric.unit}</strong></div>
-    <div><small>Pre-flight baseline · ${timeNote(baselineRecord)}</small><strong>${formatNumber(baseline, metric)} ${metric.unit}</strong></div>
-    <div><small>Difference</small><strong>${formatNumber(difference, metric)} ${metric.unit}</strong></div>
-    <div><small>Change from baseline</small><strong>${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} · ${trend}</strong></div>
+    ${Number.isFinite(baseline) ? `<div><small>Pre-flight baseline · ${timeNote(baselineRecord)}</small><strong>${formatNumber(baseline, metric)} ${metric.unit}</strong></div>` : ''}
+    ${Number.isFinite(difference) ? `<div><small>Difference</small><strong>${formatNumber(difference, metric)} ${metric.unit}</strong></div>` : ''}
+    ${Number.isFinite(percentChange) ? `<div><small>Change from baseline</small><strong>${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}% · ${difference > 0 ? 'Increased' : difference < 0 ? 'Decreased' : 'Unchanged'}</strong></div>` : ''}
   `;
 
   const values = records.map((record, index) => ({
@@ -1334,7 +1369,7 @@ function askAssistant(query) {
   const baseline = metric ? metricValue(baselineRecord, metric) : null;
   let answer;
   if (metric && (!reading || !Number.isFinite(reading[2]))) {
-    answer = `${metricLabel(metric)} is Not Available in the selected record. Missing measurements are not treated as normal.`;
+    answer = `No ${metricLabel(metric).toLowerCase()} result is recorded for this sample.`;
   } else if (metric && reading) {
     const [key, label] = statusForReading(reading);
     const range = reading[8];
