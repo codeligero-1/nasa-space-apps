@@ -2,38 +2,37 @@ const dashboard = document.querySelector('#adminDashboard');
 const dashboardStatus = document.querySelector('#adminDashboardStatus');
 const logoutButton = document.querySelector('#adminLogoutButton');
 const crewResults = document.querySelector('#adminCrewResults');
-const analyzerResults = document.querySelector('#adminAnalyzerResults');
 const crewSearch = document.querySelector('#adminCrewSearch');
 const crewEmptyState = document.querySelector('#adminCrewEmpty');
-const sidebar = document.querySelector('#adminSidebar');
-const menuToggle = document.querySelector('#adminMenuToggle');
 const themeToggle = document.querySelector('#adminDashboardThemeToggle');
+const findingsDialog = document.querySelector('#adminFindingsDialog');
+const findingsHeading = document.querySelector('#adminFindingsHeading');
+const findingsContent = document.querySelector('#adminFindingsContent');
+const findingsClose = document.querySelector('#adminFindingsClose');
 const themeStorageKey = 'vital.admin.theme';
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+const dashboardHealthData = window.VITAL_DEMO_DATA;
+const healthSummary = window.VITAL_HEALTH_SUMMARY;
 
 const fallbackCrewMembers = [
-  { name: 'Alex Vance', card: 'NFC-4821', lastSample: 'Today, 09:14', status: 'low', orbitScore: 72, sampledToday: true, needsCalibration: false },
-  { name: 'Maya Chen', card: 'NFC-1934', lastSample: 'Today, 08:42', status: 'low', orbitScore: 84, sampledToday: true, needsCalibration: false },
-  { name: 'Noah Patel', card: 'NFC-2806', lastSample: 'Yesterday, 16:20', status: 'warn', orbitScore: 81, sampledToday: false, needsCalibration: true },
-  { name: 'Lena Ortiz', card: 'NFC-7710', lastSample: 'Today, 07:55', status: 'ok', orbitScore: 94, sampledToday: true, needsCalibration: false },
-  { name: 'Ravi Singh', card: 'NFC-5218', lastSample: 'Nov 13, 11:32', status: 'low', orbitScore: 76, sampledToday: false, needsCalibration: false },
-  { name: 'Talia Brooks', card: 'NFC-6315', lastSample: 'Nov 12, 14:06', status: 'ok', orbitScore: 92, sampledToday: false, needsCalibration: false }
+  { name: 'Alex Vance', card: 'NFC-4821', lastSample: 'Today, 09:14', status: 'low', orbitScore: 72 },
+  { name: 'Maya Chen', card: 'NFC-1934', lastSample: 'Today, 08:42', status: 'low', orbitScore: 84 },
+  { name: 'Noah Patel', card: 'NFC-2806', lastSample: 'Yesterday, 16:20', status: 'warn', orbitScore: 81 },
+  { name: 'Lena Ortiz', card: 'NFC-7710', lastSample: 'Today, 07:55', status: 'ok', orbitScore: 94 },
+  { name: 'Ravi Singh', card: 'NFC-5218', lastSample: 'Nov 13, 11:32', status: 'low', orbitScore: 76 },
+  { name: 'Talia Brooks', card: 'NFC-6315', lastSample: 'Nov 12, 14:06', status: 'ok', orbitScore: 92 }
 ];
 
 const crewMembers = Array.isArray(window.VITAL_DATA?.crew) && window.VITAL_DATA.crew.length
-  ? window.VITAL_DATA.crew.map(([name, card, lastSample, status, orbitScore, sampledToday, needsCalibration]) => ({
+  ? window.VITAL_DATA.crew.map(([name, card, lastSample, status, orbitScore]) => ({
     name,
     card,
     lastSample,
     status,
-    orbitScore,
-    sampledToday: typeof sampledToday === 'boolean' ? sampledToday : /\btoday\b/i.test(String(lastSample)),
-    needsCalibration: Boolean(needsCalibration)
+    orbitScore
   }))
   : fallbackCrewMembers;
 
-const activeFilters = new Set();
-let acknowledgedFlags = new Set();
 let hasThemeOverride = false;
 
 function setTheme(theme, save = false) {
@@ -70,98 +69,181 @@ function createTextCell(value) {
   return cell;
 }
 
+function maskCardNumber(card) {
+  const lastFour = String(card).replace(/\D/g, '').slice(-4);
+  return lastFour ? `•••• ${lastFour}` : '••••';
+}
+
+function formatFindingValue(value, decimals) {
+  return Number(value.toFixed(decimals)).toLocaleString(undefined, {
+    maximumFractionDigits: decimals
+  });
+}
+
+function formatFindingDate(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function appendFindingCount(container, label, value) {
+  const count = document.createElement('article');
+  count.className = 'admin-findings-count';
+  const number = document.createElement('strong');
+  number.textContent = String(value);
+  const caption = document.createElement('span');
+  caption.textContent = label;
+  count.append(number, caption);
+  container.append(count);
+}
+
+function appendFindingRow(container, finding) {
+  const row = document.createElement('li');
+  const details = document.createElement('div');
+  details.className = 'admin-finding-details';
+  const name = document.createElement('strong');
+  name.textContent = finding.name;
+  const value = document.createElement('span');
+  value.textContent = `${formatFindingValue(finding.value, finding.decimals)} ${finding.unit}`;
+  details.append(name, value);
+
+  if (Number.isFinite(finding.baselineValue)) {
+    const baseline = document.createElement('small');
+    baseline.textContent = `Pre-flight baseline: ${formatFindingValue(finding.baselineValue, finding.decimals)} ${finding.unit}`;
+    details.append(baseline);
+  }
+
+  const statusChip = document.createElement('span');
+  statusChip.className = `admin-status-chip ${finding.statusKey === 'low' ? 'is-flagged' : 'is-warn'}`;
+  statusChip.textContent = finding.statusLabel;
+  row.append(details, statusChip);
+  container.append(row);
+}
+
+function renderFindingsSummary(name) {
+  findingsHeading.textContent = `${name} — dashboard findings`;
+  findingsContent.replaceChildren();
+
+  const profileName = dashboardHealthData?.profile?.name;
+  if (!profileName || profileName.toLocaleLowerCase() !== name.toLocaleLowerCase()) {
+    const unavailable = document.createElement('p');
+    unavailable.className = 'admin-findings-unavailable';
+    unavailable.textContent = `No user dashboard findings are linked to ${name}.`;
+    findingsContent.append(unavailable);
+    findingsDialog.showModal();
+    return;
+  }
+
+  const summary = healthSummary.summarize(
+    dashboardHealthData.profile,
+    dashboardHealthData.records,
+    window.VITAL_DATA.metrics,
+    dashboardHealthData.ranges
+  );
+  if (!summary) {
+    const unavailable = document.createElement('p');
+    unavailable.className = 'admin-findings-unavailable';
+    unavailable.textContent = 'No flight findings are available in the user dashboard.';
+    findingsContent.append(unavailable);
+    findingsDialog.showModal();
+    return;
+  }
+
+  const meta = document.createElement('p');
+  meta.className = 'admin-findings-meta';
+  meta.textContent = `Latest record: ${summary.recordLabel} · ${formatFindingDate(summary.recordDate)}`;
+
+  const overview = document.createElement('p');
+  overview.className = 'admin-findings-overview';
+  overview.textContent = `${summary.counts.normal} of ${summary.counts.rated} rated measurements are within configured ranges. ${summary.findings.length} findings need review.`;
+
+  const counts = document.createElement('div');
+  counts.className = 'admin-findings-counts';
+  appendFindingCount(counts, 'Rated', summary.counts.rated);
+  appendFindingCount(counts, 'Within range', summary.counts.normal);
+  appendFindingCount(counts, 'Findings', summary.findings.length);
+  appendFindingCount(counts, 'Not rated', summary.counts.notRated);
+
+  const bloodHeading = document.createElement('h3');
+  bloodHeading.textContent = 'Blood analysis';
+  const bloodSummary = document.createElement('div');
+  bloodSummary.className = 'admin-findings-blood';
+  const bloodAssessment = document.createElement('span');
+  bloodAssessment.textContent = summary.bloodAssessment;
+  if (summary.bloodAssessmentKey !== 'na') {
+    bloodAssessment.className = `admin-status-chip ${summary.bloodAssessmentKey === 'ok' ? 'is-ok' : summary.bloodAssessmentKey === 'low' ? 'is-flagged' : 'is-warn'}`;
+  }
+  const bloodCounts = document.createElement('p');
+  const blood = summary.bloodCounts;
+  bloodCounts.textContent = `${blood.measured} parameters measured · ${blood.normal} normal · ${blood.low} low · ${blood.high} high · ${blood.borderline} borderline`;
+  bloodSummary.append(bloodAssessment, bloodCounts);
+
+  const findingsHeadingNode = document.createElement('h3');
+  findingsHeadingNode.textContent = 'Findings to review';
+  const findingsList = document.createElement('ul');
+  findingsList.className = 'admin-findings-list';
+  if (summary.findings.length) {
+    summary.findings.forEach((finding) => appendFindingRow(findingsList, finding));
+  } else {
+    const noFindings = document.createElement('li');
+    noFindings.textContent = 'No results are outside configured ranges.';
+    findingsList.append(noFindings);
+  }
+
+  const disclaimer = document.createElement('p');
+  disclaimer.className = 'admin-findings-disclaimer';
+  disclaimer.textContent = 'Metrics without a recorded value are omitted. Summary is informational, not a diagnosis.';
+
+  findingsContent.append(
+    meta,
+    overview,
+    counts,
+    bloodHeading,
+    bloodSummary,
+    findingsHeadingNode,
+    findingsList,
+    disclaimer
+  );
+  findingsDialog.showModal();
+}
+
 function renderCrewResults() {
   const searchTerm = crewSearch.value.trim().toLocaleLowerCase();
   const visibleCrew = crewMembers.filter((member) => {
-    const matchesSearch = `${member.name} ${member.card} ${member.lastSample}`.toLocaleLowerCase().includes(searchTerm);
-    const matchesFlagged = !activeFilters.has('flagged') || (member.status === 'low' && !acknowledgedFlags.has(member.name));
-    const matchesCalibration = !activeFilters.has('calibration') || member.needsCalibration;
-    const matchesToday = !activeFilters.has('today') || member.sampledToday;
-    return matchesSearch && matchesFlagged && matchesCalibration && matchesToday;
+    return `${member.name} ${member.card} ${member.lastSample}`.toLocaleLowerCase().includes(searchTerm);
   });
 
   crewResults.replaceChildren();
   for (const member of visibleCrew) {
     const row = document.createElement('tr');
     row.dataset.crewName = member.name;
+    const nameCell = document.createElement('td');
+    const findingsButton = document.createElement('button');
+    findingsButton.type = 'button';
+    findingsButton.className = 'admin-crew-findings-link';
+    findingsButton.dataset.findingsName = member.name;
+    findingsButton.setAttribute('aria-label', `View user dashboard findings for ${member.name}`);
+    findingsButton.textContent = member.name;
+    nameCell.append(findingsButton);
     row.append(
-      createTextCell(member.name),
-      createTextCell(member.card),
+      nameCell,
+      createTextCell(maskCardNumber(member.card)),
       createTextCell(member.lastSample)
     );
 
     const statusCell = document.createElement('td');
     const statusChip = document.createElement('span');
-    const isAcknowledged = acknowledgedFlags.has(member.name);
-    statusChip.className = `admin-status-chip ${member.status === 'low' && !isAcknowledged ? 'is-flagged' : `is-${member.status}`}`;
-    statusChip.textContent = isAcknowledged ? 'Acknowledged' : { ok: 'Normal', warn: 'Review', low: 'Warning' }[member.status];
+    statusChip.className = `admin-status-chip ${member.status === 'low' ? 'is-flagged' : `is-${member.status}`}`;
+    statusChip.textContent = { ok: 'Normal', warn: 'Review', low: 'Warning' }[member.status];
     statusCell.append(statusChip);
     row.append(statusCell, createTextCell(String(member.orbitScore)));
 
-    const actionsCell = document.createElement('td');
-    actionsCell.className = 'admin-row-actions';
-    if (member.status === 'low') {
-      const acknowledgeButton = document.createElement('button');
-      acknowledgeButton.type = 'button';
-      acknowledgeButton.className = 'admin-action-pill admin-acknowledge';
-      acknowledgeButton.dataset.action = 'acknowledge';
-      acknowledgeButton.dataset.crewName = member.name;
-      acknowledgeButton.textContent = isAcknowledged ? 'Acknowledged' : 'Acknowledge';
-      acknowledgeButton.disabled = isAcknowledged;
-      actionsCell.append(acknowledgeButton);
-    }
-
-    const askButton = document.createElement('button');
-    askButton.type = 'button';
-    askButton.className = 'admin-action-pill admin-ask-orbit';
-    askButton.dataset.action = 'ask-orbit';
-    askButton.dataset.crewName = member.name;
-    askButton.dataset.orbitScore = String(member.orbitScore);
-    askButton.dataset.crewStatus = isAcknowledged ? 'acknowledged' : member.status;
-    askButton.textContent = 'Ask Orbit';
-    actionsCell.append(askButton);
-    row.append(actionsCell);
     crewResults.append(row);
   }
   crewEmptyState.hidden = visibleCrew.length > 0;
-}
-
-function renderAnalyzerSearch() {
-  const searchTerm = crewSearch.value.trim().toLocaleLowerCase();
-  for (const row of analyzerResults.rows) {
-    row.hidden = !row.textContent.toLocaleLowerCase().includes(searchTerm);
-  }
-}
-
-function setSidebarOpen(isOpen) {
-  sidebar.classList.toggle('is-open', isOpen);
-  document.body.classList.toggle('admin-sidebar-open', isOpen);
-  menuToggle.setAttribute('aria-expanded', String(isOpen));
-  menuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
-}
-
-function openOrbitForCrew(name, score, status) {
-  const orbitWindow = window.open('/', '_blank');
-  if (!orbitWindow) {
-    dashboardStatus.textContent = 'Allow pop-ups to open Orbit for this crew member.';
-    return;
-  }
-
-  orbitWindow.addEventListener('load', () => {
-    const toggle = orbitWindow.document.querySelector('#orbitChatToggle');
-    const prompt = orbitWindow.document.querySelector('#q');
-    const panel = orbitWindow.document.querySelector('#orbitCard');
-    if (!toggle || !prompt || !panel) {
-      dashboardStatus.textContent = 'Orbit could not be opened. Open the VITAL dashboard and try again.';
-      return;
-    }
-
-    if (panel.hidden) {
-      toggle.click();
-    }
-    prompt.value = `Please explain ${name}'s admin summary: Orbit score ${score}/100, status ${status}. Explain only what these summary values mean and do not infer missing measurements.`;
-    prompt.focus();
-  }, { once: true });
 }
 
 initializeTheme();
@@ -176,72 +258,12 @@ themeToggle.addEventListener('click', () => {
   setTheme(nextTheme, true);
 });
 
-crewSearch.addEventListener('input', () => {
-  renderCrewResults();
-  renderAnalyzerSearch();
-});
-
-document.querySelectorAll('[data-crew-filter]').forEach((button) => {
-  button.addEventListener('click', () => {
-    const filter = button.dataset.crewFilter;
-    if (filter === 'all') {
-      activeFilters.clear();
-    } else if (activeFilters.has(filter)) {
-      activeFilters.delete(filter);
-    } else {
-      activeFilters.add(filter);
-    }
-
-    document.querySelectorAll('[data-crew-filter]').forEach((filterButton) => {
-      filterButton.setAttribute(
-        'aria-pressed',
-        String(filterButton.dataset.crewFilter === 'all' ? activeFilters.size === 0 : activeFilters.has(filterButton.dataset.crewFilter))
-      );
-    });
-    renderCrewResults();
-  });
-});
-
+crewSearch.addEventListener('input', renderCrewResults);
 crewResults.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) {
-    return;
-  }
-
-  const name = button.dataset.crewName;
-  if (button.dataset.action === 'acknowledge') {
-    acknowledgedFlags.add(name);
-    renderCrewResults();
-    return;
-  }
-
-  if (button.dataset.action === 'ask-orbit') {
-    openOrbitForCrew(name, button.dataset.orbitScore, button.dataset.crewStatus);
-  }
+  const button = event.target.closest('button[data-findings-name]');
+  if (button) renderFindingsSummary(button.dataset.findingsName);
 });
-
-menuToggle.addEventListener('click', () => {
-  setSidebarOpen(!sidebar.classList.contains('is-open'));
-});
-
-sidebar.querySelectorAll('a').forEach((link) => {
-  link.addEventListener('click', () => setSidebarOpen(false));
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && sidebar.classList.contains('is-open')) {
-    setSidebarOpen(false);
-    menuToggle.focus();
-  }
-});
-
-document.addEventListener('click', (event) => {
-  if (sidebar.classList.contains('is-open')
-    && !sidebar.contains(event.target)
-    && !menuToggle.contains(event.target)) {
-    setSidebarOpen(false);
-  }
-});
+findingsClose.addEventListener('click', () => findingsDialog.close());
 
 async function verifyAdministratorSession() {
   try {
@@ -260,7 +282,6 @@ async function verifyAdministratorSession() {
     }
 
     renderCrewResults();
-    renderAnalyzerSearch();
     dashboardStatus.textContent = '';
     dashboard.classList.remove('hide');
   } catch {

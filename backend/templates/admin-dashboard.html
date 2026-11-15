@@ -10,13 +10,12 @@
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/data.js" defer></script>
+  <script src="/js/demo-health-data.js" defer></script>
+  <script src="/js/health-summary.js" defer></script>
   <script src="/js/admin-dashboard.js" defer></script>
 </head>
 <body class="admin-dashboard-page">
   <header class="admin-dashboard-header">
-    <button class="admin-menu-toggle" id="adminMenuToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Open menu">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
     <a class="admin-dashboard-brand" href="/admin/dashboard" aria-label="VITAL administrator dashboard">
       <svg viewBox="0 0 110 110" aria-hidden="true">
         <path d="M22 51a33 33 0 0 1 66 0v15h-7M27 66h-5V51" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -30,78 +29,19 @@
       <span>Vital</span>
     </a>
     <div class="admin-dashboard-account">
-      <span>Mission Admin</span>
       <button class="admin-theme-toggle admin-dashboard-theme-toggle" id="adminDashboardThemeToggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
         <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
         <svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg>
       </button>
-      <button class="admin-dashboard-avatar" type="button" aria-label="Mission Admin account">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
-      </button>
+      <button class="admin-header-logout" id="adminLogoutButton" type="button">Sign out</button>
     </div>
   </header>
 
   <p class="admin-dashboard-status" id="adminDashboardStatus" role="status" aria-live="polite">Verifying administrator access…</p>
 
-  <aside class="admin-dashboard-sidebar" id="adminSidebar" aria-label="Main navigation">
-    <div class="admin-sidebar-scroll">
-      <p class="admin-sidebar-label">Menu</p>
-      <nav class="admin-dashboard-nav" aria-label="Admin pages">
-        <a class="is-active" href="/admin/dashboard" aria-current="page">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>
-          <span>Overview</span>
-        </a>
-        <a href="#analytics">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 6-7"/></svg>
-          <span>Analytics</span>
-        </a>
-        <a href="#alerts">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12h4"/></svg>
-          <span>Alerts</span>
-        </a>
-        <a href="#history">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8m0-5v5h5m4-1v5l3 2"/></svg>
-          <span>History</span>
-        </a>
-        <a href="#ai-assistant">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5L12 3Zm7 12-.9 2.1L16 18l2.1.9L19 21l.9-2.1L22 18l-2.1-.9L19 15Z"/></svg>
-          <span>AI Assistant</span>
-        </a>
-        <a href="#settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.5 2.6-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.9h-3l-.3-1.9a8 8 0 0 1-1.7-1l-1.7.7-1.5-2.6 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.5-2.6 1.7.7a8 8 0 0 1 1.7-1l.3-1.9h3l.3 1.9a8 8 0 0 1 1.7 1l1.7-.7 1.5 2.6-1.4 1.1a7 7 0 0 1 0 2Z" transform="translate(-1 -1)"/></svg>
-          <span>Settings</span>
-        </a>
-      </nav>
-
-      <div class="admin-sidebar-search">
-        <label class="admin-sidebar-label" for="adminCrewSearch">Search</label>
-        <div class="admin-search-field">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.5 4.5"/></svg>
-          <input id="adminCrewSearch" type="search" placeholder="Search crew or analyzers…" autocomplete="off">
-        </div>
-      </div>
-
-      <div class="admin-sidebar-filters">
-        <p class="admin-sidebar-label">Filters</p>
-        <ul>
-          <li><button type="button" data-crew-filter="flagged">Flagged</button></li>
-          <li><button type="button" data-crew-filter="calibration">Needs calibration</button></li>
-          <li><button type="button" data-crew-filter="today">Sampled today</button></li>
-          <li><button type="button" data-crew-filter="all" aria-pressed="true">All crew</button></li>
-        </ul>
-      </div>
-    </div>
-    <button class="admin-logout-button admin-sidebar-logout" id="adminLogoutButton" type="button">Log Out</button>
-  </aside>
-
   <main class="admin-dashboard-main hide" id="adminDashboard">
-    <div class="admin-dashboard-breadcrumb" aria-label="Breadcrumb"><span>Pages</span><span aria-hidden="true">/</span><span>Overview</span></div>
     <div class="admin-dashboard-title">
-      <div>
-        <p class="admin-eyebrow">VITAL OPERATIONS</p>
-        <h1>Mainframe overview</h1>
-      </div>
-      <span class="admin-dashboard-badge">ADMINISTRATOR</span>
+      <h1>Mainframe overview</h1>
     </div>
 
     <section class="stats admin-dashboard-stats" aria-label="Overview statistics">
@@ -112,29 +52,47 @@
     </section>
 
     <section class="card admin-dashboard-card" aria-labelledby="crewResultsHeading">
-      <h2 id="crewResultsHeading">Crew results</h2>
+      <div class="admin-dashboard-card-heading">
+        <h2 id="crewResultsHeading">Crew results</h2>
+        <label class="admin-search-label" for="adminCrewSearch">Search crew
+          <input class="admin-crew-search" id="adminCrewSearch" type="search" placeholder="Name or card" autocomplete="off">
+        </label>
+      </div>
       <div class="admin-table-scroll">
         <table>
-          <thead><tr><th scope="col">Crew</th><th scope="col">Card</th><th scope="col">Last sample</th><th scope="col">Status</th><th scope="col">Orbit score</th><th scope="col">Actions</th></tr></thead>
+          <thead><tr><th scope="col">Crew</th><th scope="col">Card</th><th scope="col">Last sample</th><th scope="col">Status</th><th scope="col">Orbit score</th></tr></thead>
           <tbody id="adminCrewResults"></tbody>
         </table>
       </div>
-      <p class="admin-empty-state" id="adminCrewEmpty" hidden>No crew match your search or filter.</p>
+      <p class="admin-empty-state" id="adminCrewEmpty" hidden>No crew match your search.</p>
     </section>
 
     <section class="card admin-dashboard-card" aria-labelledby="analyzersHeading">
       <h2 id="analyzersHeading">Analyzers</h2>
       <div class="admin-table-scroll">
         <table>
-          <thead><tr><th scope="col">Device</th><th scope="col">Location</th><th scope="col">Sensors</th><th scope="col">Status</th></tr></thead>
+          <thead><tr><th scope="col">Device</th><th scope="col">Location</th><th scope="col">Status</th></tr></thead>
           <tbody id="adminAnalyzerResults">
-            <tr><td>HD-01</td><td>Lab module A</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
-            <tr><td>HD-02</td><td>Crew quarters</td><td>Blood sensor, NFC</td><td><span class="chip c-ok">Online</span></td></tr>
-            <tr><td>HD-03</td><td>Medical bay</td><td>Blood sensor, NFC</td><td><span class="chip c-warn">Calibrate soon</span></td></tr>
+            <tr><td>HD-01</td><td>Lab module A</td><td><span class="chip c-ok">Online</span></td></tr>
+            <tr><td>HD-02</td><td>Crew quarters</td><td><span class="chip c-ok">Online</span></td></tr>
+            <tr><td>HD-03</td><td>Medical bay</td><td><span class="chip c-warn">Calibrate soon</span></td></tr>
           </tbody>
         </table>
       </div>
     </section>
   </main>
+
+  <dialog class="admin-findings-dialog" id="adminFindingsDialog" aria-labelledby="adminFindingsHeading">
+    <div class="admin-findings-dialog-header">
+      <div>
+        <p class="admin-findings-eyebrow">USER DASHBOARD</p>
+        <h2 id="adminFindingsHeading">Dashboard findings</h2>
+      </div>
+      <button class="admin-findings-close" id="adminFindingsClose" type="button" aria-label="Close findings summary">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="admin-findings-content" id="adminFindingsContent"></div>
+  </dialog>
 </body>
 </html>

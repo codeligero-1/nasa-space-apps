@@ -31,6 +31,13 @@ const metricDefinitions = window.VITAL_DATA.metrics;
 const sections = window.VITAL_DATA.sections;
 const MIS = window.VITAL_DATA.missions;
 const KB = window.VITAL_DATA.chatKnowledge;
+const healthSummary = window.VITAL_HEALTH_SUMMARY;
+
+if (!healthSummary) {
+  throw new Error('VITAL health summary helpers are missing.');
+}
+
+const { statusForReading } = healthSummary;
 
 if (!DEMO?.profile || !Array.isArray(DEMO.records) || !Array.isArray(metricDefinitions)) {
   throw new Error('VITAL demo records or metric definitions are missing.');
@@ -419,42 +426,6 @@ function toast(message, duration = 2500) {
   toastNode.textContent = message;
   toastNode.classList.add('on');
   setTimeout(() => toastNode.classList.remove('on'), duration);
-}
-
-function status(value, range) {
-  if (!Number.isFinite(value)) return ['na', 'Not Available'];
-  if (!range) return ['na', 'Not Rated'];
-  const { min: lo, max: hi, warningLow, warningHigh, criticalLow, criticalHigh } = range;
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return ['na', 'Not Rated'];
-  if ((Number.isFinite(criticalLow) && value < criticalLow) ||
-      (Number.isFinite(criticalHigh) && value > criticalHigh)) {
-    return ['low', 'Critical'];
-  }
-  if (value < lo) {
-    if (Number.isFinite(warningLow) && value >= warningLow) return ['warn', 'Borderline'];
-    if (Number.isFinite(criticalLow) && value > criticalLow) return ['warn', 'Warning'];
-    return ['low', 'Low'];
-  }
-  if (value > hi) {
-    if (Number.isFinite(warningHigh) && value <= warningHigh) return ['warn', 'Borderline'];
-    if (Number.isFinite(criticalHigh) && value < criticalHigh) return ['warn', 'Warning'];
-    return ['low', 'High'];
-  }
-  return ['ok', 'Normal'];
-}
-
-function statusForReading(reading) {
-  const range = reading[8];
-  if (reading[7] === 'vitals' && Number.isFinite(reading[2]) &&
-      Number.isFinite(range?.min) && Number.isFinite(range?.max) && range.max > range.min) {
-    if ((Number.isFinite(range.criticalLow) && reading[2] < range.criticalLow) ||
-        (Number.isFinite(range.criticalHigh) && reading[2] > range.criticalHigh)) {
-      return ['low', 'Critical'];
-    }
-    if (reading[2] < range.min || reading[2] > range.max) return ['warn', 'Warning'];
-    return ['ok', 'Normal'];
-  }
-  return status(reading[2], range);
 }
 
 function displayValue(reading) {
