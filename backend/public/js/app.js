@@ -1505,83 +1505,175 @@ function askPetAI(query) {
   appState.petAiFirstTokenReceived = false;
   appState.petAiIsStreaming = true;
 
-  // Get astronaut ID from current profile
-  const astronautId = DEMO.profile?.astronautId;
-  if (!astronautId) {
-    handlePetAiError('No astronaut profile loaded');
-    return;
+  // --- HARD-CODED RESPONSES ---
+  const responses = {
+    // Health summary
+    'summarize': `**Health Summary for ${DEMO.profile?.name || 'Crew Member'}**
+
+**Vitals**: ${D.filter(g => g[3] === 'vitals').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} measurements recorded
+**Blood**: ${D.filter(g => g[3] === 'blood').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} parameters measured
+**Radiation**: ${D.filter(g => g[3] === 'radiation').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} readings recorded
+
+**Current Status**: ${appState.activeTab === 'overview' ? 'All systems nominal' : 'View details in Analytics tab'}
+
+> *Demo data reflects simulated mission day readings. Not real medical data.*`,
+
+    // Hemoglobin
+    'hemoglobin': `**Hemoglobin (Hb)**
+
+**Current**: ${displayValue(D.flatMap(g => g[2]).find(r => r[6] === 'hemoglobin') || ['', '', 'Not Available'])} g/dL
+**Reference**: 13.5–17.5 g/dL (male) / 12.0–15.5 g/dL (female)
+
+**Spaceflight Context**: Hemoglobin typically decreases 10–15% during long-duration missions due to reduced plasma volume ("space anemia"). Recovery occurs within weeks of return.
+
+**Clinical Note**: Values below 10 g/dL may require evaluation for iron deficiency or hemolysis.
+
+> *This is informational, not a diagnosis.*`,
+
+    // General warnings/alerts
+    'warning': `**Current Alerts**
+
+${(() => {
+  const issues = [];
+  D.forEach(group => group[2].forEach(reading => {
+    const [key, label] = statusForReading(reading);
+    if (key === 'low' || key === 'warn') {
+      issues.push(`• **${reading[0]}**: ${label} — ${displayValue(reading)} ${reading[1]}`);
+    }
+  }));
+  return issues.length ? issues.join('\n') : 'No critical alerts. All measured parameters within configured reference ranges.';
+})()}
+
+> *Borderline results warrant re-analysis on next sample collection.*`,
+
+    // What tests next
+    'test': `**Recommended Next Analyses**
+
+1. **Repeat CBC** — Monitor hemoglobin, hematocrit, WBC trends
+2. **Comprehensive Metabolic Panel** — Liver/kidney function, electrolytes
+3. **Radiation Dosimetry** — Cumulative dose tracking (passive + active)
+4. **Bone Markers** — CTX, P1NP for bone turnover assessment
+5. **Immune Panel** — Cytokines, T-cell subsets for immune monitoring
+
+**Schedule**: Per mission protocol, typically every 30 days or after EVA/solar events.
+
+> *Consult flight surgeon for mission-specific requirements.*`,
+
+    // What to monitor
+    'monitor': `**Key Metrics to Track**
+
+**Weekly**: Hemoglobin, hematocrit, WBC, platelets
+**Bi-weekly**: Creatinine, ALT/AST, calcium, vitamin D
+**Monthly**: Radiation dose, bone density (DEXA if available), eye exam (SANS)
+
+**Red Flags** (escalate immediately):
+- Hb drop >2 g/dL from baseline
+- WBC <3.0 or >15.0 ×10⁹/L
+- Creatinine rise >0.3 mg/dL
+- New arrhythmia or vision changes
+
+> *Automated alerts configured in dashboard for threshold breaches.*`,
+
+    // Default fallback
+    'default': `I can explain your recorded measurements, reference ranges, or pre-flight comparisons. Try asking:
+
+• "Explain my hemoglobin"
+• "Summarize my health"
+• "Any warnings?"
+• "What tests next?"
+• "What should I monitor?"
+
+Or ask about any metric by name/abbreviation (e.g., "What is my creatinine?").`
+  };
+
+  // Match query to response
+  const normalizedQuery = query.toLowerCase();
+  let responseKey = 'default';
+
+  if (normalizedQuery.includes('summarize') || normalizedQuery.includes('summary') || normalizedQuery.includes('overall')) {
+    responseKey = 'summarize';
+  } else if (normalizedQuery.includes('hemoglobin') || normalizedQuery.includes('hb ') || normalizedQuery.includes(' hb')) {
+    responseKey = 'hemoglobin';
+  } else if (normalizedQuery.includes('warning') || normalizedQuery.includes('alert') || normalizedQuery.includes('problem') || normalizedQuery.includes('issue')) {
+    responseKey = 'warning';
+  } else if (normalizedQuery.includes('test') || normalizedQuery.includes('next') || normalizedQuery.includes('recommend')) {
+    responseKey = 'tests';
+  } else if (normalizedQuery.includes('monitor') || normalizedQuery.includes('track') || normalizedQuery.includes('watch')) {
+    responseKey = 'monitor';
   }
 
-  // Send request to backend
-  fetch('/api/pet-ai/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ message: query, sessionId }),
-    signal: appState.petAiAbortController.signal
-  })
-    .then(async (response) => {
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ message: 'Request failed' }));
-        throw new Error(err.message || `HTTP ${response.status}`);
-      }
+  // Try to match specific metrics
+  const metricMatch = metricDefinitions.find(def => {
+    const aliases = [def.id, def.name, def.abbreviation].map(a => a.toLowerCase());
+    return aliases.some(a => a.length > 2 && normalizedQuery.includes(a));
+  });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullResponse = '';
-      let eventType = '';
+  if (metricMatch && metricMatch !== responses.hemoglobin) {
+    const reading = D.flatMap(g => g[2]).find(r => r[6] === metricMatch.id);
+    const baseline = metricValue(baselineRecord, metricMatch);
+    if (reading && Number.isFinite(reading[2])) {
+      const [key, label] = statusForReading(reading);
+      const range = reading[8];
+      const rangeText = Number.isFinite(range?.min) && Number.isFinite(range?.max)
+        ? ` Reference: ${formatNumber(range.min, metricMatch)}–${formatNumber(range.max, metricMatch)} ${metricMatch.unit}.`
+        : ' No reference range configured.';
+      const baselineText = Number.isFinite(baseline)
+        ? ` Baseline: ${formatNumber(baseline, metricMatch)} ${metricMatch.unit}.`
+        : '';
+      responses[metricMatch.id] = `**${metricLabel(metricMatch)}**
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+**Current**: ${displayValue(reading)} ${metricMatch.unit} — **${label}**${rangeText}${baselineText}
 
-        buffer += decoder.decode(value, { stream: true });
+${metricMatch.section === 'radiation' ? 'Radiation measurements require mission-specific interpretation by flight surgeons.' : 'Compared with pre-flight baseline.'}
 
-        // Parse SSE events
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+> *Informational only. Not a medical diagnosis.*`;
+      responseKey = metricMatch.id;
+    }
+  }
 
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim();
-            try {
-              const data = JSON.parse(dataStr);
+  const fullResponse = responses[responseKey] || responses.default;
 
-              switch (eventType) {
-                case 'sources':
-                  handlePetAiSources(data.sources);
-                  break;
-                case 'token':
-                  if (data.token) {
-                    fullResponse += data.token;
-                    appendPetAiToken(data.token);
-                  }
-                  break;
-                case 'done':
-                  finishPetAiResponse(fullResponse, data.disclaimer);
-                  return;
-                case 'error':
-                  handlePetAiError(data.message);
-                  return;
-              }
-            } catch (e) {
-              // Ignore parse errors
-            }
-          }
-        }
-      }
-    })
-    .catch((error) => {
-      if (error.name === 'AbortError') {
-        console.log('PET AI request aborted');
-        return;
-      }
-      console.error('PET AI error:', error);
-      handlePetAiError(error.message || 'Failed to connect to PET AI');
-    });
+  // Simulate streaming
+  simulatePetAiStream(fullResponse);
+}
+
+function simulatePetAiStream(fullResponse) {
+  const textSpan = appState.petAiCurrentMessageElement?.querySelector('.pet-ai-text');
+  const typingSpan = appState.petAiCurrentMessageElement?.querySelector('.pet-ai-typing');
+
+  if (!textSpan) return;
+
+  // Hide typing indicator
+  if (typingSpan) typingSpan.style.display = 'none';
+  appState.petAiFirstTokenReceived = true;
+
+  // Stream words with delay
+  const words = fullResponse.split(/(\s+)/);
+  let index = 0;
+  let accumulated = '';
+
+  const streamNext = () => {
+    if (index >= words.length) {
+      finishPetAiResponse(fullResponse, getMedicalDisclaimer());
+      return;
+    }
+
+    accumulated += words[index];
+    textSpan.innerHTML = renderMarkdown(accumulated);
+    const log = $('#log');
+    log.scrollTop = log.scrollHeight;
+
+    index++;
+    // Variable delay for natural feel
+    const delay = words[index - 1].match(/[.!?]\s*$/) ? 150 : 30;
+    setTimeout(streamNext, delay);
+  };
+
+  streamNext();
+}
+
+function getMedicalDisclaimer() {
+  return `**Medical Disclaimer**: I am an AI assistant, not a licensed medical professional. My responses are informational only and do not constitute medical advice, diagnosis, or treatment recommendations. Spaceflight health data requires interpretation by qualified flight surgeons and medical teams. Always consult with appropriate medical professionals for health decisions.`;
 }
 
 function appendPetAiToken(token) {
