@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
@@ -416,6 +416,33 @@
 
   <script src="../js/data.js" defer></script>
   <script src="../js/demo-health-data.js" defer></script>
+  <script>
+    window.VITAL_HEALTH_SUMMARY = Object.freeze({
+      statusForReading(reading) {
+        const value = reading[2], range = reading[8], section = reading[7];
+        if (!Number.isFinite(value)) return ['na', 'Not Available'];
+        if (!range) return ['na', 'Not Rated'];
+        const { min, max, warningLow, warningHigh, criticalLow, criticalHigh } = range;
+        if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return ['na', 'Not Rated'];
+        if (section === 'vitals') {
+          if ((Number.isFinite(criticalLow) && value < criticalLow) || (Number.isFinite(criticalHigh) && value > criticalHigh)) return ['low', 'Critical'];
+          return value < min || value > max ? ['warn', 'Warning'] : ['ok', 'Normal'];
+        }
+        if ((Number.isFinite(criticalLow) && value < criticalLow) || (Number.isFinite(criticalHigh) && value > criticalHigh)) return ['low', 'Critical'];
+        if (value < min) {
+          if (Number.isFinite(warningLow) && value >= warningLow) return ['warn', 'Borderline'];
+          if (Number.isFinite(criticalLow) && value > criticalLow) return ['warn', 'Warning'];
+          return ['low', 'Low'];
+        }
+        if (value > max) {
+          if (Number.isFinite(warningHigh) && value <= warningHigh) return ['warn', 'Borderline'];
+          if (Number.isFinite(criticalHigh) && value < criticalHigh) return ['warn', 'Warning'];
+          return ['low', 'High'];
+        }
+        return ['ok', 'Normal'];
+      }
+    });
+  </script>
   <script src="../js/app.js" defer></script>
 </body>
 </html>
