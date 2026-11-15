@@ -757,8 +757,8 @@ function prepareVialScreen() {
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
   $('#send').disabled = flatMetrics.length === 0;
-  $('#send').textContent = flatMetrics.length ? 'Start Blood Analysis' : 'No Sample Results';
-  $('#t2').textContent = flatMetrics.length ? `Ready for ${crewName}'s Blood Analysis` : `No blood results for ${crewName}`;
+  $('#send').textContent = flatMetrics.length ? 'Start Sample Analysis' : 'No Sample Results';
+  $('#t2').textContent = flatMetrics.length ? `Ready to Analyze Samples for ${crewName}` : `No sample results for ${crewName}`;
   $('#p2').textContent = flatMetrics.length
     ? `Theoretical demo record for ${crewName}. Only recorded blood measurements are shown.`
     : `No recorded blood measurements are linked to ${crewName}.`;
@@ -776,7 +776,7 @@ function runVialCollection() {
 
   $('#send').disabled = true;
   $('#send').textContent = 'Analyzing...';
-  $('#t2').textContent = 'Analyzing Blood Sample...';
+  $('#t2').textContent = 'Analyzing Samples...';
   $('#p2').textContent = `Processing ${flatMetrics.length} recorded measurements for ${appState.astronautProfile?.name || DEMO.profile.name}.`;
   $('#rs').textContent = 'Demo analysis in progress • Preparing recorded results';
 
@@ -806,7 +806,7 @@ function runVialCollection() {
     setTimeout(() => {
       buildDashboard();
       show('dash');
-      toast('Blood analysis complete');
+      toast('Sample analysis complete');
     }, 650);
   }, 420);
 }
@@ -1838,11 +1838,11 @@ async function resetToOnboarding() {
   $('#reader').classList.remove('reading');
   $('#t1').textContent = 'Tap your NFC card to start';
   $('#send').disabled = false;
-  $('#send').textContent = 'Start Blood Analysis';
+  $('#send').textContent = 'Start Sample Analysis';
   $('#fill').style.height = '0%';
   $('#rb').style.width = '0%';
   $('#pctLabel').textContent = '0%';
-  $('#t2').textContent = 'Ready for Blood Analysis';
+  $('#t2').textContent = 'Ready to Analyze Samples';
   $('#p2').textContent = 'Start the analysis to process the available sample data and prepare the report.';
   $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
   $('#live').innerHTML = '';

@@ -13,6 +13,7 @@ import {
   type AstronautSessionCredentials,
   type VerifyNfcResult
 } from './astronaut-auth.js'
+import { handlePetAiChat } from './rag/chat.js'
 
 const SESSION_COOKIE = 'vital_admin_session'
 const ASTRONAUT_SESSION_COOKIE = 'vital_astro_session'
@@ -27,7 +28,7 @@ const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self'",
+  "script-src 'self' https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",
@@ -569,6 +570,32 @@ async function handleRequest(
       ok: true,
       astronaut: result.astronautProfile
     })
+    return
+  }
+
+  // PET AI Medical Assistant chat endpoint
+  if (method === 'POST' && pathname === '/api/pet-ai/chat') {
+    let session = await getValidAstronautSession(request, response, astronautSessions, astronautAuthProvider)
+
+    // Demo mode fallback: if no valid session, try to get demo astronaut
+    if (!session) {
+      const demoResult = await astronautAuthProvider.getDemoAstronaut()
+      if (demoResult) {
+        session = {
+          astronautId: demoResult.astronautProfile.id,
+          nfcCardId: demoResult.astronautProfile.nfc_card_id,
+          accessToken: 'demo_token',
+          refreshToken: 'demo_refresh'
+        }
+      }
+    }
+
+    if (!session) {
+      sendJson(response, 401, { error: 'Not authenticated.' })
+      return
+    }
+
+    await handlePetAiChat(request, response, astronautAuthProvider, session, astronautSessions)
     return
   }
 
