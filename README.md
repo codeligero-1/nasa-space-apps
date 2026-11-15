@@ -4,8 +4,8 @@
 
 ### Current Live Deployment
 - **Frontend (GitHub Pages)**: https://ohnathani.github.io/vitals-app/
-- **Backend API (Supabase Edge Functions)**: `https://bkfhlqdlzcifsccjubvy.functions.supabase.co/ai-chat`
-- **Database**: Supabase (PostgreSQL) — `bkfhlqdlzcifsccjubvy.supabase.co`
+- **Backend API (Supabase Edge Functions)**
+- **Database**: Supabase (PostgreSQL)
 
 ### Tech Stack
 | Layer | Technology |
