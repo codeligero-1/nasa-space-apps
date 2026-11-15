@@ -439,6 +439,51 @@
   text-align: center;
 }
 
+.admin-dashboard-note {
+  margin: 0 auto 20px;
+  color: var(--mute);
+  font-size: 13px;
+  text-align: center;
+}
+
+.admin-dashboard-card details {
+  max-width: 520px;
+}
+
+.admin-dashboard-card details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-dashboard-card details section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-dashboard-card details h3 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.admin-dashboard-card details p {
+  margin: 4px 0;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.admin-dashboard-card details pre {
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surf2);
+  font-size: 11px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .admin-dashboard-main {
   width: min(100% - 36px, 1120px);
   margin: 42px auto 64px;
