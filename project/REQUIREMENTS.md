@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Range and alert thresholds for parameters listed in the README's verified medical parameter table are configured in the dashboard. Tumor Necrosis Factor Alpha (TNF-α) appears in the app data but has no reference row in that README table, so it remains Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not independently validate the project's cutoffs. Analytics compares the static AST-001 flight records with the latest available pre-flight record and charts dated measurements against elapsed calendar time; heart-rate history includes 10 records across the baseline and flight periods. Dynamic per-astronaut data and rules for unusual baseline-to-flight changes are not wired into the dashboard; alerts use configured per-metric ranges. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available, and unavailable results are flagged for a new sample and re-analysis. Spreadsheet upload supports blood results, but recording or importing new vital and radiation measurements and runtime database integration remain unimplemented. Cumulative dose is displayed from source data, not calculated by the app. The README table heading says 27 parameters, while its rows list 33; confirm the intended scope of that count.
+Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Range and alert thresholds for parameters listed in the README's verified medical parameter table are configured in the dashboard. Tumor Necrosis Factor Alpha (TNF-α) appears in the app data but has no reference row in that README table, so it remains Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not independently validate the project's cutoffs. Analytics compares the static AST-001 flight records with the latest available pre-flight record and charts dated measurements against elapsed calendar time; heart-rate history includes 10 records across the baseline and flight periods. Dynamic per-astronaut data and rules for unusual baseline-to-flight changes are not wired into the dashboard; alerts use configured per-metric ranges. The alert log and acknowledgements are stored only in the current browser's local storage and are not shared with mission control or a backend. Alert behavior reflects configured demo ranges, which are not clinically validated; radiation thresholds in particular remain unverified. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available, and unavailable results are flagged for a new sample and re-analysis. Spreadsheet upload supports blood results, but recording or importing new vital and radiation measurements and runtime database integration remain unimplemented. Cumulative dose is displayed from source data, not calculated by the app. The README table heading says 27 parameters, while its rows list 33; confirm the intended scope of that count.
 
 ## 1. Login and Astronaut Identification
 
@@ -85,14 +85,14 @@ Checked items are implemented in the static prototype and were verified in the b
 
 ## 8. Alerts and Notifications
 
-- [ ] Warning-level alerts appear correctly.
-- [ ] Critical alerts appear correctly.
-- [ ] Alerts identify the affected health parameter.
-- [ ] Alerts identify the astronaut concerned.
-- [ ] Alerts display the relevant measurement and threshold.
-- [ ] Alerts are recorded in the system.
-- [ ] Reviewed alerts can be marked as acknowledged.
-- [ ] Outdated or duplicate alerts are handled appropriately.
+- [x] Warning-level alerts appear for measurements outside configured demo ranges (thresholds are not clinically validated).
+- [x] Critical alerts appear when configured critical thresholds are crossed (radiation thresholds remain unverified).
+- [x] Alerts identify the affected health parameter.
+- [x] Alerts identify the astronaut concerned, based on the associated demo record.
+- [x] Alerts display the relevant measurement and configured threshold details.
+- [x] Alerts are recorded in the browser-local prototype log; they are not saved to a shared backend.
+- [x] Reviewed alerts can be marked as acknowledged, with the acknowledgement stored locally in the browser.
+- [x] Superseded alerts are retained as outdated history, and duplicate records are de-duplicated by astronaut, record, and metric.
 
 ## 9. Mission Control and Data Management
 
