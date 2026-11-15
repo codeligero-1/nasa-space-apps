@@ -399,6 +399,10 @@ function orbitAvatarSVG() {
       <circle cx="55" cy="5" r="4.5" fill="#FF5A67"/>
       <rect x="12" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
       <rect x="88" y="45" width="10" height="24" rx="5" fill="#8B1C1F"/>
+      <g class="orbit-wave-arm">
+        <path d="M88 68 Q95 63 98 55 L102 46" fill="none" stroke="#8B1C1F" stroke-width="8" stroke-linecap="round"/>
+        <path d="M101 47 Q97 43 98 39 L100 32 Q101 29 103 31 L103 38 L106 29 Q107 27 109 29 L108 38 L111 32 Q113 30 114 33 L111 41 Q116 38 117 41 L112 48 Q108 53 102 52 Z" fill="#F7F8FC" stroke="#8994C8" stroke-width="1.6" stroke-linejoin="round"/>
+      </g>
       <rect x="19" y="16" width="72" height="72" rx="34" fill="url(#helmetShell)" stroke="#9BA4D9" stroke-width="2"/>
       <rect x="27" y="34" width="56" height="38" rx="18" fill="url(#visorGlass)"/>
       <path d="M35 41 Q55 37 73 42" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
