@@ -45,3 +45,7 @@ coverage/
 backend/*.mjs
 backend/supabase/
 supabase/
+
+# Temporary cookies files
+cookies.txt
+backend/cookies.txt
