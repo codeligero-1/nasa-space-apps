@@ -1005,14 +1005,17 @@ function getRangeIndicator(value, min, max) {
     return null;
   }
   const range = max - min;
-  const scaleMin = min - range * 0.6;
-  const scaleSpan = range * 2.2;
-  const clamp = (number) => Math.max(2, Math.min(98, ((number - scaleMin) / scaleSpan) * 100));
+  // Keep the nominal band visible while expanding the scale around outlying
+  // readings, so the marker does not get pinned to the edge of the gauge.
+  const scaleMin = Math.min(min, value) - range * 0.18;
+  const scaleMax = Math.max(max, value) + range * 0.18;
+  const scaleSpan = scaleMax - scaleMin;
+  const position = (number) => ((number - scaleMin) / scaleSpan) * 100;
 
   return {
-    left: clamp(min),
-    width: clamp(max) - clamp(min),
-    marker: clamp(value)
+    left: position(min),
+    width: position(max) - position(min),
+    marker: position(value)
   };
 }
 
@@ -1053,7 +1056,7 @@ function renderMetricCard(reading, extraClass = '') {
     ? (difference / baseline) * 100
     : null;
   const band = hasRange
-    ? getRangeIndicator((range.min + range.max) / 2, range.min, range.max)
+    ? indicator || getRangeIndicator((range.min + range.max) / 2, range.min, range.max)
     : null;
   const trend = !Number.isFinite(difference)
     ? 'Not available'
