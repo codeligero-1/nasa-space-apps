@@ -1934,11 +1934,10 @@ form.in input {
 
 .orbit-controls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   margin-bottom: 8px;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .orbit-new-chat {
@@ -1959,21 +1958,23 @@ form.in input {
 }
 
 .orbit-controls .qs {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .orbit-controls .qs button {
   background: var(--surf2);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 11px;
-  font-size: 13px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
   min-width: 0;
-  white-space: nowrap;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
 }
 
 .orbit-controls .qs button:hover {
@@ -2195,13 +2196,8 @@ form.in input {
 }
 
 @media (max-width: 480px) {
-  .orbit-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .orbit-controls .qs {
-    justify-content: center;
+  #log {
+    height: 180px;
   }
 
   form.in {

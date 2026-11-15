@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Blood range flags use the project's database-provided reference ranges, while measurements without a matching range are Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not validate this project's cutoffs. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and runtime database integration remain unimplemented. Radiation readings are displayed without normal, warning, or critical classification because verified mission-specific dose limits and assay-validated biodosimetry cutoffs have not been configured; cumulative dose is displayed from source data, not calculated by the app.
+Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Blood range flags use the project's database-provided reference ranges, while measurements without a matching range are Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not validate this project's cutoffs. Analytics compares the static AST-001 flight records with the latest available pre-flight record and charts dated measurements against elapsed calendar time; heart-rate history includes 10 records across the baseline and flight periods. Dynamic per-astronaut data and rules for unusual baseline-to-flight changes are not wired into the dashboard; alerts use configured per-metric ranges. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and runtime database integration remain unimplemented. Radiation readings remain Not Rated because verified mission-specific dose limits and assay-validated biodosimetry cutoffs have not been configured; cumulative dose is displayed from source data, not calculated by the app.
 
 ## 1. Login and Astronaut Identification
 
@@ -62,11 +62,11 @@ Checked items are implemented in the static prototype and were verified in the b
 
 ## 6. Health Analytics and Baseline Comparison
 
-- [ ] Pre-flight Earth baseline data can be accessed.
-- [ ] In-flight health measurements can be compared with baseline data.
-- [ ] Changes in health parameters are calculated correctly.
-- [ ] Graphs and charts display accurate information.
-- [ ] Historical health records can be viewed.
+- [x] Pre-flight Earth baseline data can be accessed.
+- [x] In-flight health measurements can be compared with baseline data.
+- [x] Changes in health parameters are calculated correctly.
+- [x] Graphs and charts display accurate information.
+- [x] Historical health records can be viewed.
 - [ ] Unusual changes are identified based on configured rules.
 - [ ] Comparison results are associated with the correct astronaut.
 

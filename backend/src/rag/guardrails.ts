@@ -29,7 +29,14 @@ const ALLOWED_KEYWORDS = {
     'respiratory', 'hrv', 'neutrophil', 'lymphocyte', 'monocyte',
     'eosinophil', 'basophil', 'crp', 'ferritin', 'il6', 'tnf', 'cortisol',
     'troponin', 'sodium', 'potassium', 'radiation', 'dose', 'gamma-h2ax',
-    'dicentric', 'micronuclei', 'dna repair'
+    'dicentric', 'micronuclei', 'dna repair',
+    // Spaceflight hazard keywords (for knowledge base queries)
+    'hazard', 'hazards', 'spaceflight', 'space flight', 'space',
+    'radiation risk', 'radiation exposure', 'space radiation',
+    'isolation', 'confinement', 'distance from earth', 'gravity',
+    'microgravity', 'partial gravity', 'hostile environment',
+    'nasa', 'human research program', 'hrp', 'mars', 'moon',
+    'artemis', 'iss', 'mission', 'countermeasures', 'shielding'
   ],
   health_summary: [
     'summarize', 'summary', 'overview', 'health status', 'condition',

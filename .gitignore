@@ -49,3 +49,6 @@ supabase/
 # Temporary cookies files
 cookies.txt
 backend/cookies.txt
+
+# Local project folders (each has own git repo)
+nasa-space-apps/

@@ -29,7 +29,7 @@ import type { HealthRecord } from '../db/schema.js';
 
 // NVIDIA NIM API configuration
 const NVIDIA_NIM_API_URL = process.env.NVIDIA_NIM_API_URL || 'https://integrate.api.nvidia.com/v1';
-const NVIDIA_NIM_MODEL = process.env.NVIDIA_NIM_MODEL || 'nvidia/nemotron-3-ultra';
+const NVIDIA_NIM_MODEL = process.env.NVIDIA_NIM_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
 
 interface ChatRequest {
   message: string;
@@ -266,16 +266,31 @@ export async function handlePetAiChat(
     await saveMessage(astronautId, currentSessionId, 'user', message, db);
     console.log('[pet-ai] Saved user message');
 
-    // 3. Retrieve relevant health records
+    // 3. Retrieve relevant health records (personal + knowledge base)
     console.log('[pet-ai] Retrieving records...');
-    const records = await retrieveRelevantRecords({
+    const personalRecords = await retrieveRelevantRecords({
       astronautId,
       query: message,
       k: 10,
       includeBaselines: true,
       db
     });
-    console.log('[pet-ai] Retrieved records:', records.length);
+
+    // Also retrieve from NASA HRP knowledge base
+    const knowledgeRecords = await retrieveRelevantRecords({
+      astronautId: 'nasa-hrp-knowledge-base',
+      query: message,
+      k: 5,
+      includeBaselines: false,
+      db
+    });
+
+    // Merge and sort by similarity
+    const records = [...personalRecords, ...knowledgeRecords]
+      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
+      .slice(0, 10);
+
+    console.log('[pet-ai] Retrieved records:', records.length, '(personal:', personalRecords.length, ', knowledge:', knowledgeRecords.length, ')');
 
     // 4. Send sources event
     sendSSE(response, {
