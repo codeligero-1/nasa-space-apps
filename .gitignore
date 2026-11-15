@@ -1,1 +1,54 @@
+# Environment files - NEVER COMMIT
+.env
+.env.local
+.env.*.local
+.env.production
+.env.example
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/data/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Supabase local dev (if using CLI)
+.supabase/
+# Test/temp files
+backend/*.mjs
+backend/supabase/
+supabase/
+
+# Temporary cookies files
+cookies.txt
+backend/cookies.txt
+
+# Local project folders (each has own git repo)
 nasa-space-apps/
