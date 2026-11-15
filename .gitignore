@@ -4,6 +4,7 @@
 .env.*.local
 .env.production
 .env.example
+.env.vercel
 
 # Database files
 *.db
@@ -52,3 +53,5 @@ backend/cookies.txt
 
 # Local project folders (each has own git repo)
 nasa-space-apps/
+
+.vercel

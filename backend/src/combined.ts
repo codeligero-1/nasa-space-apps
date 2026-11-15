@@ -14,6 +14,7 @@ config({ path: resolve(__dirname, '..', '..', '.env') });
 
 const port = Number(process.env.PORT || 3000);
 const projectRoot = resolve(__dirname, '..', '..');
+const publicRoot = resolve(projectRoot, 'backend', 'public');
 const isProduction = process.env.NODE_ENV === 'production';
 
 let adminAuthProvider;

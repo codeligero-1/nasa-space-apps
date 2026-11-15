@@ -378,7 +378,7 @@ async function handleRequest(
   const method = request.method || 'GET'
 
   if (method === 'GET' && pathname === '/') {
-    await sendFile(response, resolve(projectRoot, 'html', 'index.html'))
+    await sendFile(response, resolve(projectRoot, 'backend', 'public', 'html', 'index.html'))
     return
   }
 
@@ -392,7 +392,7 @@ async function handleRequest(
       sendRedirect(response, '/admin/dashboard')
       return
     }
-    await sendFile(response, resolve(projectRoot, 'html', 'admin', 'login.html'))
+    await sendFile(response, resolve(projectRoot, 'backend', 'public', 'html', 'admin', 'login.html'))
     return
   }
 
