@@ -6,15 +6,26 @@
   "installCommand": "npm install --include=dev --prefix backend",
   "devCommand": "npm run dev:server --prefix backend",
   "functions": {
-    "backend/api/index.ts": {
-      "maxDuration": 30,
-      "runtime": "nodejs20.x"
-    }
+    "backend/api/health.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/admin/login.ts": { "maxDuration": 30, "runtime": "nodejs20.x" },
+    "backend/api/admin/session.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/admin/logout.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/astronaut/verify-nfc.ts": { "maxDuration": 30, "runtime": "nodejs20.x" },
+    "backend/api/astronaut/session.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/astronaut/logout.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/astronaut/profile.ts": { "maxDuration": 10, "runtime": "nodejs20.x" },
+    "backend/api/pet-ai/chat.ts": { "maxDuration": 60, "runtime": "nodejs20.x" }
   },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/api/index.ts"
-    }
+    { "src": "/api/health", "dest": "/api/health.ts" },
+    { "src": "/api/admin/login", "dest": "/api/admin/login.ts" },
+    { "src": "/api/admin/session", "dest": "/api/admin/session.ts" },
+    { "src": "/api/admin/logout", "dest": "/api/admin/logout.ts" },
+    { "src": "/api/astronaut/verify-nfc", "dest": "/api/astronaut/verify-nfc.ts" },
+    { "src": "/api/astronaut/session", "dest": "/api/astronaut/session.ts" },
+    { "src": "/api/astronaut/logout", "dest": "/api/astronaut/logout.ts" },
+    { "src": "/api/astronaut/profile", "dest": "/api/astronaut/profile.ts" },
+    { "src": "/api/pet-ai/chat", "dest": "/api/pet-ai/chat.ts" },
+    { "src": "/(.*)", "dest": "/backend/public/$1" }
   ]
 }
