@@ -871,6 +871,11 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+.crew-card-mini > div {
+  min-width: 0;
+  flex: 1;
+}
+
 .crew-avatar {
   width: 38px;
   height: 38px;
@@ -886,17 +891,15 @@ button {
 .crew-card-mini strong {
   display: block;
   font-size: 14px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .crew-card-mini small {
   display: block;
-  max-width: 180px;
-  overflow: hidden;
+  max-width: 100%;
   color: var(--mute);
   font-size: 12px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .nav-item {

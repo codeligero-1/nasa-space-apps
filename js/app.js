@@ -485,6 +485,8 @@ async function handleCardTap() {
         const demoAstronaut = {
           ...DEMO.profile,
           id: DEMO.profile.astronautId,
+          role: 'Commander',
+          mission: DEMO.profile.missionCode,
           nfcCardId: 'DEMO-4821',
           avatarUrl: null,
           healthRecords: []
