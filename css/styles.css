@@ -213,7 +213,6 @@ button {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  isolation: isolate;
   color: #fff;
   background: linear-gradient(180deg, #2A2B4A 0%, #4A1320 42%, #8B1C1F 74%, #F07C8A 100%);
   text-shadow: 0 1px 3px rgba(20, 8, 14, 0.55);
