@@ -34,6 +34,7 @@ window.VITAL_DEMO_DATA = {
         "eosinophils": 2.2,
         "basophils": 0.9,
         "immatureGranulocytes": 0.36,
+        "erythroblasts": 0.04,
         "crp": 0.4,
         "ferritin": 156.3,
         "il6": 1.45,
@@ -81,6 +82,7 @@ window.VITAL_DEMO_DATA = {
         "eosinophils": 3.3,
         "basophils": 0.5,
         "immatureGranulocytes": 0.17,
+        "erythroblasts": 0.06,
         "crp": 0.81,
         "ferritin": 160.2,
         "il6": 0.92,
@@ -128,6 +130,7 @@ window.VITAL_DEMO_DATA = {
         "eosinophils": 2.1,
         "basophils": 1.0,
         "immatureGranulocytes": 0.12,
+        "erythroblasts": 0.07,
         "crp": 0.39,
         "ferritin": 115.4,
         "il6": 2.2,
@@ -175,6 +178,7 @@ window.VITAL_DEMO_DATA = {
         "eosinophils": 2.7,
         "basophils": 0.4,
         "immatureGranulocytes": 0.26,
+        "erythroblasts": 0.04,
         "crp": 1.18,
         "ferritin": 95.4,
         "il6": 1.47,
@@ -222,6 +226,7 @@ window.VITAL_DEMO_DATA = {
         "eosinophils": 1.5,
         "basophils": 0.6,
         "immatureGranulocytes": 0.14,
+        "erythroblasts": 0.05,
         "crp": 0.8,
         "ferritin": 113.9,
         "il6": 1.91,
@@ -257,17 +262,23 @@ window.VITAL_DEMO_DATA = {
         "respiratoryRate": 13.1
       },
       "blood": {
+        "rbc": 4.59,
+        "wbc": 6.48,
         "hemoglobin": 15.51,
         "hematocrit": 46.9,
+        "platelets": 261.8,
         "neutrophils": 65.5,
         "lymphocytes": 19.9,
         "monocytes": 7.6,
         "eosinophils": 2.7,
         "basophils": 0.5,
         "immatureGranulocytes": 0.16,
+        "erythroblasts": 0.29,
         "crp": 1.38,
         "ferritin": 73.9,
         "il6": 1.52,
+        "tnfAlpha": 3.84,
+        "cortisol": 22.37,
         "troponin": 0.02,
         "sodium": 140.2,
         "potassium": 4.7
@@ -298,17 +309,23 @@ window.VITAL_DEMO_DATA = {
         "respiratoryRate": 13.2
       },
       "blood": {
+        "rbc": 4.57,
+        "wbc": 6.65,
         "hemoglobin": 15.29,
         "hematocrit": 45.8,
+        "platelets": 191.1,
         "neutrophils": 58.6,
         "lymphocytes": 27.0,
         "monocytes": 5.6,
         "eosinophils": 1.9,
         "basophils": 0.4,
         "immatureGranulocytes": 0.21,
+        "erythroblasts": 0.28,
         "crp": 2.16,
         "ferritin": 145.1,
         "il6": 1.94,
+        "tnfAlpha": 3.71,
+        "cortisol": 15.61,
         "troponin": 0.025,
         "sodium": 140.8,
         "potassium": 4.3
@@ -339,17 +356,23 @@ window.VITAL_DEMO_DATA = {
         "respiratoryRate": 14.1
       },
       "blood": {
+        "rbc": 4.64,
+        "wbc": 8.77,
         "hemoglobin": 15.32,
         "hematocrit": 46.1,
+        "platelets": 226.4,
         "neutrophils": 66.9,
         "lymphocytes": 23.7,
         "monocytes": 5.2,
         "eosinophils": 1.6,
         "basophils": 0.6,
         "immatureGranulocytes": 0.21,
+        "erythroblasts": 0.18,
         "crp": 3.41,
         "ferritin": 143.9,
         "il6": 2.67,
+        "tnfAlpha": 4.91,
+        "cortisol": 17.8,
         "troponin": 0.006,
         "sodium": 137.7,
         "potassium": 4.4
@@ -380,17 +403,23 @@ window.VITAL_DEMO_DATA = {
         "respiratoryRate": 17.3
       },
       "blood": {
+        "rbc": 4.34,
+        "wbc": 8.71,
         "hemoglobin": 14.96,
         "hematocrit": 45.4,
+        "platelets": 199.4,
         "neutrophils": 63.3,
         "lymphocytes": 17.7,
         "monocytes": 6.0,
         "eosinophils": 2.1,
         "basophils": 0.9,
         "immatureGranulocytes": 0.45,
+        "erythroblasts": 0.08,
         "crp": 4.2,
         "ferritin": 153.4,
         "il6": 5.37,
+        "tnfAlpha": 5.29,
+        "cortisol": 18.33,
         "troponin": 0.017,
         "sodium": 137.9,
         "potassium": 4.5
@@ -421,17 +450,23 @@ window.VITAL_DEMO_DATA = {
         "respiratoryRate": 17.4
       },
       "blood": {
+        "rbc": 4.28,
+        "wbc": 11.1,
         "hemoglobin": 14.17,
         "hematocrit": 42.4,
+        "platelets": 276.1,
         "neutrophils": 56.1,
         "lymphocytes": 18.5,
         "monocytes": 4.3,
         "eosinophils": 2.9,
         "basophils": 0.8,
         "immatureGranulocytes": 0.15,
+        "erythroblasts": 0.14,
         "crp": 7.04,
         "ferritin": 237.8,
         "il6": 7.12,
+        "tnfAlpha": 5.56,
+        "cortisol": 16.92,
         "troponin": 0.02,
         "sodium": 138.2,
         "potassium": 4.1
@@ -688,36 +723,6 @@ window.VITAL_DEMO_DATA = {
       "criticalLow": 10.0,
       "criticalHigh": 50.0
     },
-    "Gamma-H2AX Foci per Cell": {
-      "category": "Radiation Biodosimetry",
-      "unit": "foci/cell",
-      "min": 0.05,
-      "max": 0.2,
-      "warningLow": 0.2,
-      "warningHigh": 0.5,
-      "criticalLow": 0.5,
-      "criticalHigh": 2.0
-    },
-    "Dicentric Chromosomes": {
-      "category": "Radiation Biodosimetry",
-      "unit": "/1000 cells",
-      "min": 0.5,
-      "max": 1.5,
-      "warningLow": 1.5,
-      "warningHigh": 4.0,
-      "criticalLow": 4.0,
-      "criticalHigh": 10.0
-    },
-    "Micronuclei Frequency": {
-      "category": "Radiation Biodosimetry",
-      "unit": "/1000 cells",
-      "min": 2.0,
-      "max": 10.0,
-      "warningLow": 10.0,
-      "warningHigh": 20.0,
-      "criticalLow": 20.0,
-      "criticalHigh": 40.0
-    },
     "Respiratory Rate": {
       "category": "Vital Signs",
       "unit": "breaths/min",
@@ -728,65 +733,5 @@ window.VITAL_DEMO_DATA = {
       "criticalLow": 8.0,
       "criticalHigh": 30.0
     },
-    "Troponin-I": {
-      "category": "Biomarkers",
-      "unit": "ng/mL",
-      "min": 0.0,
-      "max": 0.04,
-      "warningHigh": 0.04,
-      "criticalHigh": 0.15
-    },
-    "Sodium": {
-      "category": "Biomarkers",
-      "unit": "mEq/L",
-      "min": 135.0,
-      "max": 145.0,
-      "warningLow": 130.0,
-      "warningHigh": 150.0,
-      "criticalLow": 125.0,
-      "criticalHigh": 155.0
-    },
-    "Potassium": {
-      "category": "Biomarkers",
-      "unit": "mEq/L",
-      "min": 3.5,
-      "max": 5.0,
-      "warningLow": 3.2,
-      "warningHigh": 5.3,
-      "criticalLow": 2.8,
-      "criticalHigh": 6.0
-    },
-    "Daily Physical Exposure": {
-      "category": "Physical Dosimetry",
-      "unit": "mSv/day",
-      "min": 0.5,
-      "max": 2.0,
-      "warningHigh": 5.0,
-      "criticalHigh": 50.0
-    },
-    "Cumulative Mission Dose": {
-      "category": "Physical Dosimetry",
-      "unit": "mSv",
-      "min": 0.0,
-      "max": 200.0,
-      "warningHigh": 300.0,
-      "criticalHigh": 500.0
-    },
-    "Cabin Background Rate": {
-      "category": "Physical Dosimetry",
-      "unit": "mGy",
-      "min": 0.01,
-      "max": 0.05,
-      "warningHigh": 0.2,
-      "criticalHigh": 1.0
-    },
-    "DNA Repair Capacity": {
-      "category": "Biodosimetry",
-      "unit": "%",
-      "min": 80.0,
-      "max": 100.0,
-      "warningLow": 65.0,
-      "criticalLow": 50.0
-    }
   }
 };

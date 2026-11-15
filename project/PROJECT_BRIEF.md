@@ -28,14 +28,14 @@ Crew blood-analysis results need to be presented in a clear, actionable way with
 
 ## Proposed Solution
 
-A VITAL workflow that supports NFC sign-in or registration, blood-sample reading, a health dashboard, an overall Orbit score, follow-up missions, and the Orbi explanatory assistant. The current frontend simulates readings and uses static data.
+A VITAL workflow that supports NFC sign-in or registration, blood-sample reading, a health dashboard, an overall Orbit score, follow-up missions, and the Orbi explanatory assistant. The current frontend simulates sensor/progress behavior and uses a static snapshot of the supplied SQLite data.
 
 ## NASA Space Apps Challenge Alignment
 
 - Challenge or prompt: _To be supplied._
-- Observed domain dataset: `astronaut-earth-baseline-1.db`.
+- Observed domain datasets: `Db/astronaut-earth-baseline (1).db`, `Db/astronaut-space-flight.db`, and `Db/astronaut-space-anomalies.db`.
 - Dataset contents observed: astronaut profiles, CBC blood data, biomarkers, vitals, dosimetry/biodosimetry, reference ranges, and clinical decision rules.
-- Current integration status: the dataset is present but is not connected to the current backend or frontend.
+- Current integration status: the frontend displays a static snapshot of AST-001 records copied from the SQLite datasets; it does not query those files at runtime, and no live NASA data feed is configured.
 - Required attribution or usage constraints: _To be supplied._
 
 ## Scope

@@ -1331,6 +1331,13 @@ button {
   min-width: 0;
 }
 
+.radiation-thresholds {
+  margin-top: 5px;
+  color: var(--mute);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .radiation-metric .d > span {
   display: block;
 }

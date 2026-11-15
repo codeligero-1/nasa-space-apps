@@ -152,7 +152,7 @@
 
       <div class="analyzing-box">
         <div class="analyzing-header">
-          <span id="rs">Analysis ready • Source-backed demo data loaded</span>
+          <span id="rs">Analysis ready • Supplied SQLite snapshot loaded</span>
           <span id="pctLabel">0%</span>
         </div>
         <div class="bar dark-bar"><b id="rb"></b></div>
@@ -177,7 +177,7 @@
     <!-- Navigation Rail (Fixed Overlap Bug!) -->
     <nav class="sidebar" aria-label="Dashboard sections">
       <div class="crew-card-mini">
-        <div class="crew-avatar" id="crewInitials">CM</div>
+        <div class="crew-avatar" id="crewInitials">AV</div>
         <div>
           <strong id="activeCrewName">Alex Vance</strong>
           <small id="activeCrewDetails">ARTEMIS-V · Starliner</small>
@@ -218,7 +218,7 @@
           <text id="rt" x="60" y="69" text-anchor="middle">--</text>
         </svg>
         <div>
-          <div class="hero-kicker">PERSONAL TELEMETRY • SOURCE-BACKED DEMO</div>
+          <div class="hero-kicker">PERSONAL TELEMETRY • SQLITE DATASET SNAPSHOT</div>
           <h2 id="hn">Orbit Health Index</h2>
           <p id="hs"></p>
           <div class="chips" id="hc"></div>
@@ -279,7 +279,7 @@
         </div>
         <div class="radiation-summary">
           <strong>Quick read</strong>
-          <p>Values are shown only when supplied in the latest available demo record. A missing reference range is labeled Not Rated; these readings are not a diagnosis or proof that someone is safe.</p>
+          <p>These readings come from the supplied project SQLite snapshot. It does not establish verified mission-specific dose limits or assay-validated biodosimetry cutoffs. Until an applicable limit is approved for the mission and test method, radiation readings remain Not Rated and should not be interpreted as safe or unsafe.</p>
         </div>
         <p class="radiation-updated" id="radiationUpdatedAt"></p>
         <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
@@ -298,11 +298,11 @@
           </section>
         </div>
 
-        <p class="radiation-note">Source-backed demo readings only—not live sensor data or a medical assessment. Ask a qualified medical professional to interpret real results.</p>
+        <p class="radiation-note">Supplied project database snapshot—not live sensor or NASA telemetry, and not a medical assessment. Ask a qualified medical professional to interpret real results.</p>
       </section>
 
       <p class="note">
-        Prototype telemetry for NASA Space Apps. Reference ranges represent standard adult values and vary by mission duration, microgravity fluid shifts, age, and sex. VITAL provides analytical decision support and does not replace flight surgeon diagnosis.
+        Blood readings and reference intervals come from a static snapshot of the supplied SQLite project data, not a live NASA feed. NASA long-duration flight research supports comparing each astronaut with their own preflight baseline; it does not validate this project's thresholds (<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5590186/" target="_blank" rel="noopener noreferrer">Kunz et al., 2017</a>). Blood and vital reference ranges also depend on population and measurement method. Radiation limits are mission-specific; biodosimetry interpretation depends on validated assay methods and crew baseline. VITAL is not a medical assessment.
       </p>
     </main>
 
@@ -356,9 +356,9 @@
     <button class="dialog-close" id="closeAnalysisGuideIcon" type="button" aria-label="Close blood analysis guide">&times;</button>
     <div class="analysis-guide-kicker">BLOOD ANALYSIS</div>
     <h2 id="analysisGuideTitle">How to use this step</h2>
-    <p id="analysisGuideDescription">Prepare a report from the demo sample or your own blood-results file.</p>
+    <p id="analysisGuideDescription">Prepare a report from the supplied dataset snapshot or your own blood-results file.</p>
     <ol class="analysis-guide-steps">
-      <li>Use the demo sample, or upload your blood results.</li>
+      <li>Use the supplied dataset snapshot, or upload your blood results.</li>
       <li>Select <strong>Start Blood Analysis</strong> to process the available measurements.</li>
       <li>Review marker values and configured range flags on your dashboard.</li>
     </ol>
@@ -373,7 +373,7 @@
     <form id="registerForm">
       <button class="dialog-close" id="closeRegister" type="button" aria-label="Close registration">&times;</button>
       <h2 id="registerTitle">Register Crew Credentials</h2>
-      <p>Enter your name, then tap your NFC card to register credentials in this browser. The dashboard demo remains linked to its displayed sample profile.</p>
+      <p>Enter your name, then tap your NFC card to register credentials in this browser. The dashboard readings remain linked to the supplied AST-001 dataset snapshot.</p>
       <label for="cardHolder">Card holder's name</label>
       <input id="cardHolder" name="cardHolder" placeholder="e.g., Cmdr. Annika Pasaje" autocomplete="name" required>
       <p class="registration-status" id="registrationStatus" role="status">Ready to register a crew card.</p>
