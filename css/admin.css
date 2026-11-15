@@ -59,6 +59,45 @@
   text-shadow: 0 1px 3px #24101899;
 }
 
+.admin-login-screen::before,
+.admin-login-screen::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+
+.admin-login-screen::before {
+  opacity: 0.55;
+  background-image:
+    radial-gradient(1.5px 1.5px at 30px 45px, rgba(255, 255, 255, 0.9) 98%, transparent),
+    radial-gradient(1px 1px at 125px 95px, rgba(255, 255, 255, 0.8) 98%, transparent),
+    radial-gradient(1px 1px at 210px 175px, rgba(255, 255, 255, 0.7) 98%, transparent),
+    radial-gradient(1.5px 1.5px at 75px 235px, rgba(255, 255, 255, 0.75) 98%, transparent);
+  background-size: 280px 280px;
+  animation: stars-drift 48s linear infinite;
+}
+
+.admin-login-screen::after {
+  opacity: 0.35;
+  background-image:
+    radial-gradient(2px 2px at 85px 65px, rgba(255, 255, 255, 0.9) 98%, transparent),
+    radial-gradient(1px 1px at 220px 130px, rgba(255, 255, 255, 0.75) 98%, transparent),
+    radial-gradient(1.5px 1.5px at 155px 250px, rgba(255, 255, 255, 0.8) 98%, transparent);
+  background-size: 360px 360px;
+  animation: distant-stars-drift 62s linear infinite reverse;
+}
+
+.admin-login-screen .shooting-stars {
+  z-index: 0;
+}
+
+.admin-login-screen .admin-login-content {
+  z-index: 2;
+}
+
 .admin-login-screen .planet {
   z-index: -1;
 }
@@ -517,6 +556,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .admin-login-screen::before,
+  .admin-login-screen::after,
+  .admin-login-screen .shooting-star {
+    animation: none;
+  }
+
   .admin-theme-toggle,
   .admin-authorize-button,
   .admin-input-wrap,
