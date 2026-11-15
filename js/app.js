@@ -1344,6 +1344,7 @@ function buildDashboard() {
   const issueChips = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`);
   const missingChips = missing.map((name) => `<span class="chip c-na">${name} (Submit new sample for re-analysis)</span>`);
   $('#hc').innerHTML = [...issueChips, ...missingChips].join('');
+  const astronautId = currentRecord.astronautId || DEMO.profile.astronautId;
   const activeAlerts = issues.map((issue) => {
     const reading = issue.reading;
     const metric = reading[9];
