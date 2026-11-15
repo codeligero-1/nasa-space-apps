@@ -1929,9 +1929,6 @@ function handleRegisterDialogClick(event) {
   }
 }
 
-// Quick suggestions for Orbit Assistant removed - using dynamic input only
-$('#qs').innerHTML = '';
-
 // PET AI Quick Suggestions
 $('#petAiQuickSuggestions').innerHTML = [
   'Explain my hemoglobin',
