@@ -2,10 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "framework": "node",
+  "installCommand": "npm install --include=dev",
   "devCommand": "npm run dev:server",
   "functions": {
-    "backend/api/index.ts": {
+    "api/index.ts": {
       "maxDuration": 30,
       "runtime": "nodejs20.x"
     }
@@ -14,26 +15,6 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/index.ts"
-    },
-    {
-      "src": "/html/(.*)",
-      "dest": "/html/$1"
-    },
-    {
-      "src": "/css/(.*)",
-      "dest": "/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/js/$1"
-    },
-    {
-      "src": "/admin/(.*)",
-      "dest": "/html/admin/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/html/$1"
     }
   ]
 }

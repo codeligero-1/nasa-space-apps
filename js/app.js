@@ -428,6 +428,35 @@ function toast(message, duration = 2500) {
   setTimeout(() => toastNode.classList.remove('on'), duration);
 }
 
+<<<<<<< HEAD
+=======
+function status(value, range) {
+  if (!Number.isFinite(value)) return ['na', 'Not Available'];
+  if (!range) return ['na', 'Not Rated'];
+  const { min: lo, max: hi, warningLow, warningHigh, criticalLow, criticalHigh } = range;
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return ['na', 'Not Rated'];
+  if ((Number.isFinite(criticalLow) && value < criticalLow) ||
+      (Number.isFinite(criticalHigh) && value > criticalHigh)) {
+    return ['low', 'Critical'];
+  }
+  if (value < lo) {
+    if (Number.isFinite(warningLow) && value >= warningLow) return ['warn', 'Borderline'];
+    if (Number.isFinite(criticalLow) && value > criticalLow) return ['warn', 'Warning'];
+    return ['low', 'Low'];
+  }
+  if (value > hi) {
+    if (Number.isFinite(warningHigh) && value <= warningHigh) return ['warn', 'Borderline'];
+    if (Number.isFinite(criticalHigh) && value < criticalHigh) return ['warn', 'Warning'];
+    return ['low', 'High'];
+  }
+  return ['ok', 'Normal'];
+}
+
+function statusForReading(reading) {
+  return status(reading[2], reading[8]);
+}
+
+>>>>>>> c7327d3ce9f52ebbee2b87c81e39d5b11754c3f9
 function displayValue(reading) {
   return formatNumber(reading[2], reading[9]);
 }
@@ -1019,29 +1048,6 @@ function getRangeIndicator(value, min, max) {
   };
 }
 
-function radiationThresholdSummary(metric, range) {
-  const thresholds = [
-    `Nominal ${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit}`
-  ];
-
-  if (Number.isFinite(range.warningLow)) {
-    thresholds.push(`Borderline <${formatNumber(range.min, metric)}`);
-    thresholds.push(`Warning <${formatNumber(range.warningLow, metric)}`);
-  }
-  if (Number.isFinite(range.criticalLow)) {
-    thresholds.push(`Critical <${formatNumber(range.criticalLow, metric)}`);
-  }
-  if (Number.isFinite(range.warningHigh)) {
-    thresholds.push(`Borderline >${formatNumber(range.max, metric)}`);
-    thresholds.push(`Warning >${formatNumber(range.warningHigh, metric)}`);
-  }
-  if (Number.isFinite(range.criticalHigh)) {
-    thresholds.push(`Critical >${formatNumber(range.criticalHigh, metric)}`);
-  }
-
-  return thresholds.join(' · ');
-}
-
 function renderMetricCard(reading, extraClass = '') {
   const metric = reading[9];
   const range = reading[8];
@@ -1058,6 +1064,11 @@ function renderMetricCard(reading, extraClass = '') {
   const band = hasRange
     ? indicator || getRangeIndicator((range.min + range.max) / 2, range.min, range.max)
     : null;
+  const markerLabelAlignment = indicator?.marker < 14
+    ? 'start'
+    : indicator?.marker > 86
+      ? 'end'
+      : 'center';
   const trend = !Number.isFinite(difference)
     ? 'Not available'
     : difference > 0
@@ -1072,20 +1083,19 @@ function renderMetricCard(reading, extraClass = '') {
         <span class="chip c-${resultKey}">${label}</span>
       </div>
       <div class="v">${displayValue(reading)} <small>${reading[1]}</small></div>
-      ${metric.section === 'radiation' && hasRange
-        ? `<div class="radiation-thresholds">${radiationThresholdSummary(metric, range)}</div>`
-        : ''}
       ${hasRange ? `
-        <div class="rg" aria-label="${metric.section === 'radiation' ? 'Nominal range' : 'Reference range'} ${formatNumber(range.min, metric)} to ${formatNumber(range.max, metric)} ${metric.unit}">
-          <i style="left:${band.left}%;width:${band.width}%"></i>
-          ${indicator ? `<u style="left:${indicator.marker}%"></u>` : ''}
+        <div class="range-visual">
+          ${indicator ? `<span class="range-value-label align-${markerLabelAlignment}" style="left:${indicator.marker}%">${displayValue(reading)} ${reading[1]}</span>` : ''}
+          <div class="rg" aria-label="Measurement position relative to the nominal interval">
+            <i style="left:${band.left}%;width:${band.width}%"></i>
+            ${indicator ? `<u style="left:${indicator.marker}%"></u>` : ''}
+          </div>
         </div>
-        <div class="r">
-          <span>${metric.section === 'radiation' ? 'Nominal min' : 'Min'} ${formatNumber(range.min, metric)}</span>
-          <span>Nominal range</span>
-          <span>${metric.section === 'radiation' ? 'Nominal max' : 'Max'} ${formatNumber(range.max, metric)}</span>
+        <div class="r nominal-labels">
+          <span class="nominal-label-title">Nominal</span>
+          <span class="nominal-range-values">(${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit})</span>
         </div>
-      ` : '<div class="r"><span>Min —</span><span>Reference range not configured</span><span>Max —</span></div>'}
+      ` : '<div class="r"><span>—</span><span>Not Rated · no reference range configured</span><span>—</span></div>'}
       <div class="d">
         ${Number.isFinite(baseline) ? `<span>Pre-flight baseline: ${formatNumber(baseline, metric)} ${metric.unit}</span>` : ''}
         ${Number.isFinite(current) ? `<span>Current value: ${formatNumber(current, metric)} ${metric.unit}</span>` : ''}

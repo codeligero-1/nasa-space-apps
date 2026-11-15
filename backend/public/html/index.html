@@ -1,0 +1,411 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VITAL – Crew Blood Analysis</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon/vital.svg">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <!-- SheetJS for optional live .xlsx sample file ingestion -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+</head>
+<body>
+
+  <!-- Top Telemetry Header (Shown on Crew Dashboard) -->
+<!-- Top Telemetry Header (With Custom VITAL Helmet Logo) -->
+  <header class="top hide" id="siteHeader">
+    <button class="logo" id="dashboardHome" type="button" aria-label="Go to dashboard overview" title="Dashboard overview">
+      <span class="logo-helmet" aria-hidden="true">
+        <svg viewBox="0 0 110 110" width="38" height="38" aria-hidden="true" focusable="false">
+          <path d="M22 51a33 33 0 0 1 66 0v15h-7M27 66h-5V51" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M20 53h-4a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h6M90 53h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="22" y="46" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path class="ecg-line" d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M57 64h24" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="58" y="64" text-anchor="start" fill="currentColor" font-size="7" font-family="Outfit, sans-serif">ITAL</text>
+          <path d="M24 85q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </span>
+      <span>VITAL</span>
+      <span class="mode-pill">CREW PORTAL</span>
+    </button>
+
+    <div class="sp"></div>
+
+    <button class="utility-toggle theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme">
+      <svg class="utility-icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
+      </svg>
+      <svg class="utility-icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/>
+      </svg>
+    </button>
+    <button class="btn ghost sm" id="out" type="button">Sign out</button>
+  </header>
+
+  <button class="utility-toggle sound-toggle" id="soundToggle" type="button" aria-pressed="true" aria-label="Turn sound effects off" title="Turn sound effects off">
+    <svg class="utility-icon icon-sound-on" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z"/>
+      <path d="M15.5 8.5a5 5 0 0 1 0 7m3-10a9 9 0 0 1 0 13"/>
+    </svg>
+    <svg class="utility-icon icon-sound-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z"/>
+      <path d="m16 9 5 6m0-6-5 6"/>
+    </svg>
+  </button>
+
+  <!-- =========================================================
+       ONBOARDING 1: NFC CARD TAP LOGIN (CREW MEMBER)
+       ========================================================= -->
+  <main class="onboarding-screen" id="s1">
+    <!-- Top-Right Ringed Planet SVG -->
+    <svg class="planet planet-top" viewBox="0 0 420 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="planetGrad1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3B3D6B"/>
+          <stop offset="100%" stop-color="#1E1F3A"/>
+        </linearGradient>
+      </defs>
+      <circle cx="290" cy="110" r="115" fill="url(#planetGrad1)" stroke="#9BA4D9" stroke-opacity="0.35" stroke-width="2"/>
+      <ellipse cx="290" cy="115" rx="195" ry="38" transform="rotate(-24 290 115)" fill="none" stroke="#FFFFFF" stroke-opacity="0.65" stroke-width="3"/>
+      <ellipse cx="290" cy="115" rx="175" ry="28" transform="rotate(-24 290 115)" fill="none" stroke="#F07C8A" stroke-opacity="0.45" stroke-width="1.5"/>
+    </svg>
+
+    <!-- Bottom-Left Ringed Planet SVG -->
+    <svg class="planet planet-bottom" viewBox="0 0 420 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="planetGrad2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2E3059"/>
+          <stop offset="100%" stop-color="#181930"/>
+        </linearGradient>
+      </defs>
+      <circle cx="115" cy="230" r="105" fill="url(#planetGrad2)" stroke="#9BA4D9" stroke-opacity="0.35" stroke-width="2"/>
+      <ellipse cx="115" cy="225" rx="185" ry="34" transform="rotate(-22 115 225)" fill="none" stroke="#FFFFFF" stroke-opacity="0.65" stroke-width="3"/>
+    </svg>
+
+    <div class="shooting-stars" aria-hidden="true">
+      <span class="shooting-star"></span>
+      <span class="shooting-star"></span>
+      <span class="shooting-star"></span>
+    </div>
+
+    <div class="onboarding-content">
+      <button class="vital-reader" id="reader" type="button" aria-label="Tap your NFC card to start">
+        <svg viewBox="0 0 110 110" role="img" aria-label="VITAL astronaut helmet with heartbeat">
+          <path d="M22 51a33 33 0 0 1 66 0v15h-7M27 66h-5V51" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M20 53h-4a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h6M90 53h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="22" y="46" width="66" height="37" rx="16" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path class="ecg-line" id="ecg-line" d="M27 64h8l3-7 4 16 4-25 4 29 4-15 3 2" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M57 64h24" transform="translate(0 2)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="58" y="64" text-anchor="start" fill="currentColor" font-size="7" font-family="Outfit, sans-serif">ITAL</text>
+          <path d="M24 85q31 10 62 0l-3 9q-28 8-56 0z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span class="ripple-ring" aria-hidden="true"></span>
+        <span class="ripple-ring" aria-hidden="true"></span>
+        <span class="ripple-ring" aria-hidden="true"></span>
+      </button>
+
+      <p class="brand-name">VITAL</p>
+      <p class="tagline">Every Indicator Matters. Every Life Counts.</p>
+      <h1 id="t1">Tap your NFC card to start</h1>
+      <p class="hint-sub">Place your crew ID badge against the reader to begin your scan</p>
+
+      <div class="onboard-actions">
+        <button class="register-trigger" id="openRegister" type="button">Register Your Credentials</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- =========================================================
+       ONBOARDING 2: BLOOD CARTRIDGE VIAL FILLING & SENSOR READ
+       ========================================================= -->
+  <main class="onboarding-screen stage-vial hide" id="s2">
+    <div class="vial-container">
+      <div class="steps-pill">
+        <span>1. NFC Verified</span>
+        <span>›</span>
+        <b>2. Sample Analysis Record</b>
+        <span>›</span>
+        <span>3. Analysis</span>
+      </div>
+
+      <!-- Animated Glass Test Tube / Vial -->
+      <div class="vial-wrapper" aria-hidden="true">
+        <div class="vial-rim"></div>
+        <div class="tube">
+          <div class="tube-graduations">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <i id="fill">
+            <span class="wave"></span>
+            <span class="bubble b1"></span>
+            <span class="bubble b2"></span>
+            <span class="bubble b3"></span>
+          </i>
+        </div>
+      </div>
+
+      <h1 id="t2">Ready for Blood Analysis</h1>
+      <p id="p2">Start the analysis to process the available sample data and prepare the report.</p>
+
+      <div class="analyzing-box">
+        <div class="analyzing-header">
+          <span id="rs">Analysis ready • Supplied SQLite snapshot loaded</span>
+          <span id="pctLabel">0%</span>
+        </div>
+        <div class="bar dark-bar"><b id="rb"></b></div>
+        <div class="live" id="live"></div>
+      </div>
+
+      <div class="vial-controls">
+        <button class="btn pulse-btn" id="send" type="button">Start Blood Analysis</button>
+        <label class="register-trigger file-upload-btn" for="xlsxInput">
+          Upload Blood Results
+          <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" hidden>
+        </label>
+        <button class="register-trigger help-trigger" id="openAnalysisGuide" type="button" aria-haspopup="dialog" aria-controls="analysisGuideDialog">How to use</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- =========================================================
+       CREW MEMBER DASHBOARD (LOCALIZED VIEW)
+       ========================================================= -->
+  <div class="app-shell hide" id="dash">
+    <!-- Navigation Rail (Fixed Overlap Bug!) -->
+    <nav class="sidebar" aria-label="Dashboard sections">
+      <div class="crew-card-mini">
+        <div class="crew-avatar" id="crewInitials">AV</div>
+        <div>
+          <strong id="activeCrewName">Alex Vance</strong>
+          <small id="activeCrewDetails">ARTEMIS-V · Starliner</small>
+          <small id="activeCardId">NFC •••• 4821</small>
+        </div>
+      </div>
+
+      <div class="nav-links">
+        <button class="nav-item active" data-tab="overview" type="button">
+          <span class="nav-dot"></span> Vital Signs
+        </button>
+        <button class="nav-item" data-tab="analytics" type="button">
+          <span class="nav-dot"></span> Blood Analysis
+        </button>
+        <button class="nav-item" data-tab="radiation" type="button">
+          <span class="nav-dot"></span> Radiation
+        </button>
+        <button class="nav-item" data-tab="alerts" type="button">
+          <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
+        </button>
+        <button class="nav-item" data-tab="history" type="button">
+          <span class="nav-dot"></span> History
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn ghost sm" id="rescanBtn" type="button">New Samples Scan</button>
+      </div>
+    </nav>
+
+    <!-- Center Main Content Area -->
+    <main class="main-content">
+      <!-- Hero Banner -->
+      <div class="card hero">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="11"/>
+          <circle id="rc" cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease"/>
+          <text id="rt" x="60" y="69" text-anchor="middle">--</text>
+        </svg>
+        <div>
+          <div class="hero-kicker">PERSONAL TELEMETRY • SQLITE DATASET SNAPSHOT</div>
+          <h2 id="hn">Orbit Health Index</h2>
+          <p id="hs"></p>
+          <div class="chips" id="hc"></div>
+        </div>
+      </div>
+
+      <!-- Summary Quick Tiles -->
+      <div class="summary-tiles" id="summaryTiles"></div>
+
+      <section class="blood-summary hide" id="bloodSummary" aria-labelledby="bloodSummaryTitle">
+        <div class="blood-summary-heading">
+          <div>
+            <div class="hero-kicker">LATEST AVAILABLE TEST</div>
+            <h2 id="bloodSummaryTitle">Blood Analysis Summary</h2>
+          </div>
+          <span class="chip c-na" id="bloodAssessment">Not Available</span>
+        </div>
+        <p class="blood-summary-meta" id="bloodSummaryMeta"></p>
+        <div class="blood-counts" id="bloodCounts"></div>
+      </section>
+
+      <!-- Categorized Blood Components -->
+      <div id="groups"></div>
+
+      <section class="history-panel hide" id="historyPanel" aria-labelledby="historyTitle">
+        <div class="history-heading">
+          <div>
+            <div class="hero-kicker">PERSONAL BASELINE &amp; MISSION TREND</div>
+            <h2 id="historyTitle">Measurement History</h2>
+          </div>
+        </div>
+        <div class="history-controls">
+          <label>Category
+            <select id="historyCategory">
+              <option value="blood">Blood Analysis</option>
+              <option value="vitals">Vital Signs</option>
+              <option value="radiation">Radiation Monitoring</option>
+            </select>
+          </label>
+          <label>Measurement
+            <select id="historyMetric"></select>
+          </label>
+          <label>Test date
+            <select id="historyDate"></select>
+          </label>
+        </div>
+        <div class="history-comparison" id="historyComparison"></div>
+        <div class="history-chart" id="historyChart" aria-live="polite"></div>
+      </section>
+
+      <section class="radiation-panel hide" id="radiationPanel" aria-labelledby="radiationTitle">
+        <div class="radiation-heading">
+          <div>
+            <div class="hero-kicker">MISSION EXPOSURE MONITORING</div>
+            <h2 id="radiationTitle">Radiation &amp; Biodosimetry</h2>
+          </div>
+          <span class="chip c-na" id="radiationStatus">Not Rated</span>
+        </div>
+        <div class="radiation-summary">
+          <strong>Quick read</strong>
+          <p>These readings come from the supplied project SQLite snapshot. It does not establish verified mission-specific dose limits or assay-validated biodosimetry cutoffs. Until an applicable limit is approved for the mission and test method, radiation readings remain Not Rated and should not be interpreted as safe or unsafe.</p>
+        </div>
+        <p class="radiation-updated" id="radiationUpdatedAt"></p>
+        <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
+
+        <div class="radiation-streams">
+          <section class="radiation-stream" aria-labelledby="physicalDoseTitle">
+            <h3 id="physicalDoseTitle">Radiation measured by sensors</h3>
+            <p>How much radiation the personal badge and cabin sensor detected.</p>
+            <div class="radiation-metrics" id="physicalRadiationMetrics"></div>
+          </section>
+
+          <section class="radiation-stream" aria-labelledby="bioDoseTitle">
+            <h3 id="bioDoseTitle">What lab tests found in cells</h3>
+            <p>Blood tests look for possible signs of cell damage and repair. They do not measure radiation directly.</p>
+            <div class="radiation-metrics" id="bioRadiationMetrics"></div>
+          </section>
+        </div>
+
+        <p class="radiation-note">Supplied project database snapshot—not live sensor or NASA telemetry, and not a medical assessment. Ask a qualified medical professional to interpret real results.</p>
+      </section>
+
+      <p class="note">
+        Blood readings and reference intervals come from a static snapshot of the supplied SQLite project data, not a live NASA feed. NASA long-duration flight research supports comparing each astronaut with their own preflight baseline; it does not validate this project's thresholds (<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5590186/" target="_blank" rel="noopener noreferrer">Kunz et al., 2017</a>). Blood and vital reference ranges also depend on population and measurement method. Radiation limits are mission-specific; biodosimetry interpretation depends on validated assay methods and crew baseline. VITAL is not a medical assessment.
+      </p>
+    </main>
+
+    <button class="orbit-chat-toggle" id="orbitChatToggle" type="button" aria-controls="orbitCard" aria-expanded="false" aria-label="Open Orbit AI chat" title="Chat with Orbit">
+      <span class="orbit-chat-avatar" id="orbitChatIcon" aria-hidden="true"></span>
+    </button>
+    <!-- Right Column: Gamified Missions & Floating Orbit AI Assistant -->
+    <aside class="side">
+      <div class="card">
+        <div class="card-head-row">
+          <h3>Diagnostic Missions</h3>
+          <span class="chip c-warn" id="missionCountChip">0 / 5</span>
+        </div>
+        <p class="sub-copy">Complete recommended follow-up tests and crew logs to investigate flagged biomarkers.</p>
+        <ul class="mis" id="mis"></ul>
+      </div>
+
+      <!-- Orbit AI Assistant Card -->
+      <div class="card pet orbit-chat-panel" id="orbitCard" aria-label="Orbit AI chat" hidden>
+        <div class="pethd">
+          <button class="orbit-chat-close" id="orbitChatClose" type="button" aria-label="Close Orbit chat">×</button>
+          <div class="orbit-avatar-wrap" id="petsvg"></div>
+          <div class="orbit-heading">
+            <div class="orbit-title-row">
+              <h3>Orbit</h3>
+              <span class="online-pill">AI AGENT</span>
+            </div>
+            <span class="sub-copy">Crew Medical Telemetry Companion</span>
+          </div>
+          <button class="orbit-voice-toggle" id="orbitVoiceToggle" type="button" aria-pressed="false" aria-label="Turn Orbit voice on">Voice off</button>
+        </div>
+
+        <div id="log" aria-live="polite"></div>
+
+        <div class="orbit-controls">
+          <button class="btn ghost sm orbit-new-chat" id="newChatBtn" type="button" aria-label="Start new conversation">New Conversation</button>
+          <div class="qs" id="petAiQuickSuggestions" aria-label="Suggested questions"></div>
+        </div>
+
+        <form class="in" id="f">
+          <input id="q" placeholder="Ask Orbit about hemoglobin, WBC, tests..." aria-label="Ask Orbit" autocomplete="off">
+          <button class="btn ghost sm orbit-mic-toggle" id="orbitMicToggle" type="button" aria-pressed="false" aria-label="Ask Orbit by voice" title="Ask Orbit by voice">Speak</button>
+          <button class="btn sm" type="submit">Send</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  <dialog class="register-dialog analysis-guide-dialog" id="analysisGuideDialog" aria-labelledby="analysisGuideTitle" aria-describedby="analysisGuideDescription">
+    <button class="dialog-close" id="closeAnalysisGuideIcon" type="button" aria-label="Close blood analysis guide">&times;</button>
+    <div class="analysis-guide-kicker">BLOOD ANALYSIS</div>
+    <h2 id="analysisGuideTitle">How to use this step</h2>
+    <p id="analysisGuideDescription">Prepare a report from the supplied dataset snapshot or your own blood-results file.</p>
+    <ol class="analysis-guide-steps">
+      <li>Use the supplied dataset snapshot, or upload your blood results.</li>
+      <li>Select <strong>Start Blood Analysis</strong> to process the available measurements.</li>
+      <li>Review marker values and configured range flags on your dashboard.</li>
+    </ol>
+    <p class="analysis-guide-note">Results are informational, not a diagnosis. Discuss medical findings with a qualified clinician.</p>
+    <div class="dialog-actions">
+      <button class="btn" id="closeAnalysisGuide" type="button" autofocus>Got it</button>
+    </div>
+  </dialog>
+
+  <!-- NFC Registration Dialog -->
+  <dialog class="register-dialog" id="registerDialog" aria-labelledby="registerTitle">
+    <form id="registerForm">
+      <button class="dialog-close" id="closeRegister" type="button" aria-label="Close registration">&times;</button>
+      <h2 id="registerTitle">Register Crew Credentials</h2>
+      <p>Enter your name, then tap your NFC card to register credentials in this browser. The dashboard readings remain linked to the supplied AST-001 dataset snapshot.</p>
+      <label for="cardHolder">Card holder's name</label>
+      <input id="cardHolder" name="cardHolder" placeholder="e.g., Cmdr. Annika Pasaje" autocomplete="name" required>
+      <p class="registration-status" id="registrationStatus" role="status">Ready to register a crew card.</p>
+      <div class="dialog-actions">
+        <button class="btn" id="tapToRegister" type="button">Tap NFC Card</button>
+        <button class="register-trigger" id="simulateRegister" type="button">Demo: Simulate Card Tap</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="register-dialog mission-dialog" id="missionDialog" aria-labelledby="missionDialogTitle">
+    <button class="dialog-close" id="closeMissionDialog" type="button" aria-label="Close mission instructions">&times;</button>
+    <h2 id="missionDialogTitle"></h2>
+    <p id="missionDialogSummary"></p>
+    <ol class="mission-instructions" id="missionInstructions"></ol>
+    <div class="dialog-actions">
+      <button class="btn" id="readMissionInstructions" type="button">Read aloud</button>
+    </div>
+  </dialog>
+
+  <dialog class="register-dialog mission-dialog" id="signOutDialog" aria-labelledby="signOutDialogTitle" aria-describedby="signOutDialogDescription">
+    <h2 id="signOutDialogTitle">Sign out?</h2>
+    <p id="signOutDialogDescription">Are you sure you want to return to the NFC sign-in screen?</p>
+    <div class="dialog-actions">
+      <button class="btn ghost sm" id="cancelSignOut" type="button" autofocus>Cancel</button>
+      <button class="btn sm" id="confirmSignOut" type="button">Sign out</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="../js/data.js" defer></script>
+  <script src="../js/demo-health-data.js" defer></script>
+  <script src="../js/app.js" defer></script>
+</body>
+</html>
