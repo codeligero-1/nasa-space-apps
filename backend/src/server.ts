@@ -583,9 +583,10 @@ async function handleRequest(
       if (demoResult) {
         session = {
           astronautId: demoResult.astronautProfile.id,
-          nfcCardId: demoResult.astronautProfile.nfc_card_id,
+          nfcCardId: demoResult.astronautProfile.nfcCardId,
           accessToken: 'demo_token',
-          refreshToken: 'demo_refresh'
+          refreshToken: 'demo_refresh',
+          expiresAt: Date.now() + SESSION_TTL_MS
         }
       }
     }

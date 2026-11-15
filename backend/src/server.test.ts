@@ -17,7 +17,8 @@ const approvedCredentials: AdminSessionCredentials = {
 const mockAstronautAuthProvider: AstronautAuthProvider = {
   async verifyNfcCard() { return null },
   async validateSession() { return null },
-  async signOut() { }
+  async signOut() { },
+  async getDemoAstronaut() { return null }
 }
 
 test('admin routes require an authorized session and logout revokes it', async (context) => {
