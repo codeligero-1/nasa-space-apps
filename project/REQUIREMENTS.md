@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are implemented in the static demo and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Dashboard readings come from the single source-backed demo astronaut. The latest demo flight record has no body-temperature value, so the dashboard now displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and wiring database records into the crew dashboard remain unimplemented. Radiation alerts use configured biological-indicator ranges; physical dose metrics have no configured thresholds and cumulative dose is displayed from source data, not calculated by the app.
+Checked items are implemented in the static demo and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Dashboard readings come from the single source-backed demo astronaut. The latest demo flight record has no body-temperature value, so the dashboard now displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and wiring database records into the crew dashboard remain unimplemented. Radiation alerts use configured biological-indicator ranges; physical dose metrics have no configured thresholds and cumulative dose is displayed from source data, not calculated by the app. Analytics compares demo flights against the latest available pre-flight record and charts data using elapsed calendar time; browser verification covered 10 heart-rate history records and the displayed baseline difference. Dynamic per-astronaut records are not wired into the dashboard, and no configured rules define unusual baseline-to-flight changes beyond individual metric reference-range alerts.
 
 ## 1. Login and Astronaut Identification
 
@@ -62,11 +62,11 @@ Checked items are implemented in the static demo and were verified in the browse
 
 ## 6. Health Analytics and Baseline Comparison
 
-- [ ] Pre-flight Earth baseline data can be accessed.
-- [ ] In-flight health measurements can be compared with baseline data.
-- [ ] Changes in health parameters are calculated correctly.
-- [ ] Graphs and charts display accurate information.
-- [ ] Historical health records can be viewed.
+- [x] Pre-flight Earth baseline data can be accessed.
+- [x] In-flight health measurements can be compared with baseline data.
+- [x] Changes in health parameters are calculated correctly.
+- [x] Graphs and charts display accurate information.
+- [x] Historical health records can be viewed.
 - [ ] Unusual changes are identified based on configured rules.
 - [ ] Comparison results are associated with the correct astronaut.
 
