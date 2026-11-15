@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/main.ts",
     "dev:server": "tsx watch src/combined.ts",
     "type-check": "npx tsc --noEmit",
     "db:init": "tsx src/db/init.ts",
@@ -13,7 +13,7 @@
     "test:supabase": "tsx src/test-supabase.ts",
     "push:supabase": "tsx src/supabase-push.ts",
     "build": "node node_modules/typescript/bin/tsc --noEmit false --outDir dist",
-    "start": "node dist/index.js",
+    "start": "node dist/main.js",
     "start:server": "node dist/combined.js",
     "test:admin": "tsx --test src/admin-auth.test.ts src/server.test.ts"
   },

@@ -1,12 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm --prefix backend run build",
-  "outputDirectory": "backend/dist",
-  "framework": "node",
-  "installCommand": "npm --prefix backend install",
-  "devCommand": "npm --prefix backend run dev:server",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev:server",
   "functions": {
-    "backend/src/api/index.ts": {
+    "backend/api/index.ts": {
       "maxDuration": 30,
       "runtime": "nodejs20.x"
     }
@@ -14,7 +13,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/src/api/index.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/html/(.*)",
