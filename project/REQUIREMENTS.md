@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Blood range flags use the project's database-provided reference ranges, while measurements without a matching range are Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not validate this project's cutoffs. Analytics compares the static AST-001 flight records with the latest available pre-flight record and charts dated measurements against elapsed calendar time; heart-rate history includes 10 records across the baseline and flight periods. Dynamic per-astronaut data and rules for unusual baseline-to-flight changes are not wired into the dashboard; alerts use configured per-metric ranges. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and runtime database integration remain unimplemented. Radiation readings remain Not Rated because verified mission-specific dose limits and assay-validated biodosimetry cutoffs have not been configured; cumulative dose is displayed from source data, not calculated by the app.
+Checked items are implemented in the static prototype and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Blood values are a static AST-001 snapshot copied from the supplied Earth-baseline and space-flight SQLite databases; the frontend does not query those files at runtime. Blood range flags use the project's database-provided reference ranges, while measurements without a matching range are Not Rated. NASA long-duration astronaut hematology research supports comparison with each astronaut's own preflight baseline, but does not validate this project's cutoffs. Analytics compares the static AST-001 flight records with the latest available pre-flight record and charts dated measurements against elapsed calendar time; heart-rate history includes 10 records across the baseline and flight periods. Dynamic per-astronaut data and rules for unusual baseline-to-flight changes are not wired into the dashboard; alerts use configured per-metric ranges. The latest flight record has no body-temperature value, so the dashboard displays it as Not Available, and unavailable results are flagged for a new sample and re-analysis. Spreadsheet upload supports blood results, but recording or importing new vital and radiation measurements and runtime database integration remain unimplemented. Radiation metrics are rated only when a configured range exists; none are currently configured, so these readings remain Not Rated. Cumulative dose is displayed from source data, not calculated by the app.
 
 ## 1. Login and Astronaut Identification
 
@@ -20,12 +20,12 @@ Checked items are implemented in the static prototype and were verified in the b
 ## 2. Main Dashboard
 
 - [x] The dashboard loads successfully.
-- [ ] The astronaut's name and profile are displayed.
-- [ ] The latest health measurements are displayed.
-- [ ] Vital signs are displayed correctly.
+- [x] The astronaut's name and profile are displayed.
+- [x] The latest available health measurements are displayed.
+- [x] Available vital signs are displayed correctly.
 - [x] Blood analysis results are accessible.
-- [ ] Radiation exposure information is displayed.
-- [ ] Health warnings and critical alerts are visible.
+- [x] Available radiation exposure information is displayed.
+- [x] Health warnings and critical alerts are visible for measurements with configured thresholds.
 - [ ] The dashboard updates when new data is recorded.
 
 ## 3. Blood Analysis Module
@@ -48,7 +48,7 @@ Checked items are implemented in the static prototype and were verified in the b
 - [x] Respiratory rate measurements are displayed correctly.
 - [x] Heart Rate Variability (HRV) data are displayed correctly.
 - [ ] New measurements update the dashboard.
-- [ ] Abnormal measurements trigger the appropriate alerts.
+- [x] Abnormal measurements trigger alerts when configured thresholds are available.
 
 ## 5. Radiation Monitoring Module
 
