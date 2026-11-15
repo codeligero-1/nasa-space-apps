@@ -1,4 +1,4 @@
-const $ = (selector) => document.querySelector(selector);
+﻿const $ = (selector) => document.querySelector(selector);
 
 const appState = {
   done: new Set(),
@@ -116,15 +116,15 @@ function formatDate(value) {
 
 function timeNote(record) {
   if (!record?.date) return 'Date and time not supplied';
-  return `${formatDate(record.date)} · ${record.time ? `Time ${record.time}` : 'Time not supplied'}`;
+  return `${formatDate(record.date)} Â· ${record.time ? `Time ${record.time}` : 'Time not supplied'}`;
 }
 
 function currentTestMetadata(section = 'blood') {
   const record = section === 'blood' ? activeBloodRecord : currentRecord;
   if (section === 'blood' && appState.importedFile) {
-    return `Imported file: ${appState.importedFile} · ${timeNote(record)} · Sample ID: ${record.sampleId || 'Not provided'}`;
+    return `Imported file: ${appState.importedFile} Â· ${timeNote(record)} Â· Sample ID: ${record.sampleId || 'Not provided'}`;
   }
-  return `${timeNote(record)} · Sample ID: ${record.sampleId || 'Not provided'}`;
+  return `${timeNote(record)} Â· Sample ID: ${record.sampleId || 'Not provided'}`;
 }
 
 function playTone(frequency, duration, volume, delay = 0) {
@@ -467,11 +467,11 @@ async function handleCardTap() {
 
   const reader = $('#reader');
   reader.classList.add('reading');
-  $('#t1').textContent = 'Reading NFC card…';
+  $('#t1').textContent = 'Reading NFC cardâ€¦';
 
   // Check if Web NFC API is available
   if (!('NDEFReader' in window)) {
-    $('#t1').textContent = 'NFC detected • Logging in';
+    $('#t1').textContent = 'NFC detected â€¢ Logging in';
     // Fallback to demo mode after a short delay
     setTimeout(() => {
       playSound('login');
@@ -521,7 +521,7 @@ async function handleCardTap() {
           // Unregistered card
           reader.classList.remove('reading');
           reader.classList.add('error');
-          $('#t1').textContent = data.error || 'Unregistered NFC card • Access denied';
+          $('#t1').textContent = data.error || 'Unregistered NFC card â€¢ Access denied';
           playSound('error');
 
           setTimeout(() => {
@@ -551,7 +551,7 @@ async function handleCardTap() {
         console.error('NFC verification failed:', error);
         reader.classList.remove('reading');
         reader.classList.add('error');
-        $('#t1').textContent = 'Verification failed • Try again';
+        $('#t1').textContent = 'Verification failed â€¢ Try again';
         playSound('error');
 
         setTimeout(() => {
@@ -566,7 +566,7 @@ async function handleCardTap() {
       controller.abort();
       reader.classList.remove('reading');
       reader.classList.add('error');
-      $('#t1').textContent = 'Could not read card • Try again';
+      $('#t1').textContent = 'Could not read card â€¢ Try again';
       playSound('error');
 
       setTimeout(() => {
@@ -582,7 +582,7 @@ async function handleCardTap() {
       console.error('NFC scan failed:', error);
       reader.classList.remove('reading');
       reader.classList.add('error');
-      $('#t1').textContent = 'NFC scan failed • Try again';
+      $('#t1').textContent = 'NFC scan failed â€¢ Try again';
       playSound('error');
 
       setTimeout(() => {
@@ -599,13 +599,13 @@ function updateCrewProfile(profile) {
   const cardId = profile.nfcCardId || '';
   const details = [profile.role, profile.mission || profile.missionCode, profile.spacecraft]
     .filter(Boolean)
-    .join(' · ');
+    .join(' Â· ');
   const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
   $('#activeCrewName').textContent = name;
   $('#crewInitials').textContent = initials || 'CR';
   $('#activeCrewDetails').textContent = details || 'Crew profile';
   $('#activeCrewDetails').title = details;
-  $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
+  $('#activeCardId').textContent = cardId ? `NFC â€¢â€¢â€¢â€¢ ${cardId.slice(-4)}` : 'NFC â€¢â€¢â€¢â€¢ DEMO';
 }
 
 function openRegistration() {
@@ -642,7 +642,7 @@ async function startCardRegistration() {
   const name = $('#cardHolder').value.trim();
   const statusNode = $('#registrationStatus');
   if (!name) {
-    statusNode.textContent = 'Enter the card holder’s name first.';
+    statusNode.textContent = 'Enter the card holderâ€™s name first.';
     $('#cardHolder').focus();
     return;
   }
@@ -659,7 +659,7 @@ async function startCardRegistration() {
 
   const controller = new AbortController();
   appState.registrationAbortController = controller;
-  statusNode.textContent = 'Waiting for an NFC card…';
+  statusNode.textContent = 'Waiting for an NFC cardâ€¦';
   try {
     const reader = new window.NDEFReader();
     appState.registrationReader = reader;
@@ -707,7 +707,7 @@ function closeRegistration() {
 function simulateCardRegistration() {
   const name = $('#cardHolder').value.trim();
   if (!name) {
-    $('#registrationStatus').textContent = 'Enter the card holder’s name first.';
+    $('#registrationStatus').textContent = 'Enter the card holderâ€™s name first.';
     $('#cardHolder').focus();
     return;
   }
@@ -726,7 +726,7 @@ function prepareVialScreen() {
     .filter((group) => group[3] === 'blood')
     .flatMap((group) => group[2]);
   $('#live').innerHTML = flatMetrics.slice(0, 6).map((metric, index) => {
-    return `<div id="l${index}"><span>${metric[0]}</span><b>Waiting…</b></div>`;
+    return `<div id="l${index}"><span>${metric[0]}</span><b>Waitingâ€¦</b></div>`;
   }).join('');
 
   $('#fill').style.height = '0%';
@@ -736,7 +736,7 @@ function prepareVialScreen() {
   $('#send').textContent = 'Start Blood Analysis';
   $('#t2').textContent = 'Ready for Blood Analysis';
   $('#p2').textContent = 'Welcome, crew member! Start the analysis to process the available sample data and prepare your report.';
-  $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
+  $('#rs').textContent = 'Analysis ready â€¢ Source-backed demo data loaded';
 }
 
 function runVialCollection() {
@@ -753,7 +753,7 @@ function runVialCollection() {
   $('#send').textContent = 'Analyzing...';
   $('#t2').textContent = 'Analyzing Blood Sample...';
   $('#p2').textContent = 'Processing the available sample data and preparing your report.';
-  $('#rs').textContent = 'Demo analysis in progress • Preparing source-backed results';
+  $('#rs').textContent = 'Demo analysis in progress â€¢ Preparing source-backed results';
 
   let step = 0;
   const totalSteps = flatMetrics.length;
@@ -777,7 +777,7 @@ function runVialCollection() {
     }
 
     clearInterval(timer);
-    $('#rs').textContent = 'Analysis complete • Source-backed results ready';
+    $('#rs').textContent = 'Analysis complete â€¢ Source-backed results ready';
     setTimeout(() => {
       buildDashboard();
       show('dash');
@@ -881,7 +881,7 @@ function handleSpreadsheetUpload(event) {
       const normalizeUnit = (value) => String(value)
         .replace(/[\u00c2\u00e2]/g, '')
         .toLowerCase()
-        .replace(/[µμ]/g, 'u')
+        .replace(/[ÂµÎ¼]/g, 'u')
         .replace(/\s/g, '');
       const seenMetrics = new Set();
       let updatedCount = 0;
@@ -960,7 +960,7 @@ function buildDashboard() {
 
   const ratedCount = counts.ok + counts.low + counts.high + counts.warn;
   const score = ratedCount ? Math.round((counts.ok / ratedCount) * 100) : null;
-  $('#rt').textContent = score === null ? '—' : `${score}%`;
+  $('#rt').textContent = score === null ? 'â€”' : `${score}%`;
   setTimeout(() => {
     $('#rc').style.strokeDashoffset = score === null ? 314 : 314 * (1 - score / 100);
   }, 80);
@@ -1044,12 +1044,12 @@ function renderMetricCard(reading, extraClass = '') {
           <span>Nominal range</span>
           <span>Max ${formatNumber(range.max, metric)}</span>
         </div>
-      ` : '<div class="r"><span>Min —</span><span>Reference range not configured</span><span>Max —</span></div>'}
+      ` : '<div class="r"><span>Min â€”</span><span>Reference range not configured</span><span>Max â€”</span></div>'}
       <div class="d">
         <span>Pre-flight baseline: ${formatNumber(baseline, metric)} ${metric.unit}</span>
         <span>Current value: ${formatNumber(current, metric)} ${metric.unit}</span>
         <span>Difference from baseline: ${formatNumber(difference, metric)} ${metric.unit}</span>
-        <span>Change: ${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} · ${trend}</span>
+        <span>Change: ${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} Â· ${trend}</span>
         <span>${metric.section === 'radiation' ? 'Source measurement; interpretation requires mission-specific guidance.' : 'Compared with the latest available pre-flight measurement.'}</span>
       </div>
     </button>
@@ -1199,7 +1199,7 @@ function renderHistoryPanel() {
       : Number.isFinite(record.missionDay)
         ? `Mission day ${record.missionDay}`
         : 'Pre-flight';
-    option.textContent = `${timeNote(record)} · ${recordType}`;
+    option.textContent = `${timeNote(record)} Â· ${recordType}`;
     dateSelect.appendChild(option);
   });
   if (!records.some((record) => record.id === appState.historyDate)) {
@@ -1221,10 +1221,10 @@ function renderHistoryPanel() {
   const percentChange = Number.isFinite(difference) && baseline !== 0 ? (difference / baseline) * 100 : null;
   const trend = !Number.isFinite(difference) ? 'Not available' : difference > 0 ? 'Increased' : difference < 0 ? 'Decreased' : 'Unchanged';
   $('#historyComparison').innerHTML = `
-    <div><small>Selected test · ${timeNote(selectedRecord)}</small><strong>${formatNumber(selectedValue, metric)} ${metric.unit}</strong></div>
-    <div><small>Pre-flight baseline · ${timeNote(baselineRecord)}</small><strong>${formatNumber(baseline, metric)} ${metric.unit}</strong></div>
+    <div><small>Selected test Â· ${timeNote(selectedRecord)}</small><strong>${formatNumber(selectedValue, metric)} ${metric.unit}</strong></div>
+    <div><small>Pre-flight baseline Â· ${timeNote(baselineRecord)}</small><strong>${formatNumber(baseline, metric)} ${metric.unit}</strong></div>
     <div><small>Difference</small><strong>${formatNumber(difference, metric)} ${metric.unit}</strong></div>
-    <div><small>Change from baseline</small><strong>${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} · ${trend}</strong></div>
+    <div><small>Change from baseline</small><strong>${Number.isFinite(percentChange) ? `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%` : 'Not meaningful or unavailable'} Â· ${trend}</strong></div>
   `;
 
   const values = records.map((record, index) => ({
@@ -1349,7 +1349,7 @@ function askAssistant(query) {
     const [key, label] = statusForReading(reading);
     const range = reading[8];
     const rangeText = Number.isFinite(range?.min) && Number.isFinite(range?.max)
-      ? ` Configured reference range: ${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit}.`
+      ? ` Configured reference range: ${formatNumber(range.min, metric)}â€“${formatNumber(range.max, metric)} ${metric.unit}.`
       : ' No reference range is configured, so this result is Not Rated.';
     const baselineText = Number.isFinite(baseline)
       ? ` Pre-flight baseline: ${formatNumber(baseline, metric)} ${metric.unit}.`
@@ -1389,7 +1389,7 @@ function askPetAI(query) {
   messageEl.className = 'b p pet-ai-streaming';
   messageEl.innerHTML = `
     <span class="pet-ai-text"></span>
-    <span class="pet-ai-typing"><span>●</span><span>●</span><span>●</span></span>
+    <span class="pet-ai-typing"><span>â—</span><span>â—</span><span>â—</span></span>
   `;
   log.appendChild(messageEl);
   log.scrollTop = log.scrollHeight;
@@ -1484,7 +1484,7 @@ function appendPetAiToken(token) {
 
   // Hide typing indicator on first token
   if (!appState.petAiFirstTokenReceived && typingSpan) {
-    typingSpan.style.display = 'none';
+    typingSpan.style.display = 'none';;
     appState.petAiFirstTokenReceived = true;
   }
 
@@ -1526,7 +1526,7 @@ function finishPetAiResponse(fullResponse, disclaimer) {
   // Remove streaming class and hide typing indicator
   appState.petAiCurrentMessageElement.classList.remove('pet-ai-streaming');
   const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
-  if (typingSpan) typingSpan.style.display = 'none';
+  if (typingSpan) typingSpan.style.display = 'none';;
 
   // Render markdown in the response
   const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
@@ -1639,7 +1639,7 @@ function handlePetAiError(message) {
   if (appState.petAiCurrentMessageElement) {
     appState.petAiCurrentMessageElement.classList.remove('pet-ai-streaming');
     const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
-    if (typingSpan) typingSpan.style.display = 'none;
+    if (typingSpan) typingSpan.style.display = 'none';
 
     const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
     if (textSpan) {
@@ -1807,7 +1807,7 @@ async function resetToOnboarding() {
   $('#pctLabel').textContent = '0%';
   $('#t2').textContent = 'Ready for Blood Analysis';
   $('#p2').textContent = 'Start the analysis to process the available sample data and prepare the report.';
-  $('#rs').textContent = 'Analysis ready • Source-backed demo data loaded';
+  $('#rs').textContent = 'Analysis ready â€¢ Source-backed demo data loaded';
   $('#live').innerHTML = '';
   show('s1');
 }
@@ -1889,20 +1889,36 @@ if (!window.AudioContext) {
   $('#soundToggle').setAttribute('aria-pressed', 'false');
 }
 
+function safeOnClick(id, handler) {
+  const el = $(id);
+  if (el) el.onclick = handler;
+  else console.warn('[init] Element not found:', id);
+}
+
+function safeAddEventListener(id, event, handler) {
+  const el = $(id);
+  if (el) el.addEventListener(event, handler);
+  else console.warn('[init] Element not found:', id);
+}
+
+safeOnClick('#reader', handleCardTap);
+safeOnClick('#openRegister', openRegistration);
+safeOnClick('#closeRegister', closeRegistration);
+safeOnClick('#tapToRegister', startCardRegistration);
+safeOnClick('#simulateRegister', simulateCardRegistration);
+safeAddEventListener('#registerDialog', 'click', handleRegisterDialogClick);
+
 $('#registerForm').onsubmit = (event) => event.preventDefault();
-$('#reader').onclick = handleCardTap;
-$('#openRegister').onclick = openRegistration;
-$('#closeRegister').onclick = closeRegistration;
-$('#registerDialog').addEventListener('click', handleRegisterDialogClick);
-$('#tapToRegister').onclick = startCardRegistration;
-$('#simulateRegister').onclick = simulateCardRegistration;
+
 window.addEventListener('vital:nfc-read', handleNfcLogin);
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !$('#s1').classList.contains('hide') && !$('#registerDialog').open) {
+  if (event.key === 'Enter' && !$('#s1')?.classList.contains('hide') && !$('#registerDialog')?.open) {
     if (event.target === document.body || event.target === document.documentElement) {
       event.preventDefault();
       handleCardTap();
     }
   }
 });
+
+console.log('[VITAL] App initialized - event handlers attached');
