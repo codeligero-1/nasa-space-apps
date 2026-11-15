@@ -1866,16 +1866,6 @@ function handleRegisterDialogClick(event) {
   }
 }
 
-$('#qs').innerHTML = [
-  'Why is hemoglobin low?',
-  'Explain my WBC count',
-  'What tests should I do next?'
-].map((q) => `<button type="button">${q}</button>`).join('');
-
-document.querySelectorAll('#qs button').forEach((btn) => {
-  btn.onclick = () => askAssistant(btn.textContent);
-});
-
 // PET AI Quick Suggestions
 $('#petAiQuickSuggestions').innerHTML = [
   'Explain my hemoglobin',
@@ -1898,17 +1888,6 @@ $('#newChatBtn').onclick = () => {
   log.innerHTML = '';
   // Show initial message
   say('New conversation started. How can I help you with your health data?');
-  // Re-render quick suggestions
-  $('#petAiQuickSuggestions').innerHTML = [
-    'Explain my hemoglobin',
-    'Summarize my health',
-    'Any warnings?',
-    'What tests next?',
-    'What should I monitor?'
-  ].map((q) => `<button type="button">${q}</button>`).join('');
-  document.querySelectorAll('#petAiQuickSuggestions button').forEach((btn) => {
-    btn.onclick = () => askPetAI(btn.textContent);
-  });
 };
 
 $('#f').onsubmit = (e) => {
