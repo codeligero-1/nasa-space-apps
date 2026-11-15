@@ -668,10 +668,8 @@ window.VITAL_DEMO_DATA = {
       "unit": "mg/L",
       "min": 0.0,
       "max": 3.0,
-      "warningLow": 3.0,
-      "warningHigh": 10.0,
-      "criticalLow": 10.0,
-      "criticalHigh": 50.0
+      "warningHigh": 3.0,
+      "criticalHigh": 10.0
     },
     "Ferritin": {
       "category": "Biomarkers",
@@ -688,10 +686,8 @@ window.VITAL_DEMO_DATA = {
       "unit": "pg/mL",
       "min": 0.0,
       "max": 5.0,
-      "warningLow": 5.0,
-      "warningHigh": 15.0,
-      "criticalLow": 15.0,
-      "criticalHigh": 50.0
+      "warningHigh": 5.0,
+      "criticalHigh": 15.0
     },
     "Cortisol": {
       "category": "Biomarkers",

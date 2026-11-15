@@ -657,6 +657,10 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  max-height: min(30vh, 240px);
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 4px;
 }
 
 .live div {
@@ -885,6 +889,16 @@ button {
   font: 700 14px "Outfit", sans-serif;
   display: grid;
   place-items: center;
+}
+
+.crew-card-mini > .crew-avatar {
+  flex: 0 0 38px;
+}
+
+.crew-avatar svg {
+  display: block;
+  width: 30px;
+  height: 30px;
 }
 
 .crew-card-mini strong {
@@ -1496,24 +1510,24 @@ button {
 }
 
 .m .r.nominal-labels {
-  display: block;
-  position: relative;
-  height: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  min-width: 0;
+  text-align: center;
 }
 
 .m .nominal-label-title {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  white-space: nowrap;
+  display: block;
   line-height: 16px;
 }
 
 .m .nominal-labels .nominal-range-values {
-  position: absolute;
-  top: 16px;
-  white-space: nowrap;
-  transform: translateX(-50%);
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   line-height: 16px;
 }
 
