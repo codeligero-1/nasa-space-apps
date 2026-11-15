@@ -1082,8 +1082,8 @@ function renderMetricCard(reading, extraClass = '') {
           </div>
         </div>
         <div class="r nominal-labels">
-          <span class="nominal-label-title" style="left:${band.left + band.width / 2}%">Nominal</span>
-          <span class="nominal-range-values" style="left:${band.left + band.width / 2}%">(${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit})</span>
+          <span class="nominal-label-title">Nominal</span>
+          <span class="nominal-range-values">(${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit})</span>
         </div>
       ` : '<div class="r"><span>—</span><span>Not Rated · no reference range configured</span><span>—</span></div>'}
       <div class="d">

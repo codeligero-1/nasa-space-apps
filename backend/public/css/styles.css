@@ -1422,7 +1422,37 @@ button {
   height: 8px;
   border-radius: 6px;
   background: var(--lowbg);
-  margin: 12px 0 6px;
+  margin: 0 0 6px;
+}
+
+.range-visual {
+  position: relative;
+  padding-top: 19px;
+}
+
+.range-value-label {
+  position: absolute;
+  top: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.range-value-label.align-center {
+  transform: translateX(-50%);
+}
+
+.range-value-label.align-start {
+  transform: none;
+}
+
+.range-value-label.align-end {
+  transform: translateX(-100%);
 }
 
 .rg i {
@@ -1463,6 +1493,28 @@ button {
   color: var(--mute);
   display: flex;
   justify-content: space-between;
+}
+
+.m .r.nominal-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  min-width: 0;
+  text-align: center;
+}
+
+.m .nominal-label-title {
+  display: block;
+  line-height: 16px;
+}
+
+.m .nominal-labels .nominal-range-values {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 16px;
 }
 
 /* Right Column: Missions & Floating Orbit Astronaut */
@@ -1590,6 +1642,13 @@ button {
   flex-shrink: 0;
   animation: orbit-float 3.2s ease-in-out infinite;
   filter: drop-shadow(0 8px 12px rgba(42, 43, 74, 0.35));
+}
+
+.orbit-avatar-wrap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 @keyframes orbit-float {
