@@ -657,6 +657,10 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  max-height: min(30vh, 240px);
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 4px;
 }
 
 .live div {
@@ -885,6 +889,16 @@ button {
   font: 700 14px "Outfit", sans-serif;
   display: grid;
   place-items: center;
+}
+
+.crew-card-mini > .crew-avatar {
+  flex: 0 0 38px;
+}
+
+.crew-avatar svg {
+  display: block;
+  width: 30px;
+  height: 30px;
 }
 
 .crew-card-mini strong {

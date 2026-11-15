@@ -617,9 +617,8 @@ function updateCrewProfile(profile) {
   const details = [profile.role, profile.mission || profile.missionCode, profile.spacecraft]
     .filter(Boolean)
     .join(' · ');
-  const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
   $('#activeCrewName').textContent = name;
-  $('#crewInitials').textContent = initials || 'CR';
+  $('#crewAvatar').setAttribute('aria-label', `Astronaut profile for ${name}`);
   $('#activeCrewDetails').textContent = details || 'Crew profile';
   $('#activeCrewDetails').title = details;
   $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
@@ -742,8 +741,7 @@ function availableOnboardingBloodReadings() {
   return D
     .filter((group) => group[3] === 'blood')
     .flatMap((group) => group[2])
-    .filter((reading) => Number.isFinite(reading[2]))
-    .slice(0, 6);
+    .filter((reading) => Number.isFinite(reading[2]));
 }
 
 function prepareVialScreen() {
@@ -760,49 +758,56 @@ function prepareVialScreen() {
   $('#send').textContent = flatMetrics.length ? 'Start Sample Analysis' : 'No Sample Results';
   $('#t2').textContent = flatMetrics.length ? `Ready to Analyze Samples for ${crewName}` : `No sample results for ${crewName}`;
   $('#p2').textContent = flatMetrics.length
-    ? `Static SQLite dataset snapshot for AST-001. Only recorded blood measurements are shown.`
-    : `No recorded blood measurements are linked to ${crewName}.`;
+    ? 'Hardware preview: receive sample → analyze parameters → validate results → update dashboard. This demo replays source data; no analyzer is connected.'
+    : `No sample results are available for ${crewName}.`;
   $('#rs').textContent = flatMetrics.length
-    ? `Analysis ready • ${flatMetrics.length} recorded measurements for ${crewName}`
-    : 'Analysis unavailable • No recorded measurements';
+    ? `Demo sample ready • ${flatMetrics.length} results loaded`
+    : 'Analysis unavailable • No sample results';
 }
 
 function runVialCollection() {
   const flatMetrics = availableOnboardingBloodReadings();
   if (!flatMetrics.length) {
-    $('#rs').textContent = 'Analysis unavailable • No recorded measurements';
+    $('#rs').textContent = 'Analysis unavailable • No sample results';
     return;
   }
 
   $('#send').disabled = true;
   $('#send').textContent = 'Analyzing...';
   $('#t2').textContent = 'Analyzing Samples...';
-  $('#p2').textContent = `Processing ${flatMetrics.length} recorded measurements for ${appState.astronautProfile?.name || DEMO.profile.name}.`;
-  $('#rs').textContent = 'SQLite snapshot analysis in progress • Preparing recorded results';
+  $('#p2').textContent = `Simulated analyzer flow for ${appState.astronautProfile?.name || DEMO.profile.name}: receiving the sample, streaming results, validating them, then updating the dashboard. No hardware is connected.`;
+  $('#rs').textContent = 'Hardware simulation • Preparing sample';
 
-  let step = 0;
+  let frame = 0;
   const totalSteps = flatMetrics.length;
+  const totalFrames = Math.min(6, totalSteps);
 
   const timer = setInterval(() => {
-    if (step < totalSteps) {
-      const item = flatMetrics[step];
-      const pct = Math.round(((step + 1) / totalSteps) * 100);
-      playSound('fill', step);
+    if (frame < totalFrames) {
+      const startIndex = Math.floor((frame * totalSteps) / totalFrames);
+      const endIndex = Math.floor(((frame + 1) * totalSteps) / totalFrames);
+      const pct = Math.round((endIndex / totalSteps) * 100);
+      playSound('fill', frame);
       $('#fill').style.height = Math.min(88, pct * 0.88) + '%';
       $('#rb').style.width = pct + '%';
       $('#pctLabel').textContent = pct + '%';
 
-      const cell = $('#l' + step);
-      if (cell) {
-        cell.classList.add('done');
-        cell.querySelector('b').textContent = `${displayValue(item)} ${item[1]}`;
+      for (let index = startIndex; index < endIndex; index += 1) {
+        const cell = $('#l' + index);
+        if (cell) {
+          cell.classList.add('done');
+          cell.querySelector('b').textContent = `${displayValue(flatMetrics[index])} ${flatMetrics[index][1]}`;
+        }
       }
-      step += 1;
+      $('#rs').textContent = pct < 65
+        ? `Hardware simulation • Streaming results ${endIndex} of ${totalSteps}`
+        : `Hardware simulation • Validating results ${endIndex} of ${totalSteps}`;
+      frame += 1;
       return;
     }
 
     clearInterval(timer);
-    $('#rs').textContent = 'Analysis complete • SQLite snapshot results ready';
+    $('#rs').textContent = 'Hardware simulation complete • Dashboard updated from demo sample';
     setTimeout(() => {
       buildDashboard();
       show('dash');
