@@ -659,7 +659,7 @@ async function startCardRegistration() {
   const name = $('#cardHolder').value.trim();
   const statusNode = $('#registrationStatus');
   if (!name) {
-    statusNode.textContent = 'Enter the card holder's name first.';
+    statusNode.textContent = 'Enter the card holder\'s name first.';
     $('#cardHolder').focus();
     return;
   }
@@ -724,7 +724,7 @@ function closeRegistration() {
 function simulateCardRegistration() {
   const name = $('#cardHolder').value.trim();
   if (!name) {
-    $('#registrationStatus').textContent = 'Enter the card holder's name first.';
+    $('#registrationStatus').textContent = 'Enter the card holder\'s name first.';
     $('#cardHolder').focus();
     return;
   }
