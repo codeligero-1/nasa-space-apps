@@ -8,6 +8,8 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = resolve(fileURLToPath(import.meta.url), '..');
+// Load backend/.env first (has NVIDIA_API_KEY), then fall back to project root
+config({ path: resolve(__dirname, '..', '.env') });
 config({ path: resolve(__dirname, '..', '..', '.env') });
 
 const port = Number(process.env.PORT || 3000);

@@ -110,9 +110,10 @@ CREATE TABLE IF NOT EXISTS astronauts (
 CREATE TABLE IF NOT EXISTS health_records (
   id TEXT PRIMARY KEY,                    -- UUID
   astronaut_id TEXT NOT NULL REFERENCES astronauts(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('blood', 'vitals', 'radiation')),
+  type TEXT NOT NULL CHECK (type IN ('blood', 'vitals', 'radiation', 'baseline')),
   data TEXT NOT NULL,                     -- JSON blob with measurement data
-  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  embedding TEXT                          -- Vector embedding stored as JSON array (2048 dims for Nemotron-3-Embed-1B)
 );
 
 -- Indexes for common queries
@@ -206,7 +207,8 @@ export type Astronaut = {
 export type HealthRecord = {
   id: string
   astronaut_id: string
-  type: 'blood' | 'vitals' | 'radiation'
+  type: 'blood' | 'vitals' | 'radiation' | 'baseline'
   data: string // JSON string
   recorded_at: string
+  embedding?: string | number[] // Vector embedding (stored as JSON string in SQLite, vector in pgvector)
 }
