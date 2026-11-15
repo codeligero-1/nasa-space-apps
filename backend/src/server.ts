@@ -445,6 +445,18 @@ async function handleRequest(
     return
   }
 
+  if (method === 'GET' && pathname === '/api/admin/astronauts') {
+    const session = await getValidSession(request, response, sessions, authProvider)
+    if (!session) {
+      sendJson(response, 401, { error: 'Not authenticated.' })
+      return
+    }
+
+    const astronauts = await astronautAuthProvider.listMissionControlAstronauts()
+    sendJson(response, 200, { astronauts })
+    return
+  }
+
   if (method === 'POST' && pathname === '/api/admin/logout') {
     requireSameOrigin(request)
     const sessionId = getSessionId(request)
@@ -575,22 +587,7 @@ async function handleRequest(
 
   // PET AI Medical Assistant chat endpoint
   if (method === 'POST' && pathname === '/api/pet-ai/chat') {
-    let session = await getValidAstronautSession(request, response, astronautSessions, astronautAuthProvider)
-
-    // Demo mode fallback: if no valid session, try to get demo astronaut
-    if (!session) {
-      const demoResult = await astronautAuthProvider.getDemoAstronaut()
-      if (demoResult) {
-        session = {
-          astronautId: demoResult.astronautProfile.id,
-          nfcCardId: demoResult.astronautProfile.nfcCardId,
-          accessToken: 'demo_token',
-          refreshToken: 'demo_refresh',
-          expiresAt: Date.now() + SESSION_TTL_MS
-        }
-      }
-    }
-
+    const session = await getValidAstronautSession(request, response, astronautSessions, astronautAuthProvider)
     if (!session) {
       sendJson(response, 401, { error: 'Not authenticated.' })
       return

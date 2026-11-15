@@ -18,7 +18,37 @@ const mockAstronautAuthProvider: AstronautAuthProvider = {
   async verifyNfcCard() { return null },
   async validateSession() { return null },
   async signOut() { },
-  async getDemoAstronaut() { return null }
+  async getDemoAstronaut() { return null },
+  async listMissionControlAstronauts() {
+    return [
+      {
+        id: 'astro-1',
+        name: 'Alex Vance',
+        role: 'Commander',
+        mission: 'ARTEMIS-V',
+        healthRecords: [{
+          id: 'record-1',
+          astronautId: 'astro-1',
+          type: 'radiation',
+          data: { dailyDose: 0.02 },
+          recordedAt: '2026-01-02T00:00:00.000Z'
+        }]
+      },
+      {
+        id: 'astro-2',
+        name: 'A. Reyes',
+        role: 'Pilot',
+        mission: 'ARTEMIS-V',
+        healthRecords: [{
+          id: 'record-2',
+          astronautId: 'astro-2',
+          type: 'vitals',
+          data: { heartRate: 66 },
+          recordedAt: '2026-01-03T00:00:00.000Z'
+        }]
+      }
+    ]
+  }
 }
 
 test('admin routes require an authorized session and logout revokes it', async (context) => {
@@ -46,6 +76,16 @@ test('admin routes require an authorized session and logout revokes it', async (
 
   const address = server.address() as AddressInfo
   const origin = `http://127.0.0.1:${address.port}`
+
+  const deniedRecords = await fetch(`${origin}/api/admin/astronauts`)
+  assert.equal(deniedRecords.status, 401)
+
+  const deniedAssistant = await fetch(`${origin}/api/pet-ai/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Summarize crew health.' })
+  })
+  assert.equal(deniedAssistant.status, 401)
 
   const deniedDashboard = await fetch(`${origin}/admin/dashboard`, { redirect: 'manual' })
   assert.equal(deniedDashboard.status, 302)
@@ -108,6 +148,23 @@ test('admin routes require an authorized session and logout revokes it', async (
     authenticated: true,
     email: approvedCredentials.email
   })
+
+  const rosterResponse = await fetch(`${origin}/api/admin/astronauts`, {
+    headers: { Cookie: sessionCookie }
+  })
+  assert.equal(rosterResponse.status, 200)
+  const roster = await rosterResponse.json() as {
+    astronauts: Array<{
+      id: string
+      healthRecords: Array<{ astronautId: string; id: string }>
+      nfcCardId?: string
+    }>
+  }
+  assert.deepEqual(roster.astronauts.map((astronaut) => astronaut.id), ['astro-1', 'astro-2'])
+  assert.deepEqual(roster.astronauts.map((astronaut) =>
+    astronaut.healthRecords.map((record) => record.astronautId)
+  ), [['astro-1'], ['astro-2']])
+  assert.ok(roster.astronauts.every((astronaut) => !('nfcCardId' in astronaut)))
 
   const logoutResponse = await fetch(`${origin}/api/admin/logout`, {
     method: 'POST',

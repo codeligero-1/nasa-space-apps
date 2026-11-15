@@ -13,9 +13,17 @@ export interface AstronautProfile {
 export interface HealthRecord {
   id: string
   astronautId: string
-  type: 'blood' | 'vitals' | 'radiation'
+  type: 'blood' | 'vitals' | 'radiation' | 'baseline' | 'hazard-knowledge'
   data: Record<string, unknown>
   recordedAt: string
+}
+
+export interface MissionControlAstronaut {
+  id: string
+  name: string
+  role: string
+  mission: string
+  healthRecords: HealthRecord[]
 }
 
 export interface AstronautSessionCredentials {
@@ -38,6 +46,7 @@ export interface AstronautAuthProvider {
   validateSession(session: AstronautSessionCredentials): Promise<AstronautSessionCredentials | null>
   signOut(session: AstronautSessionCredentials): Promise<void>
   getDemoAstronaut(): Promise<VerifyNfcResult | null>
+  listMissionControlAstronauts(): Promise<MissionControlAstronaut[]>
 }
 
 export function createSupabaseAstronautAuthProvider(
@@ -98,6 +107,40 @@ export function createSupabaseAstronautAuthProvider(
   }
 
   return {
+    async listMissionControlAstronauts() {
+      const { data: astronauts, error: astronautError } = await serviceClient
+        .from('astronauts')
+        .select('id, name, role, mission')
+        .order('name', { ascending: true })
+      if (astronautError) {
+        throw new Error(`Unable to load astronaut roster: ${astronautError.message}`)
+      }
+
+      const { data: records, error: recordError } = await serviceClient
+        .from('health_records')
+        .select('id, astronaut_id, type, data, recorded_at')
+        .order('recorded_at', { ascending: false })
+      if (recordError) {
+        throw new Error(`Unable to load astronaut health records: ${recordError.message}`)
+      }
+
+      return (astronauts || []).map((astronaut) => ({
+        id: astronaut.id,
+        name: astronaut.name,
+        role: astronaut.role,
+        mission: astronaut.mission,
+        healthRecords: (records || [])
+          .filter((record) => record.astronaut_id === astronaut.id)
+          .map((record) => ({
+            id: record.id,
+            astronautId: record.astronaut_id,
+            type: record.type,
+            data: typeof record.data === 'string' ? JSON.parse(record.data) : record.data,
+            recordedAt: record.recorded_at
+          }))
+      }))
+    },
+
     async verifyNfcCard(nfcCardId: string) {
       const client = createAnonymousClient()
 
@@ -202,6 +245,45 @@ export function createSqliteAstronautAuthProvider(
   db: { exec: (sql: string) => any[] }
 ): AstronautAuthProvider {
   return {
+    async listMissionControlAstronauts() {
+      const result = db.exec('SELECT id, name, role, mission FROM astronauts ORDER BY name')
+      const rows = result[0]?.values || []
+      const columns = result[0]?.columns || []
+      const astronauts = rows.map((row: unknown[]) =>
+        Object.fromEntries(columns.map((column: string, index: number) => [column, row[index]]))
+      )
+
+      return astronauts.map((astronaut: Record<string, unknown>) => {
+        const astronautId = String(astronaut.id).replace(/'/g, "''")
+        const healthResult = db.exec(
+          `SELECT id, astronaut_id, type, data, recorded_at FROM health_records WHERE astronaut_id = '${astronautId}' ORDER BY recorded_at DESC`
+        )
+        const recordRows = healthResult[0]?.values || []
+        const recordColumns = healthResult[0]?.columns || []
+        const healthRecords = recordRows.map((row: unknown[]) => {
+          const record = Object.fromEntries(recordColumns.map(
+            (column: string, index: number) => [column, row[index]]
+          ))
+          const recordType = String(record.type) as HealthRecord['type']
+          return {
+            id: String(record.id),
+            astronautId: String(record.astronaut_id),
+            type: recordType,
+            data: typeof record.data === 'string' ? JSON.parse(record.data) : record.data,
+            recordedAt: String(record.recorded_at)
+          }
+        })
+
+        return {
+          id: String(astronaut.id),
+          name: String(astronaut.name),
+          role: String(astronaut.role),
+          mission: String(astronaut.mission),
+          healthRecords
+        }
+      })
+    },
+
     async verifyNfcCard(nfcCardId: string) {
       // Query SQLite database for astronaut with this NFC card
       const result = db.exec(
