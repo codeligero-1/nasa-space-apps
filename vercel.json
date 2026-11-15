@@ -17,12 +17,6 @@
       "dest": "/backend/src/api/index.ts"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "staticRoutes": [
-    {
       "src": "/html/(.*)",
       "dest": "/html/$1"
     },
@@ -37,6 +31,10 @@
     {
       "src": "/admin/(.*)",
       "dest": "/html/admin/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/html/$1"
     }
   ]
 }
