@@ -1505,77 +1505,91 @@ function askPetAI(query) {
   appState.petAiFirstTokenReceived = false;
   appState.petAiIsStreaming = true;
 
-  // --- HARD-CODED RESPONSES ---
+  // --- HARD-CODED RESPONSES (exact matches for suggested queries) ---
   const responses = {
-    // Health summary
-    'summarize': `**Health Summary for ${DEMO.profile?.name || 'Crew Member'}**
+    "explain my hemoglobin": `**Hemoglobin (Hb)**
 
-**Vitals**: ${D.filter(g => g[3] === 'vitals').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} measurements recorded
-**Blood**: ${D.filter(g => g[3] === 'blood').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} parameters measured
-**Radiation**: ${D.filter(g => g[3] === 'radiation').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} readings recorded
+**Current Value**: ${displayValue(D.flatMap(g => g[2]).find(r => r[6] === 'hemoglobin') || ['', '', 'Not Available'])} g/dL
+**Reference Range**: 13.5–17.5 g/dL (male) / 12.0–15.5 g/dL (female)
+**Status**: ${(() => { const r = D.flatMap(g => g[2]).find(r => r[6] === 'hemoglobin'); if (!r || !Number.isFinite(r[2])) return 'Not Available'; return statusForReading(r)[1]; })()}
 
-**Current Status**: ${appState.activeTab === 'overview' ? 'All systems nominal' : 'View details in Analytics tab'}
-
-> *Demo data reflects simulated mission day readings. Not real medical data.*`,
-
-    // Hemoglobin
-    'hemoglobin': `**Hemoglobin (Hb)**
-
-**Current**: ${displayValue(D.flatMap(g => g[2]).find(r => r[6] === 'hemoglobin') || ['', '', 'Not Available'])} g/dL
-**Reference**: 13.5–17.5 g/dL (male) / 12.0–15.5 g/dL (female)
-
-**Spaceflight Context**: Hemoglobin typically decreases 10–15% during long-duration missions due to reduced plasma volume ("space anemia"). Recovery occurs within weeks of return.
+**Spaceflight Context**: Hemoglobin typically decreases 10–15% during long-duration missions due to reduced plasma volume ("space anemia"). Recovery occurs within weeks of return to gravity.
 
 **Clinical Note**: Values below 10 g/dL may require evaluation for iron deficiency or hemolysis.
 
-> *This is informational, not a diagnosis.*`,
+> *This is informational, not a medical diagnosis. Consult flight surgeon for clinical decisions.*`,
 
-    // General warnings/alerts
-    'warning': `**Current Alerts**
+    "summarize my health": `**Health Summary for ${DEMO.profile?.name || 'Crew Member'}**
+
+**Vital Signs**: ${D.filter(g => g[3] === 'vitals').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} measurements recorded
+**Blood Chemistry**: ${D.filter(g => g[3] === 'blood').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} parameters measured
+**Radiation Exposure**: ${D.filter(g => g[3] === 'radiation').flatMap(g => g[2]).filter(r => Number.isFinite(r[2])).length} readings recorded
+
+**Overall Status**: ${(() => {
+  const issues = []; D.forEach(g => g[2].forEach(r => { const [k] = statusForReading(r); if (k === 'low' || k === 'warn') issues.push(r[0]); }));
+  return issues.length ? `⚠ ${issues.length} parameter(s) flagged: ${issues.join(', ')}` : '✅ All measured parameters within configured reference ranges';
+})()}
+
+**Latest Sample**: ${currentTestMetadata('blood')}
+
+> *Demo data reflects simulated mission day readings. Not real medical data.*`,
+
+    "any warnings?": `**Current Alerts & Warnings**
 
 ${(() => {
-  const issues = [];
+  const alerts = [];
   D.forEach(group => group[2].forEach(reading => {
     const [key, label] = statusForReading(reading);
     if (key === 'low' || key === 'warn') {
-      issues.push(`• **${reading[0]}**: ${label} — ${displayValue(reading)} ${reading[1]}`);
+      alerts.push(`• **${reading[0]}**: ${label} — ${displayValue(reading)} ${reading[1]}`);
     }
   }));
-  return issues.length ? issues.join('\n') : 'No critical alerts. All measured parameters within configured reference ranges.';
+  if (!alerts.length) return '✅ No critical alerts. All measured parameters within configured reference ranges.';
+  return alerts.join('\n');
 })()}
 
-> *Borderline results warrant re-analysis on next sample collection.*`,
-
-    // What tests next
-    'test': `**Recommended Next Analyses**
-
-1. **Repeat CBC** — Monitor hemoglobin, hematocrit, WBC trends
-2. **Comprehensive Metabolic Panel** — Liver/kidney function, electrolytes
-3. **Radiation Dosimetry** — Cumulative dose tracking (passive + active)
-4. **Bone Markers** — CTX, P1NP for bone turnover assessment
-5. **Immune Panel** — Cytokines, T-cell subsets for immune monitoring
-
-**Schedule**: Per mission protocol, typically every 30 days or after EVA/solar events.
-
-> *Consult flight surgeon for mission-specific requirements.*`,
-
-    // What to monitor
-    'monitor': `**Key Metrics to Track**
-
-**Weekly**: Hemoglobin, hematocrit, WBC, platelets
-**Bi-weekly**: Creatinine, ALT/AST, calcium, vitamin D
-**Monthly**: Radiation dose, bone density (DEXA if available), eye exam (SANS)
-
-**Red Flags** (escalate immediately):
-- Hb drop >2 g/dL from baseline
-- WBC <3.0 or >15.0 ×10⁹/L
-- Creatinine rise >0.3 mg/dL
-- New arrhythmia or vision changes
+**Action Required**: Flagged parameters should be re-analyzed on next sample collection. Escalate to flight surgeon if values trend outside nominal range.
 
 > *Automated alerts configured in dashboard for threshold breaches.*`,
 
-    // Default fallback
-    'default': `I can explain your recorded measurements, reference ranges, or pre-flight comparisons. Try asking:
+    "what tests next?": `**Recommended Next Analyses**
+
+1. **Repeat CBC** — Monitor hemoglobin, hematocrit, WBC, platelet trends
+2. **Comprehensive Metabolic Panel** — Liver/kidney function, electrolytes, glucose
+3. **Radiation Dosimetry** — Cumulative dose tracking (passive + active detectors)
+4. **Bone Turnover Markers** — CTX, P1NP for bone loss assessment
+5. **Immune Function Panel** — Cytokines, T-cell subsets, reactivated viruses
+6. **Ophthalmic Exam** — SANS screening (optic disc edema, choroidal folds)
+
+**Standard Schedule**: Every 30 mission days, or within 72h post-EVA / solar particle event.
+
+> *Mission-specific protocols may vary. Confirm with flight surgeon.*`,
+
+    "what should i monitor?": `**Key Metrics to Track**
+
+**Weekly (Automated)**:
+• Hemoglobin, Hematocrit, WBC, Platelets
+• Heart rate, Blood pressure, Temperature
+
+**Bi-weekly**:
+• Creatinine, eGFR, ALT, AST, Calcium, Vitamin D
+• Radiation dose accumulation
+
+**Monthly**:
+• Bone density (DEXA if available)
+• Ophthalmic exam (SANS protocol)
+• Body composition, Muscle mass
+
+**🔴 Red Flags — Escalate Immediately**:
+• Hb drop >2 g/dL from baseline
+• WBC <3.0 or >15.0 ×10⁹/L
+• Creatinine rise >0.3 mg/dL from baseline
+• New arrhythmia, vision changes, persistent headache
+• Radiation dose > career limit threshold
+
+> *Automated dashboard alerts fire on threshold breach. Review Analytics tab for trends.*`,
+
+    'default': `I can explain your recorded measurements, reference ranges, or pre-flight comparisons. Try these exact queries:
 
 • "Explain my hemoglobin"
 • "Summarize my health"
@@ -1583,26 +1597,40 @@ ${(() => {
 • "What tests next?"
 • "What should I monitor?"
 
-Or ask about any metric by name/abbreviation (e.g., "What is my creatinine?").`
+Or ask about any metric by name/abbreviation (e.g., "creatinine", "WBC", "radiation dose").`
   };
 
-  // Match query to response
-  const normalizedQuery = query.toLowerCase();
+  // Match query to response (exact match for suggested queries, keyword fallback for others)
+  const normalizedQuery = query.toLowerCase().trim();
   let responseKey = 'default';
 
-  if (normalizedQuery.includes('summarize') || normalizedQuery.includes('summary') || normalizedQuery.includes('overall')) {
-    responseKey = 'summarize';
-  } else if (normalizedQuery.includes('hemoglobin') || normalizedQuery.includes('hb ') || normalizedQuery.includes(' hb')) {
-    responseKey = 'hemoglobin';
-  } else if (normalizedQuery.includes('warning') || normalizedQuery.includes('alert') || normalizedQuery.includes('problem') || normalizedQuery.includes('issue')) {
-    responseKey = 'warning';
-  } else if (normalizedQuery.includes('test') || normalizedQuery.includes('next') || normalizedQuery.includes('recommend')) {
-    responseKey = 'tests';
-  } else if (normalizedQuery.includes('monitor') || normalizedQuery.includes('track') || normalizedQuery.includes('watch')) {
-    responseKey = 'monitor';
+  // Exact matches for the 5 suggested queries
+  if (normalizedQuery === 'explain my hemoglobin') {
+    responseKey = 'explain my hemoglobin';
+  } else if (normalizedQuery === 'summarize my health') {
+    responseKey = 'summarize my health';
+  } else if (normalizedQuery === 'any warnings?') {
+    responseKey = 'any warnings?';
+  } else if (normalizedQuery === 'what tests next?') {
+    responseKey = 'what tests next?';
+  } else if (normalizedQuery === 'what should i monitor?') {
+    responseKey = 'what should i monitor?';
+  } else {
+    // Keyword fallback for variations
+    if (normalizedQuery.includes('summarize') || normalizedQuery.includes('summary') || normalizedQuery.includes('overall')) {
+      responseKey = 'summarize my health';
+    } else if (normalizedQuery.includes('hemoglobin') || normalizedQuery.includes('hb ') || normalizedQuery.includes(' hb')) {
+      responseKey = 'explain my hemoglobin';
+    } else if (normalizedQuery.includes('warning') || normalizedQuery.includes('alert') || normalizedQuery.includes('problem') || normalizedQuery.includes('issue')) {
+      responseKey = 'any warnings?';
+    } else if (normalizedQuery.includes('test') || normalizedQuery.includes('next') || normalizedQuery.includes('recommend')) {
+      responseKey = 'what tests next?';
+    } else if (normalizedQuery.includes('monitor') || normalizedQuery.includes('track') || normalizedQuery.includes('watch')) {
+      responseKey = 'what should i monitor?';
+    }
   }
 
-  // Try to match specific metrics
+  // Try to match specific metrics (for other queries)
   const metricMatch = metricDefinitions.find(def => {
     const aliases = [def.id, def.name, def.abbreviation].map(a => a.toLowerCase());
     return aliases.some(a => a.length > 2 && normalizedQuery.includes(a));
