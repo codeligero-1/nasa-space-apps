@@ -179,7 +179,8 @@
       <div class="crew-card-mini">
         <div class="crew-avatar" id="crewInitials">CM</div>
         <div>
-          <strong id="activeCrewName">Crew Member</strong>
+          <strong id="activeCrewName">Alex Vance</strong>
+          <small id="activeCrewDetails">ARTEMIS-V · Starliner</small>
           <small id="activeCardId">NFC •••• 4821</small>
         </div>
       </div>
@@ -333,8 +334,13 @@
         <div id="log" aria-live="polite"></div>
         <div class="qs" id="qs"></div>
 
+        <div class="orbit-controls">
+          <button class="btn ghost sm orbit-new-chat" id="newChatBtn" type="button" aria-label="Start new conversation">New Conversation</button>
+          <div class="qs" id="petAiQuickSuggestions"></div>
+        </div>
+
         <form class="in" id="f">
-          <input id="q" placeholder="Ask Orbit about hemoglobin, WBC, tests..." aria-label="Ask Orbit">
+          <input id="q" placeholder="Ask Orbit about hemoglobin, WBC, tests..." aria-label="Ask Orbit" autocomplete="off">
           <button class="btn ghost sm orbit-mic-toggle" id="orbitMicToggle" type="button" aria-pressed="false" aria-label="Ask Orbit by voice" title="Ask Orbit by voice">Speak</button>
           <button class="btn sm" type="submit">Send</button>
         </form>

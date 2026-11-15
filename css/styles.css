@@ -890,9 +890,13 @@ button {
 }
 
 .crew-card-mini small {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
   color: var(--mute);
   font-size: 12px;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .nav-item {
@@ -1912,5 +1916,297 @@ form.in input {
   .onboarding-screen::after,
   .shooting-star {
     animation: none;
+  }
+}
+
+/* =========================================================
+   PET AI CHAT STYLES
+   ========================================================= */
+
+.orbit-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.orbit-new-chat {
+  background: var(--surf2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.orbit-new-chat:hover {
+  border-color: var(--accent);
+  background: var(--surf);
+}
+
+.orbit-controls .qs {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.orbit-controls .qs button {
+  background: var(--surf2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 13px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.orbit-controls .qs button:hover {
+  border-color: var(--accent);
+}
+
+.pet-ai-streaming .pet-ai-typing {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.pet-ai-typing span {
+  width: 6px;
+  height: 6px;
+  background: var(--mute);
+  border-radius: 50%;
+  animation: pet-ai-typing-bounce 1.4s ease-in-out infinite both;
+}
+
+.pet-ai-typing span:nth-child(1) { animation-delay: 0s; }
+.pet-ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+.pet-ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pet-ai-typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pet-ai-text {
+  line-height: 1.6;
+}
+
+.pet-ai-sources {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.sources-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mute);
+  padding: 4px 0;
+}
+
+.sources-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sources-list li {
+  font-size: 11px;
+  color: var(--mute);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--surf2);
+  border-radius: 6px;
+}
+
+.source-type {
+  font-weight: 700;
+  text-transform: capitalize;
+  background: var(--accent);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.source-date {
+  flex: 1;
+}
+
+.source-similarity {
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  color: var(--ok);
+}
+
+.pet-ai-disclaimer {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--warnbg);
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--warn);
+  line-height: 1.5;
+}
+
+/* Markdown rendering styles */
+.b.p .markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 13px;
+  overflow-x: auto;
+  display: block;
+}
+
+.b.p .markdown-table th,
+.b.p .markdown-table td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.b.p .markdown-table th {
+  background: var(--surf2);
+  font-weight: 700;
+  color: var(--ink);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.b.p .markdown-table tr:nth-child(even) td {
+  background: var(--surf2);
+}
+
+.b.p .markdown-table tr:hover td {
+  background: var(--line);
+}
+
+.b.p h1, .b.p h2, .b.p h3 {
+  margin: 8px 0 4px;
+  font-family: "Outfit", sans-serif;
+  line-height: 1.3;
+}
+
+.b.p h1 { font-size: 18px; }
+.b.p h2 { font-size: 16px; }
+.b.p h3 { font-size: 14.5px; }
+
+.b.p strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.b.p em {
+  font-style: italic;
+  color: var(--ink);
+}
+
+.b.p code {
+  background: var(--surf2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+}
+
+.b.p ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.b.p li {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.b.p br {
+  content: "";
+  display: block;
+  margin: 4px 0;
+}
+
+.pet-ai-disclaimer .markdown-table {
+  font-size: 11px;
+}
+
+.pet-ai-disclaimer th,
+.pet-ai-disclaimer td {
+  padding: 4px 6px;
+}
+
+/* Responsive fixes for chat input area */
+form.in {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+form.in input {
+  flex: 1;
+  min-width: 120px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.orbit-mic-toggle {
+  flex-shrink: 0;
+  padding: 0 12px;
+  height: 40px;
+  min-width: 40px;
+}
+
+@media (max-width: 480px) {
+  .orbit-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .orbit-controls .qs {
+    justify-content: center;
+  }
+
+  form.in {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  form.in input {
+    width: 100%;
+  }
+
+  .orbit-mic-toggle {
+    width: 100%;
+    padding: 0;
+    height: 44px;
   }
 }

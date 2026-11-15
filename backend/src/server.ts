@@ -331,7 +331,7 @@ async function getValidSession(
   return updated
 }
 
-async function getValidAstronautSession(
+export async function getValidAstronautSession(
   request: IncomingMessage,
   response: ServerResponse,
   sessions: Map<string, StoredAstronautSession>,

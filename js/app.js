@@ -18,7 +18,12 @@ const appState = {
   historyCategory: 'blood',
   historyMetric: 'hemoglobin',
   historyDate: '',
-  importedFile: ''
+  importedFile: '',
+  // PET AI state
+  petAiIsStreaming: false,
+  petAiCurrentMessageElement: null,
+  petAiFirstTokenReceived: false,
+  petAiAbortController: null
 };
 
 const DEMO = window.VITAL_DEMO_DATA;
@@ -478,16 +483,25 @@ async function handleCardTap() {
         $('#t1').textContent = 'Tap your NFC card to start';
         // Use demo astronaut profile
         const demoAstronaut = {
+<<<<<<< HEAD
           id: DEMO.profile.astronautId,
           name: DEMO.profile.name,
           role: 'Commander',
           mission: DEMO.profile.missionCode,
+=======
+          ...DEMO.profile,
+          id: DEMO.profile.astronautId,
+>>>>>>> 889274c1378d20f0cbc73f0511de16d13e28e24b
           nfcCardId: 'DEMO-4821',
           avatarUrl: null,
           healthRecords: []
         };
         appState.astronautProfile = demoAstronaut;
+<<<<<<< HEAD
         updateCrewProfile(demoAstronaut.name, demoAstronaut.nfcCardId);
+=======
+        updateCrewProfile(demoAstronaut);
+>>>>>>> 889274c1378d20f0cbc73f0511de16d13e28e24b
         prepareVialScreen();
         show('s2');
         appState.loginInProgress = false;
@@ -547,7 +561,7 @@ async function handleCardTap() {
         }
 
         appState.astronautProfile = astronaut;
-        updateCrewProfile(astronaut.name, astronaut.nfcCardId);
+        updateCrewProfile(astronaut);
 
         playSound('login');
         $('#s1').classList.add('leaving');
@@ -606,10 +620,17 @@ async function handleCardTap() {
   }
 }
 
-function updateCrewProfile(name, cardId = '') {
+function updateCrewProfile(profile) {
+  const name = profile.name || 'Crew Member';
+  const cardId = profile.nfcCardId || '';
+  const details = [profile.role, profile.mission || profile.missionCode, profile.spacecraft]
+    .filter(Boolean)
+    .join(' · ');
   const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
   $('#activeCrewName').textContent = name;
   $('#crewInitials').textContent = initials || 'CR';
+  $('#activeCrewDetails').textContent = details || 'Crew profile';
+  $('#activeCrewDetails').title = details;
   $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
 }
 
@@ -1389,6 +1410,298 @@ function askAssistant(query) {
   setTimeout(() => say(answer), 420);
 }
 
+/**
+ * PET AI Chat - SSE-based streaming chat with backend
+ */
+function askPetAI(query) {
+  say(query, true);
+
+  // Abort any existing request
+  if (appState.petAiAbortController) {
+    appState.petAiAbortController.abort();
+  }
+  appState.petAiAbortController = new AbortController();
+
+  // Get or create session ID
+  let sessionId = localStorage.getItem('petAiSessionId');
+  if (!sessionId) {
+    sessionId = 'pet_ai_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('petAiSessionId', sessionId);
+  }
+
+  // Create assistant message element
+  const log = $('#log');
+  const messageEl = document.createElement('div');
+  messageEl.className = 'b p pet-ai-streaming';
+  messageEl.innerHTML = `
+    <span class="pet-ai-text"></span>
+    <span class="pet-ai-typing"><span>●</span><span>●</span><span>●</span></span>
+  `;
+  log.appendChild(messageEl);
+  log.scrollTop = log.scrollHeight;
+
+  appState.petAiCurrentMessageElement = messageEl;
+  appState.petAiFirstTokenReceived = false;
+  appState.petAiIsStreaming = true;
+
+  // Get astronaut ID from current profile
+  const astronautId = DEMO.profile?.astronautId;
+  if (!astronautId) {
+    handlePetAiError('No astronaut profile loaded');
+    return;
+  }
+
+  // Send request to backend
+  fetch('/api/pet-ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ message: query, sessionId }),
+    signal: appState.petAiAbortController.signal
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(err.message || `HTTP ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullResponse = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        let eventType = '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            try {
+              const data = JSON.parse(dataStr);
+
+              switch (eventType) {
+                case 'sources':
+                  handlePetAiSources(data.sources);
+                  break;
+                case 'token':
+                  if (data.token) {
+                    fullResponse += data.token;
+                    appendPetAiToken(data.token);
+                  }
+                  break;
+                case 'done':
+                  finishPetAiResponse(fullResponse, data.disclaimer);
+                  return;
+                case 'error':
+                  handlePetAiError(data.message);
+                  return;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    })
+    .catch((error) => {
+      if (error.name === 'AbortError') {
+        console.log('PET AI request aborted');
+        return;
+      }
+      console.error('PET AI error:', error);
+      handlePetAiError(error.message || 'Failed to connect to PET AI');
+    });
+}
+
+function appendPetAiToken(token) {
+  if (!appState.petAiCurrentMessageElement) return;
+  const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
+  const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
+
+  // Hide typing indicator on first token
+  if (!appState.petAiFirstTokenReceived && typingSpan) {
+    typingSpan.style.display = 'none';
+    appState.petAiFirstTokenReceived = true;
+  }
+
+  if (textSpan) {
+    textSpan.textContent += token;
+    const log = $('#log');
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+function handlePetAiSources(sources) {
+  if (!appState.petAiCurrentMessageElement || !sources || sources.length === 0) return;
+
+  // Create sources element
+  const sourcesEl = document.createElement('div');
+  sourcesEl.className = 'pet-ai-sources';
+  sourcesEl.innerHTML = `
+    <details class="sources-details">
+      <summary>Sources (${sources.length})</summary>
+      <ul class="sources-list">
+        ${sources.map(s => `
+          <li>
+            <span class="source-type">${s.type}</span>
+            <span class="source-date">${new Date(s.recordedAt).toLocaleDateString()}</span>
+            ${s.similarity !== undefined ? `<span class="source-similarity">${(s.similarity * 100).toFixed(1)}%</span>` : ''}
+          </li>
+        `).join('')}
+      </ul>
+    </details>
+  `;
+  appState.petAiCurrentMessageElement.appendChild(sourcesEl);
+}
+
+function finishPetAiResponse(fullResponse, disclaimer) {
+  appState.petAiIsStreaming = false;
+
+  if (!appState.petAiCurrentMessageElement) return;
+
+  // Remove streaming class and hide typing indicator
+  appState.petAiCurrentMessageElement.classList.remove('pet-ai-streaming');
+  const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
+  if (typingSpan) typingSpan.style.display = 'none';
+
+  // Render markdown in the response
+  const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
+  if (textSpan) {
+    textSpan.innerHTML = renderMarkdown(fullResponse);
+  }
+
+  // Add disclaimer if provided
+  if (disclaimer) {
+    const disclaimerEl = document.createElement('div');
+    disclaimerEl.className = 'pet-ai-disclaimer';
+    disclaimerEl.innerHTML = renderMarkdown(disclaimer);
+    appState.petAiCurrentMessageElement.appendChild(disclaimerEl);
+  }
+
+  // Speak the response if voice is enabled
+  if (appState.voiceEnabled && 'speechSynthesis' in window) {
+    // Clean response for speech (remove sources, disclaimer)
+    const speechText = fullResponse
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/#{1,6}\s+/g, '')
+      .trim();
+    say(speechText);
+  }
+
+  appState.petAiCurrentMessageElement = null;
+}
+
+/**
+ * Simple markdown renderer for chat responses
+ * Handles: **bold**, *italic*, bullet lists, line breaks, tables
+ */
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  // Escape HTML first
+  let html = text
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>');
+
+  // Tables (must be processed before other block elements)
+  html = html.replace(/^\|(.+)\|\s*\n\|([\s\-\|:]+)\|\s*\n((?:\|.+\|\s*\n?)+)/gm, (match, headerRow, separatorRow, bodyRows) => {
+    const headers = headerRow.split('|').map(h => h.trim()).filter(Boolean);
+    const alignments = separatorRow.split('|').map(s => s.trim()).filter(Boolean);
+    const rows = bodyRows.trim().split('\n').filter(r => r.trim().startsWith('|') && r.trim().endsWith('|'));
+
+    let tableHtml = '<table class="markdown-table"><thead><tr>';
+    headers.forEach((header, i) => {
+      const align = getAlignment(alignments[i]);
+      tableHtml += `<th${align ? ` style="text-align: ${align}"` : ''}>${header}</th>`;
+    });
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+      const cells = row.split('|').map(c => c.trim()).filter(Boolean);
+      tableHtml += '<tr>';
+      cells.forEach((cell, i) => {
+        const align = getAlignment(alignments[i]);
+        tableHtml += `<td${align ? ` style="text-align: ${align}"` : ''}>${cell}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+
+    tableHtml += '</tbody></table>';
+    return tableHtml;
+  });
+
+  function getAlignment(sep) {
+    if (!sep) return '';
+    const hasLeftColon = sep.startsWith(':');
+    const hasRightColon = sep.endsWith(':');
+    if (hasLeftColon && hasRightColon) return 'center';
+    if (hasLeftColon) return 'left';
+    if (hasRightColon) return 'right';
+    return '';
+  }
+
+  // Headers
+  html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+
+  // Bold: **text** or __text__
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+  // Italic: *text* or _text_ (but not already bold)
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+  // Inline code: `code`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bullet points: - text or * text at start of line
+  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => '<ul>' + match + '</ul>');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+function handlePetAiError(message) {
+  appState.petAiIsStreaming = false;
+
+  if (appState.petAiCurrentMessageElement) {
+    appState.petAiCurrentMessageElement.classList.remove('pet-ai-streaming');
+    const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
+    if (typingSpan) typingSpan.style.display = 'none;
+
+    const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
+    if (textSpan) {
+      textSpan.textContent = `Error: ${message}`;
+      textSpan.style.color = 'var(--err, #ff6b6b)';
+    }
+    appState.petAiCurrentMessageElement = null;
+  } else {
+    // Fallback: show error as a new message
+    say(`Error: ${message}`);
+  }
+
+  // Show toast for user awareness
+  toast(`PET AI: ${message}`, 5000);
+}
+
 /* Event Bindings */
 $('#soundToggle').onclick = () => {
   appState.soundsEnabled = !appState.soundsEnabled;
@@ -1528,7 +1841,7 @@ async function resetToOnboarding() {
   appState.activeTab = 'overview';
   appState.historyDate = '';
   D = createMetricGroups(currentRecord, activeBloodRecord);
-  updateCrewProfile(DEMO.profile.name);
+  updateCrewProfile({ ...DEMO.profile, nfcCardId: 'DEMO-4821' });
   $('#xlsxInput').value = '';
   $('#s1').classList.remove('leaving');
   $('#reader').classList.remove('reading');
@@ -1561,11 +1874,46 @@ document.querySelectorAll('#qs button').forEach((btn) => {
   btn.onclick = () => askAssistant(btn.textContent);
 });
 
+// PET AI Quick Suggestions
+$('#petAiQuickSuggestions').innerHTML = [
+  'Explain my hemoglobin',
+  'Summarize my health',
+  'Any warnings?',
+  'What tests next?',
+  'What should I monitor?'
+].map((q) => `<button type="button">${q}</button>`).join('');
+
+document.querySelectorAll('#petAiQuickSuggestions button').forEach((btn) => {
+  btn.onclick = () => askPetAI(btn.textContent);
+});
+
+// New Conversation button handler
+$('#newChatBtn').onclick = () => {
+  // Clear session ID to start fresh
+  localStorage.removeItem('petAiSessionId');
+  // Clear chat log
+  const log = $('#log');
+  log.innerHTML = '';
+  // Show initial message
+  say('New conversation started. How can I help you with your health data?');
+  // Re-render quick suggestions
+  $('#petAiQuickSuggestions').innerHTML = [
+    'Explain my hemoglobin',
+    'Summarize my health',
+    'Any warnings?',
+    'What tests next?',
+    'What should I monitor?'
+  ].map((q) => `<button type="button">${q}</button>`).join('');
+  document.querySelectorAll('#petAiQuickSuggestions button').forEach((btn) => {
+    btn.onclick = () => askPetAI(btn.textContent);
+  });
+};
+
 $('#f').onsubmit = (e) => {
   e.preventDefault();
   const val = $('#q').value.trim();
   if (val) {
-    askAssistant(val);
+    askPetAI(val);
     $('#q').value = '';
   }
 };
