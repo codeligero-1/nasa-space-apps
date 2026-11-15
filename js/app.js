@@ -1870,15 +1870,8 @@ function handleRegisterDialogClick(event) {
   }
 }
 
-$('#qs').innerHTML = [
-  'Why is hemoglobin low?',
-  'Explain my WBC count',
-  'What tests should I do next?'
-].map((q) => `<button type="button">${q}</button>`).join('');
-
-document.querySelectorAll('#qs button').forEach((btn) => {
-  btn.onclick = () => askAssistant(btn.textContent);
-});
+// Quick suggestions for Orbit Assistant removed - using dynamic input only
+$('#qs').innerHTML = '';
 
 // PET AI Quick Suggestions
 $('#petAiQuickSuggestions').innerHTML = [
