@@ -1909,6 +1909,29 @@ $('#f').onsubmit = (e) => {
   }
 };
 
+const orbitChatPanel = $('#orbitCard');
+const orbitChatToggle = $('#orbitChatToggle');
+const closeOrbitChat = () => {
+  orbitChatPanel.hidden = true;
+  orbitChatToggle.setAttribute('aria-expanded', 'false');
+  orbitChatToggle.setAttribute('aria-label', 'Open Orbit AI chat');
+};
+const openOrbitChat = () => {
+  orbitChatPanel.hidden = false;
+  orbitChatToggle.setAttribute('aria-expanded', 'true');
+  orbitChatToggle.setAttribute('aria-label', 'Close Orbit AI chat');
+  $('#q').focus();
+};
+$('#orbitChatIcon').innerHTML = orbitAvatarSVG();
+orbitChatToggle.onclick = () => orbitChatPanel.hidden ? openOrbitChat() : closeOrbitChat();
+$('#orbitChatClose').onclick = closeOrbitChat;
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !orbitChatPanel.hidden) {
+    closeOrbitChat();
+    orbitChatToggle.focus();
+  }
+});
+
 $('#petsvg').innerHTML = orbitAvatarSVG();
 watchAssistantVisibility();
 setupOrbitSpeechRecognition();

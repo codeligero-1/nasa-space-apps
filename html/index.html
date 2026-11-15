@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
@@ -306,6 +306,9 @@
       </p>
     </main>
 
+    <button class="orbit-chat-toggle" id="orbitChatToggle" type="button" aria-controls="orbitCard" aria-expanded="false" aria-label="Open Orbit AI chat" title="Chat with Orbit">
+      <span class="orbit-chat-avatar" id="orbitChatIcon" aria-hidden="true"></span>
+    </button>
     <!-- Right Column: Gamified Missions & Floating Orbit AI Assistant -->
     <aside class="side">
       <div class="card">
@@ -318,8 +321,9 @@
       </div>
 
       <!-- Orbit AI Assistant Card -->
-      <div class="card pet" id="orbitCard">
+      <div class="card pet orbit-chat-panel" id="orbitCard" aria-label="Orbit AI chat" hidden>
         <div class="pethd">
+          <button class="orbit-chat-close" id="orbitChatClose" type="button" aria-label="Close Orbit chat">×</button>
           <div class="orbit-avatar-wrap" id="petsvg"></div>
           <div class="orbit-heading">
             <div class="orbit-title-row">
@@ -405,4 +409,4 @@
   <script src="../js/demo-health-data.js" defer></script>
   <script src="../js/app.js" defer></script>
 </body>
-</html> 
+</html>
