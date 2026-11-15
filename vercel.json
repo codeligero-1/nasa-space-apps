@@ -3,7 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "node",
-  "installCommand": "npm install",
+  "installCommand": "npm install --include=dev",
   "devCommand": "npm run dev:server",
   "functions": {
     "api/index.ts": {
