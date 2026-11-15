@@ -192,14 +192,14 @@
         <button class="nav-item" data-tab="analytics" type="button">
           <span class="nav-dot"></span> Blood Analysis
         </button>
-        <button class="nav-item" data-tab="history" type="button">
-          <span class="nav-dot"></span> History
-        </button>
         <button class="nav-item" data-tab="radiation" type="button">
           <span class="nav-dot"></span> Radiation
         </button>
         <button class="nav-item" data-tab="alerts" type="button">
           <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
+        </button>
+        <button class="nav-item" data-tab="history" type="button">
+          <span class="nav-dot"></span> History
         </button>
       </div>
 
@@ -336,11 +336,10 @@
         </div>
 
         <div id="log" aria-live="polite"></div>
-        <div class="qs" id="qs"></div>
 
         <div class="orbit-controls">
           <button class="btn ghost sm orbit-new-chat" id="newChatBtn" type="button" aria-label="Start new conversation">New Conversation</button>
-          <div class="qs" id="petAiQuickSuggestions"></div>
+          <div class="qs" id="petAiQuickSuggestions" aria-label="Suggested questions"></div>
         </div>
 
         <form class="in" id="f">

@@ -717,6 +717,76 @@ window.VITAL_DEMO_DATA = {
       "warningHigh": 20.0,
       "criticalLow": 20.0,
       "criticalHigh": 40.0
+    },
+    "Respiratory Rate": {
+      "category": "Vital Signs",
+      "unit": "breaths/min",
+      "min": 12.0,
+      "max": 20.0,
+      "warningLow": 10.0,
+      "warningHigh": 24.0,
+      "criticalLow": 8.0,
+      "criticalHigh": 30.0
+    },
+    "Troponin-I": {
+      "category": "Biomarkers",
+      "unit": "ng/mL",
+      "min": 0.0,
+      "max": 0.04,
+      "warningHigh": 0.04,
+      "criticalHigh": 0.15
+    },
+    "Sodium": {
+      "category": "Biomarkers",
+      "unit": "mEq/L",
+      "min": 135.0,
+      "max": 145.0,
+      "warningLow": 130.0,
+      "warningHigh": 150.0,
+      "criticalLow": 125.0,
+      "criticalHigh": 155.0
+    },
+    "Potassium": {
+      "category": "Biomarkers",
+      "unit": "mEq/L",
+      "min": 3.5,
+      "max": 5.0,
+      "warningLow": 3.2,
+      "warningHigh": 5.3,
+      "criticalLow": 2.8,
+      "criticalHigh": 6.0
+    },
+    "Daily Physical Exposure": {
+      "category": "Physical Dosimetry",
+      "unit": "mSv/day",
+      "min": 0.5,
+      "max": 2.0,
+      "warningHigh": 5.0,
+      "criticalHigh": 50.0
+    },
+    "Cumulative Mission Dose": {
+      "category": "Physical Dosimetry",
+      "unit": "mSv",
+      "min": 0.0,
+      "max": 200.0,
+      "warningHigh": 300.0,
+      "criticalHigh": 500.0
+    },
+    "Cabin Background Rate": {
+      "category": "Physical Dosimetry",
+      "unit": "mGy",
+      "min": 0.01,
+      "max": 0.05,
+      "warningHigh": 0.2,
+      "criticalHigh": 1.0
+    },
+    "DNA Repair Capacity": {
+      "category": "Biodosimetry",
+      "unit": "%",
+      "min": 80.0,
+      "max": 100.0,
+      "warningLow": 65.0,
+      "criticalLow": 50.0
     }
   }
 };
