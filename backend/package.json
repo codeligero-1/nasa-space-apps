@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/main.ts",
     "dev:server": "tsx watch src/combined.ts",
     "type-check": "npx tsc --noEmit",
     "db:init": "tsx src/db/init.ts",
@@ -12,8 +12,8 @@
     "test:db": "tsx src/test-db.ts",
     "test:supabase": "tsx src/test-supabase.ts",
     "push:supabase": "tsx src/supabase-push.ts",
-    "build": "npx tsc --noEmit false --outDir dist",
-    "start": "node dist/index.js",
+    "build": "node node_modules/typescript/bin/tsc --noEmit false --outDir dist",
+    "start": "node dist/main.js",
     "start:server": "node dist/combined.js",
     "test:admin": "tsx --test src/admin-auth.test.ts src/server.test.ts"
   },
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/sql.js": "^1.4.11",
+    "@vercel/node": "^31.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

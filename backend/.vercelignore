@@ -1,0 +1,7 @@
+# Exclude ONLY the server build output from Vercel deployment
+# This prevents dist/ from being detected as entrypoint
+dist/
+
+# Keep everything else - needed for build and API function
+# backend/ (package.json, src/, api/, etc.)
+# html/, css/, js/ (static files)
