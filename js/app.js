@@ -741,7 +741,7 @@ function prepareVialScreen() {
   $('#send').textContent = flatMetrics.length ? 'Start Sample Analysis' : 'No Sample Results';
   $('#t2').textContent = flatMetrics.length ? `Ready to Analyze Samples for ${crewName}` : `No sample results for ${crewName}`;
   $('#p2').textContent = flatMetrics.length
-    ? `Theoretical demo record for ${crewName}. Only recorded blood measurements are shown.`
+    ? `Static SQLite dataset snapshot for AST-001. Only recorded blood measurements are shown.`
     : `No recorded blood measurements are linked to ${crewName}.`;
   $('#rs').textContent = flatMetrics.length
     ? `Analysis ready • ${flatMetrics.length} recorded measurements for ${crewName}`
@@ -759,7 +759,7 @@ function runVialCollection() {
   $('#send').textContent = 'Analyzing...';
   $('#t2').textContent = 'Analyzing Samples...';
   $('#p2').textContent = `Processing ${flatMetrics.length} recorded measurements for ${appState.astronautProfile?.name || DEMO.profile.name}.`;
-  $('#rs').textContent = 'Demo analysis in progress • Preparing recorded results';
+  $('#rs').textContent = 'SQLite snapshot analysis in progress • Preparing recorded results';
 
   let step = 0;
   const totalSteps = flatMetrics.length;
@@ -783,7 +783,7 @@ function runVialCollection() {
     }
 
     clearInterval(timer);
-    $('#rs').textContent = 'Analysis complete • Source-backed results ready';
+    $('#rs').textContent = 'Analysis complete • SQLite snapshot results ready';
     setTimeout(() => {
       buildDashboard();
       show('dash');
@@ -1016,6 +1016,29 @@ function getRangeIndicator(value, min, max) {
   };
 }
 
+function radiationThresholdSummary(metric, range) {
+  const thresholds = [
+    `Nominal ${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit}`
+  ];
+
+  if (Number.isFinite(range.warningLow)) {
+    thresholds.push(`Borderline <${formatNumber(range.min, metric)}`);
+    thresholds.push(`Warning <${formatNumber(range.warningLow, metric)}`);
+  }
+  if (Number.isFinite(range.criticalLow)) {
+    thresholds.push(`Critical <${formatNumber(range.criticalLow, metric)}`);
+  }
+  if (Number.isFinite(range.warningHigh)) {
+    thresholds.push(`Borderline >${formatNumber(range.max, metric)}`);
+    thresholds.push(`Warning >${formatNumber(range.warningHigh, metric)}`);
+  }
+  if (Number.isFinite(range.criticalHigh)) {
+    thresholds.push(`Critical >${formatNumber(range.criticalHigh, metric)}`);
+  }
+
+  return thresholds.join(' · ');
+}
+
 function renderMetricCard(reading, extraClass = '') {
   const metric = reading[9];
   const range = reading[8];
@@ -1046,15 +1069,18 @@ function renderMetricCard(reading, extraClass = '') {
         <span class="chip c-${resultKey}">${label}</span>
       </div>
       <div class="v">${displayValue(reading)} <small>${reading[1]}</small></div>
+      ${metric.section === 'radiation' && hasRange
+        ? `<div class="radiation-thresholds">${radiationThresholdSummary(metric, range)}</div>`
+        : ''}
       ${hasRange ? `
-        <div class="rg" aria-label="Reference range ${formatNumber(range.min, metric)} to ${formatNumber(range.max, metric)} ${metric.unit}">
+        <div class="rg" aria-label="${metric.section === 'radiation' ? 'Nominal range' : 'Reference range'} ${formatNumber(range.min, metric)} to ${formatNumber(range.max, metric)} ${metric.unit}">
           <i style="left:${band.left}%;width:${band.width}%"></i>
           ${indicator ? `<u style="left:${indicator.marker}%"></u>` : ''}
         </div>
         <div class="r">
-          <span>Min ${formatNumber(range.min, metric)}</span>
+          <span>${metric.section === 'radiation' ? 'Nominal min' : 'Min'} ${formatNumber(range.min, metric)}</span>
           <span>Nominal range</span>
-          <span>Max ${formatNumber(range.max, metric)}</span>
+          <span>${metric.section === 'radiation' ? 'Nominal max' : 'Max'} ${formatNumber(range.max, metric)}</span>
         </div>
       ` : '<div class="r"><span>Min —</span><span>Reference range not configured</span><span>Max —</span></div>'}
       <div class="d">
@@ -1873,9 +1899,6 @@ function handleRegisterDialogClick(event) {
     closeRegistration();
   }
 }
-
-// Quick suggestions for Orbit Assistant removed - using dynamic input only
-$('#qs').innerHTML = '';
 
 // PET AI Quick Suggestions
 $('#petAiQuickSuggestions').innerHTML = [

@@ -187,9 +187,9 @@ export function createSupabaseAstronautAuthProvider(
       const refreshToken = `refresh_demo_${sessionId}`
 
       return {
-        astronautProfile: astronautProfile,
-        astronautId: astronautProfile.id,
-        nfcCardId: astronautProfile.nfcCardId,
+        astronautProfile: profile,
+        astronautId: profile.id,
+        nfcCardId: profile.nfcCardId,
         accessToken,
         refreshToken
       }
