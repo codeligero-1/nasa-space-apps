@@ -1279,12 +1279,12 @@ function renderHistoryPanel() {
     ${Number.isFinite(percentChange) ? `<div><small>Change from baseline</small><strong>${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}% · ${difference > 0 ? 'Increased' : difference < 0 ? 'Decreased' : 'Unchanged'}</strong></div>` : ''}
   `;
 
-  const values = records.map((record, index) => ({
+  const values = records.map((record) => ({
     record,
-    index,
+    timestamp: Date.parse(`${record.date}T00:00:00`),
     value: metricValue(record, metric)
   }));
-  const available = values.filter((point) => Number.isFinite(point.value));
+  const available = values.filter((point) => Number.isFinite(point.value) && Number.isFinite(point.timestamp));
   if (!available.length) {
     $('#historyChart').textContent = 'No recorded values for this measurement.';
     return;
@@ -1295,17 +1295,21 @@ function renderHistoryPanel() {
   const padding = { top: 20, right: 24, bottom: 42, left: 48 };
   let min = Math.min(...available.map((point) => point.value));
   let max = Math.max(...available.map((point) => point.value));
+  const startTime = Math.min(...available.map((point) => point.timestamp));
+  const endTime = Math.max(...available.map((point) => point.timestamp));
   if (min === max) {
     min -= Math.abs(min * 0.05) || 1;
     max += Math.abs(max * 0.05) || 1;
   }
-  const x = (index) => padding.left + index * (width - padding.left - padding.right) / Math.max(1, values.length - 1);
+  const x = (timestamp) => padding.left + (
+    (timestamp - startTime) * (width - padding.left - padding.right) / Math.max(1, endTime - startTime)
+  );
   const y = (value) => padding.top + (max - value) * (height - padding.top - padding.bottom) / (max - min);
   const segments = [];
   let segment = [];
   values.forEach((point) => {
-    if (Number.isFinite(point.value)) {
-      segment.push(`${x(point.index)},${y(point.value)}`);
+    if (Number.isFinite(point.value) && Number.isFinite(point.timestamp)) {
+      segment.push(`${x(point.timestamp)},${y(point.value)}`);
     } else if (segment.length) {
       segments.push(segment.join(' '));
       segment = [];
@@ -1313,12 +1317,22 @@ function renderHistoryPanel() {
   });
   if (segment.length) segments.push(segment.join(' '));
 
+  const labeledPoints = [];
+  available.forEach((point, index) => {
+    const position = x(point.timestamp);
+    if (!labeledPoints.length || position - labeledPoints[labeledPoints.length - 1].position >= 52) {
+      labeledPoints.push({ point, position });
+    } else if (index === available.length - 1 && labeledPoints.length > 1) {
+      labeledPoints[labeledPoints.length - 1] = { point, position };
+    }
+  });
+
   $('#historyChart').innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metric.name} history chart">
       <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" class="history-axis"></line>
       ${segments.map((points) => `<polyline points="${points}" class="history-line"></polyline>`).join('')}
-      ${available.map((point) => `<circle cx="${x(point.index)}" cy="${y(point.value)}" r="4" class="history-point"><title>${formatDate(point.record.date)}: ${formatNumber(point.value, metric)} ${metric.unit}</title></circle>`).join('')}
-      ${values.map((point) => `<text x="${x(point.index)}" y="${height - 12}" text-anchor="middle" class="history-label">${point.record.label || formatDate(point.record.date)}</text>`).join('')}
+      ${available.map((point) => `<circle cx="${x(point.timestamp)}" cy="${y(point.value)}" r="4" class="history-point"><title>${formatDate(point.record.date)}: ${formatNumber(point.value, metric)} ${metric.unit}</title></circle>`).join('')}
+      ${labeledPoints.map(({ point, position }) => `<text x="${position}" y="${height - 12}" text-anchor="middle" class="history-label">${point.record.label || formatDate(point.record.date)}</text>`).join('')}
     </svg>
   `;
 }
@@ -1895,17 +1909,6 @@ $('#newChatBtn').onclick = () => {
   log.innerHTML = '';
   // Show initial message
   say('New conversation started. How can I help you with your health data?');
-  // Re-render quick suggestions
-  $('#petAiQuickSuggestions').innerHTML = [
-    'Explain my hemoglobin',
-    'Summarize my health',
-    'Any warnings?',
-    'What tests next?',
-    'What should I monitor?'
-  ].map((q) => `<button type="button">${q}</button>`).join('');
-  document.querySelectorAll('#petAiQuickSuggestions button').forEach((btn) => {
-    btn.onclick = () => askPetAI(btn.textContent);
-  });
 };
 
 $('#f').onsubmit = (e) => {
