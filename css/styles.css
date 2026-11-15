@@ -1856,10 +1856,9 @@ form.in input {
 }
 
 @keyframes planet-rotate {
-  to { transform: rotate(180deg); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
 }
-
-
 
 @keyframes stars-drift {
   to { background-position: 280px 280px; }
@@ -1880,10 +1879,6 @@ form.in input {
     transform: translate3d(var(--fall-x), 94vh, 0) rotate(var(--fall-angle)) scaleX(0.8);
     opacity: 0;
   }
-}
-
-@keyframes planet-rotate {
-  to { transform: rotate(180deg); }
 }
 
 @keyframes stars-drift {
