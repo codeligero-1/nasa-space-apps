@@ -1,0 +1,9 @@
+# Exclude ONLY the backend build output from Vercel deployment
+backend/dist/
+backend/node_modules/
+*.log
+.env
+.env.local
+.env.production.local
+
+# Keep everything else - static files, API function, backend source
