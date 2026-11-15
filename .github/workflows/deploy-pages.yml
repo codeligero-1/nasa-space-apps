@@ -1,0 +1,79 @@
+name: Deploy Static Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build static site
+        run: |
+          # Create deployment directory
+          mkdir -p _site
+
+          # Copy backend/public contents (html, js, css)
+          cp -r backend/public/* _site/
+
+          # Copy root assets to _site/assets (referenced as ../assets/ from html/)
+          cp -r assets _site/
+
+          # Fix absolute paths in admin login for GitHub Pages project site
+          # GitHub Pages serves at https://username.github.io/repo-name/
+          # So /assets/ needs to become ./assets/ or ../assets/ depending on location
+          REPO_NAME="${{ github.event.repository.name }}"
+          echo "Repository name: $REPO_NAME"
+
+          # Fix admin login.html - change /assets/ to ../assets/, /css/ to ../css/, /js/ to ../js/
+          if [ -f "_site/html/admin/login.html" ]; then
+            sed -i 's|href="/assets/|href="../assets/|g' _site/html/admin/login.html
+            sed -i 's|href="/css/|href="../css/|g' _site/html/admin/login.html
+            sed -i 's|href="/js/|href="../js/|g' _site/html/admin/login.html
+            sed -i 's|src="/assets/|src="../assets/|g' _site/html/admin/login.html
+            sed -i 's|src="/js/|src="../js/|g' _site/html/admin/login.html
+            echo "Fixed admin login.html paths"
+          fi
+
+          # Fix admin dashboard.js if it has absolute paths
+          if [ -f "_site/js/admin-dashboard.js" ]; then
+            sed -i 's|"/api/|"/'"$REPO_NAME"'/api/|g' _site/js/admin-dashboard.js
+            sed -i 's|"/admin/|"/'"$REPO_NAME"'/admin/|g' _site/js/admin-dashboard.js
+            echo "Fixed admin-dashboard.js paths"
+          fi
+
+          # Verify structure
+          echo "=== Deployment structure ==="
+          find _site -type f | sort
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

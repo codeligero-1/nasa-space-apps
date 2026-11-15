@@ -45,22 +45,24 @@
     </div>
 
     <section class="stats admin-dashboard-stats" aria-label="Overview statistics">
-      <article><b>6</b><span>Crew enrolled</span></article>
-      <article><b>4</b><span>Analyzers online</span></article>
-      <article><b>19</b><span>Samples this week</span></article>
-      <article><b>3</b><span>Flags to review</span></article>
+      <article><b id="adminCrewCount">—</b><span>Crew enrolled</span></article>
+      <article><b id="adminRecordCount">—</b><span>Health records</span></article>
+      <article><b id="adminCrewWithRecords">—</b><span>Crew with records</span></article>
+      <article><b id="adminMissionCount">—</b><span>Missions represented</span></article>
     </section>
+
+    <p class="admin-dashboard-note">Record access is restricted to authorized administrators. This view does not calculate clinical status; browser-local prototype alerts are not available to mission control.</p>
 
     <section class="card admin-dashboard-card" aria-labelledby="crewResultsHeading">
       <div class="admin-dashboard-card-heading">
         <h2 id="crewResultsHeading">Crew results</h2>
         <label class="admin-search-label" for="adminCrewSearch">Search crew
-          <input class="admin-crew-search" id="adminCrewSearch" type="search" placeholder="Name or card" autocomplete="off">
+          <input class="admin-crew-search" id="adminCrewSearch" type="search" placeholder="Name or mission" autocomplete="off">
         </label>
       </div>
       <div class="admin-table-scroll">
         <table>
-          <thead><tr><th scope="col">Crew</th><th scope="col">Card</th><th scope="col">Last sample</th><th scope="col">Status</th><th scope="col">Orbit score</th></tr></thead>
+          <thead><tr><th scope="col">Crew</th><th scope="col">Mission</th><th scope="col">Latest record</th><th scope="col">Records</th><th scope="col">Health record details</th></tr></thead>
           <tbody id="adminCrewResults"></tbody>
         </table>
       </div>
