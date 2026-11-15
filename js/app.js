@@ -483,25 +483,16 @@ async function handleCardTap() {
         $('#t1').textContent = 'Tap your NFC card to start';
         // Use demo astronaut profile
         const demoAstronaut = {
-<<<<<<< HEAD
-          id: DEMO.profile.astronautId,
-          name: DEMO.profile.name,
-          role: 'Commander',
-          mission: DEMO.profile.missionCode,
-=======
           ...DEMO.profile,
           id: DEMO.profile.astronautId,
->>>>>>> 889274c1378d20f0cbc73f0511de16d13e28e24b
+          role: 'Commander',
+          mission: DEMO.profile.missionCode,
           nfcCardId: 'DEMO-4821',
           avatarUrl: null,
           healthRecords: []
         };
         appState.astronautProfile = demoAstronaut;
-<<<<<<< HEAD
-        updateCrewProfile(demoAstronaut.name, demoAstronaut.nfcCardId);
-=======
         updateCrewProfile(demoAstronaut);
->>>>>>> 889274c1378d20f0cbc73f0511de16d13e28e24b
         prepareVialScreen();
         show('s2');
         appState.loginInProgress = false;
@@ -1685,7 +1676,7 @@ function handlePetAiError(message) {
   if (appState.petAiCurrentMessageElement) {
     appState.petAiCurrentMessageElement.classList.remove('pet-ai-streaming');
     const typingSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-typing');
-    if (typingSpan) typingSpan.style.display = 'none;
+    if (typingSpan) typingSpan.style.display = 'none';
 
     const textSpan = appState.petAiCurrentMessageElement.querySelector('.pet-ai-text');
     if (textSpan) {
