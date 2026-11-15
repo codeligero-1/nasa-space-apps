@@ -293,10 +293,17 @@
         </div>
         <div class="radiation-summary">
           <strong>Quick read</strong>
-          <p>These readings come from the supplied project SQLite snapshot. It does not establish verified mission-specific dose limits or assay-validated biodosimetry cutoffs. Until an applicable limit is approved for the mission and test method, radiation readings remain Not Rated and should not be interpreted as safe or unsafe.</p>
+          <p>Configured radiation flags are provisional demo thresholds, not verified mission limits or assay-validated biodosimetry cutoffs. Do not interpret them as a safety or medical assessment.</p>
         </div>
         <p class="radiation-updated" id="radiationUpdatedAt"></p>
         <p class="radiation-intro">Radiation sensors measure exposure around the spacecraft. Blood tests look for signs of cell damage. Select a card for a simple explanation.</p>
+        <div class="radiation-import">
+          <label class="register-trigger file-upload-btn" for="radiationXlsxInput">
+            Import Radiation Results
+            <input type="file" id="radiationXlsxInput" accept=".xlsx,.xls,.csv" hidden>
+          </label>
+          <p>Spreadsheet columns: Astronaut ID, Test Date (YYYY-MM-DD), Metric, Value, Unit, and optional Sample ID. Use one row per metric per date; include daily dose readings to calculate cumulative dose. Cumulative dose is derived, not imported.</p>
+        </div>
 
         <div class="radiation-streams">
           <section class="radiation-stream" aria-labelledby="physicalDoseTitle">
@@ -312,7 +319,7 @@
           </section>
         </div>
 
-        <p class="radiation-note">Supplied project database snapshot—not live sensor or NASA telemetry, and not a medical assessment. Ask a qualified medical professional to interpret real results.</p>
+        <p class="radiation-note">Source data are a supplied project database snapshot, not live sensor or NASA telemetry. Imported records and acknowledgements are stored only in this browser. Cumulative dose is calculated from available daily-dose readings; missing days are not estimated. Ask a qualified medical professional to interpret real results.</p>
       </section>
 
       <p class="note">

@@ -19,6 +19,7 @@ const appState = {
   historyMetric: 'hemoglobin',
   historyDate: '',
   importedFile: '',
+  importedRadiationRecords: [],
   alerts: [],
   alertLog: [],
   // PET AI state
@@ -64,6 +65,7 @@ if (!currentRecord) {
 }
 
 let activeBloodRecord = currentRecord;
+let activeRadiationRecord = currentRecord;
 
 function metricLabel(metric) {
   return metric.name.toLowerCase() === metric.abbreviation.toLowerCase()
@@ -71,7 +73,7 @@ function metricLabel(metric) {
     : `${metric.name} (${metric.abbreviation})`;
 }
 
-function createMetricGroups(record, bloodRecord = record) {
+function createMetricGroups(record, bloodRecord = record, radiationRecord = record) {
   const groups = new Map();
 
   metricDefinitions.forEach((metric) => {
@@ -82,7 +84,11 @@ function createMetricGroups(record, bloodRecord = record) {
     }
 
     const range = metric.range ? DEMO.ranges[metric.range] || null : null;
-    const recordForMetric = metric.section === 'blood' ? bloodRecord : record;
+    const recordForMetric = metric.section === 'blood'
+      ? bloodRecord
+      : metric.section === 'radiation'
+        ? radiationRecord
+        : record;
     const measured = recordForMetric?.[metric.section]?.[metric.id];
     const value = Number.isFinite(measured) ? measured : null;
     groups.get(groupKey)[2].push([
@@ -104,6 +110,22 @@ function createMetricGroups(record, bloodRecord = record) {
 
 let D = createMetricGroups(currentRecord);
 
+function refreshMetricGroups() {
+  const radiationRecords = [
+    ...DEMO.records.filter((record) => record.type === 'flight' && record.radiation),
+    ...appState.importedRadiationRecords
+  ].sort((left, right) => left.date.localeCompare(right.date));
+  const latestRadiation = radiationRecords[radiationRecords.length - 1] || currentRecord;
+  activeRadiationRecord = {
+    ...currentRecord,
+    ...latestRadiation,
+    vitals: currentRecord.vitals,
+    blood: currentRecord.blood,
+    radiation: latestRadiation.radiation
+  };
+  D = createMetricGroups(currentRecord, activeBloodRecord, activeRadiationRecord);
+}
+
 function metricValue(record, metric) {
   const value = record?.[metric.section]?.[metric.id];
   return Number.isFinite(value) ? value : null;
@@ -123,15 +145,93 @@ function formatDate(value) {
     .toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function radiationStorageKey(astronautId) {
+  return `vital.radiation.${encodeURIComponent(astronautId)}`;
+}
+
+function isValidRadiationRecord(record, astronautId) {
+  if (!record || typeof record.id !== 'string' || record.astronautId !== astronautId ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(record.date || '') ||
+      !record.radiation || typeof record.radiation !== 'object') {
+    return false;
+  }
+  const radiationMetrics = metricDefinitions.filter((metric) => metric.section === 'radiation');
+  const values = Object.entries(record.radiation);
+  return values.length > 0 && values.every(([metricId, value]) => {
+    const metric = radiationMetrics.find((item) => item.id === metricId);
+    return metric && Number.isFinite(value) && value >= 0
+      && (metricId !== 'dnaRepair' || value <= 100);
+  });
+}
+
+function loadRadiationRecords(astronautId) {
+  let stored;
+  try {
+    stored = localStorage.getItem(radiationStorageKey(astronautId));
+  } catch (error) {
+    console.error('Could not access locally stored radiation records:', error);
+    toast(`Radiation records could not be loaded from this browser: ${error.message}`, 5000);
+    return [];
+  }
+  if (!stored) return [];
+
+  try {
+    const records = JSON.parse(stored);
+    if (!Array.isArray(records) || records.some((record) => !isValidRadiationRecord(record, astronautId))) {
+      throw new Error('Saved radiation records are invalid or belong to another crew profile.');
+    }
+    return records;
+  } catch (error) {
+    console.error('Could not parse locally stored radiation records:', error);
+    toast(`Saved radiation records could not be used: ${error.message}`, 5000);
+    return [];
+  }
+}
+
+function calculateImportedCumulativeDose(records) {
+  if (!records.length) return records;
+  const ordered = [...records].sort((left, right) => left.date.localeCompare(right.date));
+  const firstDate = ordered[0].date;
+  const lastSourceRecord = DEMO.records
+    .filter((record) => record.date < firstDate && Number.isFinite(record.radiation?.cumulativeDose))
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .pop();
+  const latestSourceFlight = DEMO.records
+    .filter((record) => record.type === 'flight' && record.radiation)
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .pop();
+  let runningDose = firstDate > (latestSourceFlight?.date || '')
+    ? lastSourceRecord?.radiation.cumulativeDose || 0
+    : 0;
+
+  return ordered.map((record) => {
+    if (Number.isFinite(record.radiation.dailyDose)) {
+      runningDose += record.radiation.dailyDose;
+    }
+    return {
+      ...record,
+      radiation: {
+        ...record.radiation,
+        cumulativeDose: Number(runningDose.toFixed(5))
+      }
+    };
+  });
+}
+
 function timeNote(record) {
   if (!record?.date) return '';
   return `${formatDate(record.date)}${record.time ? ` · Time ${record.time}` : ''}`;
 }
 
 function currentTestMetadata(section = 'blood') {
-  const record = section === 'blood' ? activeBloodRecord : currentRecord;
+  const record = section === 'blood'
+    ? activeBloodRecord
+    : section === 'radiation'
+      ? activeRadiationRecord
+      : currentRecord;
   return [
     section === 'blood' && appState.importedFile ? `Imported file: ${appState.importedFile}` : '',
+    section === 'radiation' && activeRadiationRecord.type === 'radiation' ? 'Imported radiation record' : '',
     timeNote(record),
     record?.sampleId ? `Sample ID: ${record.sampleId}` : ''
   ].filter(Boolean).join(' · ');
@@ -1054,7 +1154,7 @@ function handleSpreadsheetUpload(event) {
         blood: bloodValues
       };
       appState.importedFile = file.name;
-      D = createMetricGroups(currentRecord, activeBloodRecord);
+      refreshMetricGroups();
       toast(`Loaded ${updatedCount} metric${updatedCount === 1 ? '' : 's'}${skippedCount ? `; skipped ${skippedCount} invalid or unsupported row${skippedCount === 1 ? '' : 's'}` : ''}.`);
       prepareVialScreen();
       runVialCollection();
@@ -1067,8 +1167,148 @@ function handleSpreadsheetUpload(event) {
   event.target.value = '';
 }
 
+function handleRadiationUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    toast('Spreadsheet support is unavailable. Try reloading the page.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const workbook = XLSX.read(event.target.result, { type: 'array', cellDates: true });
+      if (!workbook.SheetNames.length) throw new Error('No worksheet was found.');
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      if (!rows.length) throw new Error('No radiation measurements were found.');
+
+      const valueFrom = (row, keys) => {
+        const key = keys.find((candidate) => row[candidate] !== undefined && row[candidate] !== null);
+        return key ? row[key] : undefined;
+      };
+      const parseDate = (value) => {
+        if (value instanceof Date && Number.isFinite(value.getTime())) {
+          return value.toISOString().slice(0, 10);
+        }
+        const date = String(value || '').trim().match(/^\d{4}-\d{2}-\d{2}$/)?.[0];
+        if (!date) return null;
+        const parsed = new Date(`${date}T00:00:00Z`);
+        return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date
+          ? date
+          : null;
+      };
+      const normalizeUnit = (unit) => String(unit)
+        .replace(/[Ââ]/g, '')
+        .toLowerCase()
+        .replace(/[ÂµÎ¼]/g, 'u')
+        .replace(/\s/g, '');
+      const astronautId = DEMO.profile.astronautId;
+      const activeAstronautId = appState.astronautProfile?.id || DEMO.profile.astronautId;
+      if (activeAstronautId !== astronautId) {
+        throw new Error('Radiation imports are currently supported only for the active demo astronaut profile.');
+      }
+      const radiationDefinitions = metricDefinitions.filter((metric) => metric.section === 'radiation');
+      const recordsByDate = new Map();
+
+      rows.forEach((row, index) => {
+        const rowNumber = index + 2;
+        const rowAstronaut = String(valueFrom(row, ['Astronaut ID', 'AstronautID', 'astronautId']) || '').trim();
+        if (rowAstronaut.toUpperCase() !== astronautId.toUpperCase()) {
+          throw new Error(`Row ${rowNumber}: Astronaut ID must match the active profile (${astronautId}).`);
+        }
+        const date = parseDate(valueFrom(row, ['Test Date', 'Date', 'date']));
+        if (!date) throw new Error(`Row ${rowNumber}: enter a valid Test Date in YYYY-MM-DD format.`);
+        if (DEMO.records.some((record) => record.date === date) ||
+            appState.importedRadiationRecords.some((record) => record.date === date)) {
+          throw new Error(`Row ${rowNumber}: ${date} already has a radiation record; duplicate dates are not imported.`);
+        }
+
+        const name = String(valueFrom(row, ['Metric', 'Parameter', 'Name']) || '')
+          .replace(/\s*\([^)]*\)\s*$/, '')
+          .trim()
+          .toLowerCase();
+        const metric = radiationDefinitions.find((definition) =>
+          [definition.id, definition.name, definition.abbreviation]
+            .some((candidate) => candidate.toLowerCase() === name)
+        );
+        if (!metric) throw new Error(`Row ${rowNumber}: unknown radiation metric "${name || '(blank)'}".`);
+        if (metric.id === 'cumulativeDose') {
+          throw new Error(`Row ${rowNumber}: cumulative dose is calculated from daily doses; do not import it.`);
+        }
+
+        const rawValue = valueFrom(row, ['Value', 'Result', 'Reading']);
+        const value = rawValue === undefined || String(rawValue).trim() === '' ? NaN : Number(rawValue);
+        const unit = String(valueFrom(row, ['Unit', 'Units']) || '').trim();
+        if (!Number.isFinite(value) || value < 0 ||
+            (metric.id === 'dnaRepair' && value > 100)) {
+          throw new Error(`Row ${rowNumber}: ${metric.name} must be a valid non-negative number${metric.id === 'dnaRepair' ? ' no greater than 100' : ''}.`);
+        }
+        if (!unit || normalizeUnit(unit) !== normalizeUnit(metric.unit)) {
+          throw new Error(`Row ${rowNumber}: ${metric.name} requires the unit "${metric.unit}".`);
+        }
+
+        if (!recordsByDate.has(date)) {
+          recordsByDate.set(date, {
+            id: `imported-radiation-${astronautId}-${date}`,
+            type: 'radiation',
+            astronautId,
+            date,
+            label: `Radiation ${date}`,
+            sampleId: String(valueFrom(row, ['Sample ID', 'SampleID', 'sampleId']) || '').trim() || null,
+            radiation: {}
+          });
+        }
+        const record = recordsByDate.get(date);
+        const sampleId = String(valueFrom(row, ['Sample ID', 'SampleID', 'sampleId']) || '').trim() || null;
+        if (record.sampleId && sampleId && record.sampleId !== sampleId) {
+          throw new Error(`Row ${rowNumber}: use one Sample ID per date.`);
+        }
+        if (Object.prototype.hasOwnProperty.call(record.radiation, metric.id)) {
+          throw new Error(`Row ${rowNumber}: ${metric.name} appears more than once for ${date}.`);
+        }
+        record.sampleId = record.sampleId || sampleId;
+        record.radiation[metric.id] = value;
+      });
+
+      const importedRecords = calculateImportedCumulativeDose([
+        ...appState.importedRadiationRecords,
+        ...recordsByDate.values()
+      ]);
+      if (importedRecords.some((record) => !isValidRadiationRecord(record, astronautId))) {
+        throw new Error('The imported data did not pass radiation record validation.');
+      }
+
+      try {
+        localStorage.setItem(radiationStorageKey(astronautId), JSON.stringify(importedRecords));
+      } catch (error) {
+        console.error('Could not save imported radiation records:', error);
+        throw new Error(`Radiation data could not be saved in this browser: ${error.message}`);
+      }
+      appState.importedRadiationRecords = importedRecords;
+      refreshMetricGroups();
+      appState.historyCategory = 'radiation';
+      $('#historyCategory').value = 'radiation';
+      appState.historyMetric = '';
+      appState.historyDate = '';
+      buildDashboard();
+      appState.activeTab = 'radiation';
+      updateDashboardTab();
+      toast(`Imported ${recordsByDate.size} radiation record${recordsByDate.size === 1 ? '' : 's'} for ${DEMO.profile.name}. Cumulative dose is a running sum of the imported daily doses.`);
+    } catch (error) {
+      console.error('Could not import radiation spreadsheet:', error);
+      toast(`Radiation import failed: ${error.message}`, 6000);
+    }
+  };
+  reader.onerror = () => toast('Could not read the selected radiation spreadsheet file.');
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
 /* Dashboard Builder */
 function buildDashboard() {
+  appState.importedRadiationRecords = loadRadiationRecords(DEMO.profile.astronautId);
+  refreshMetricGroups();
   const counts = { ok: 0, low: 0, high: 0, warn: 0, na: 0 };
   const issues = [];
   const missing = [];
@@ -1104,14 +1344,18 @@ function buildDashboard() {
   const issueChips = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`);
   const missingChips = missing.map((name) => `<span class="chip c-na">${name} (Submit new sample for re-analysis)</span>`);
   $('#hc').innerHTML = [...issueChips, ...missingChips].join('');
-  const astronautId = currentRecord.astronautId || DEMO.profile.astronautId;
   const activeAlerts = issues.map((issue) => {
     const reading = issue.reading;
     const metric = reading[9];
-    const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
+    const record = metric.section === 'blood'
+      ? activeBloodRecord
+      : metric.section === 'radiation'
+        ? activeRadiationRecord
+        : currentRecord;
+    const alertAstronautId = record.astronautId || DEMO.profile.astronautId;
     return {
-      id: JSON.stringify([astronautId, record.id, metric.id]),
-      astronautId,
+      id: JSON.stringify([alertAstronautId, record.id, metric.id]),
+      astronautId: alertAstronautId,
       recordId: record.id,
       metricId: metric.id,
       metricName: reading[0],
@@ -1318,7 +1562,11 @@ function renderGroups() {
             const card = renderMetricCard(reading);
             if (!filterAlertsOnly || !Number.isFinite(reading[2])) return card;
             const metric = reading[9];
-            const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
+            const record = metric.section === 'blood'
+              ? activeBloodRecord
+              : metric.section === 'radiation'
+                ? activeRadiationRecord
+                : currentRecord;
             const alert = appState.alerts.find((item) => (
               item.recordId === record.id && item.metricId === metric.id
             ));
@@ -1404,7 +1652,15 @@ function renderRadiationPanel() {
   const flagged = hasCritical || hasHigh || ratedStatuses.some(([key]) => key === 'warn');
   const statusNode = $('#radiationStatus');
   statusNode.className = `chip c-${hasCritical || hasHigh ? 'low' : flagged ? 'warn' : ratedStatuses.length ? 'ok' : 'na'}`;
-  statusNode.textContent = hasCritical ? 'Critical alert' : hasHigh ? 'High result' : flagged ? 'Warning' : ratedStatuses.length ? 'Within configured ranges' : 'Not Rated';
+  statusNode.textContent = hasCritical
+    ? 'Critical demo flag'
+    : hasHigh
+      ? 'High demo flag'
+      : flagged
+        ? 'Warning demo flag'
+        : ratedStatuses.length
+          ? 'Within demo ranges'
+          : 'Not Rated';
   bindMetricCards($('#radiationPanel'));
 }
 
@@ -1415,6 +1671,7 @@ function historyRecords(category) {
   if (category === 'blood' && activeBloodRecord.id.startsWith('imported-') && activeBloodRecord.date) {
     records.push(activeBloodRecord);
   }
+  if (category === 'radiation') records.push(...appState.importedRadiationRecords);
   return records.sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -1984,6 +2241,7 @@ document.addEventListener('click', (event) => {
 
 $('#send').onclick = runVialCollection;
 $('#xlsxInput').onchange = handleSpreadsheetUpload;
+$('#radiationXlsxInput').onchange = handleRadiationUpload;
 $('#openAnalysisGuide').onclick = () => $('#analysisGuideDialog').showModal();
 $('#closeAnalysisGuide').onclick = () => $('#analysisGuideDialog').close();
 $('#closeAnalysisGuideIcon').onclick = () => $('#analysisGuideDialog').close();
@@ -2067,7 +2325,7 @@ async function resetToOnboarding() {
   appState.importedFile = '';
   appState.activeTab = 'overview';
   appState.historyDate = '';
-  D = createMetricGroups(currentRecord, activeBloodRecord);
+  refreshMetricGroups();
   updateCrewProfile({ ...DEMO.profile, nfcCardId: 'DEMO-4821' });
   $('#xlsxInput').value = '';
   $('#s1').classList.remove('leaving');
