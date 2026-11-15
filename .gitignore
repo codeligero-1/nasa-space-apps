@@ -55,3 +55,4 @@ backend/cookies.txt
 nasa-space-apps/
 
 .vercel
+.env*

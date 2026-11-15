@@ -12,7 +12,7 @@
     "test:db": "tsx src/test-db.ts",
     "test:supabase": "tsx src/test-supabase.ts",
     "push:supabase": "tsx src/supabase-push.ts",
-    "build": "node node_modules/typescript/bin/tsc --noEmit false --outDir dist",
+    "build": "node node_modules/typescript/bin/tsc --noEmit false --outDir dist && cp package.json dist/",
     "start": "node dist/main.js",
     "start:server": "node dist/combined.js",
     "test:admin": "tsx --test src/admin-auth.test.ts src/server.test.ts"

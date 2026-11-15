@@ -1,0 +1,8 @@
+# Exclude source files that Vercel shouldn't process
+src/
+node_modules/
+dist/
+*.mjs
+*.js
+!api/
+!public/

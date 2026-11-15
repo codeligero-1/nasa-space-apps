@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "node",
+  "outputDirectory": "public",
+  "buildCommand": "echo 'no build'",
+  "functions": {
+    "api/health.ts": { "maxDuration": 10 },
+    "api/admin/login.ts": { "maxDuration": 30 },
+    "api/admin/session.ts": { "maxDuration": 10 },
+    "api/admin/logout.ts": { "maxDuration": 10 },
+    "api/astronaut/verify-nfc.ts": { "maxDuration": 30 },
+    "api/astronaut/session.ts": { "maxDuration": 10 },
+    "api/astronaut/logout.ts": { "maxDuration": 10 },
+    "api/astronaut/profile.ts": { "maxDuration": 10 },
+    "api/pet-ai/chat.ts": { "maxDuration": 60 }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
