@@ -98,3 +98,101 @@ CREATE TABLE IF NOT EXISTS users (`)
     .replace(/UNIQUE \(project_id, judge_id, criterion_id\)/g, 'UNIQUE (project_id, judge_id, criterion_id)')
     .replace(/PRIMARY KEY \(team_id, user_id\)/g, 'PRIMARY KEY (team_id, user_id)')
 }
+
+async function generateSqlFile() {
+  console.log('[push] Converting schema to PostgreSQL...')
+  const pgSchema = toPostgres(schema)
+
+  const outputPath = resolve(__dirname, '..', '..', 'supabase-schema.sql')
+  writeFileSync(outputPath, pgSchema)
+  console.log(`[push] ✅ Schema saved to: ${outputPath}`)
+  console.log('[push]   → Run this in Supabase Dashboard → SQL Editor')
+
+  return pgSchema
+}
+
+async function pushData() {
+  console.log('[push] Reading SQLite data...')
+  const sqliteDb = await getDb()
+
+  const tables = [
+    'users', 'teams', 'team_members', 'projects',
+    'criteria', 'scores', 'comments'
+  ]
+
+  let totalRows = 0
+
+  for (const table of tables) {
+    console.log(`[push] Syncing ${table}...`)
+    const result = sqliteDb.exec(`SELECT * FROM ${table}`)
+
+    if (result.length === 0 || result[0].values.length === 0) {
+      console.log(`  No data in ${table}`)
+      continue
+    }
+
+    const columns = result[0].columns
+    const rows = result[0].values.map((row: any[]) => {
+      const obj: any = {}
+      columns.forEach((col, i) => { obj[col] = row[i] })
+      return obj
+    })
+
+    const pgRows = rows.map(row => {
+      const converted: any = {}
+      for (const [key, value] of Object.entries(row)) {
+        if (value === 0 || value === 1) {
+          // Boolean columns (is_public)
+          if (key === 'is_public') {
+            converted[key] = value === 1
+          } else {
+            converted[key] = value
+          }
+        } else if (typeof value === 'string' && key.endsWith('_at') && value) {
+          // Timestamps - ensure ISO format
+          converted[key] = value
+        } else {
+          converted[key] = value
+        }
+      }
+      return converted
+    })
+
+    const batchSize = 100
+    for (let i = 0; i < pgRows.length; i += batchSize) {
+      const batch = pgRows.slice(i, i + batchSize)
+      const { error } = await admin.from(table).upsert(batch, { onConflict: 'id' })
+      if (error) {
+        console.error(`  ❌ Failed:`, error.message)
+        if (error.code === 'PGRST116') {
+          console.log(`  ⏭ Table ${table} doesn't exist yet - run the generated SQL first`)
+        }
+        throw error
+      }
+    }
+    console.log(`  ✅ ${pgRows.length} rows`)
+    totalRows += pgRows.length
+  }
+
+  console.log(`\n[push] Total rows pushed: ${totalRows}`)
+}
+
+async function main() {
+  console.log('[push] Starting SQLite → Supabase sync...\n')
+
+  try {
+    await generateSqlFile()
+    console.log('')
+    await pushData()
+    console.log('\n[push] ✅ Data push complete!')
+    console.log('[push] 📋 Next: Run supabase-schema.sql in Supabase Dashboard → SQL Editor')
+  } catch (e) {
+    console.error('\n[push] ❌ Failed:', e instanceof Error ? e.message : e)
+    if ((e as any).code === 'PGRST116') {
+      console.log('[push] Tables don\'t exist yet. Run the generated supabase-schema.sql first.')
+    }
+    process.exit(1)
+  }
+}
+
+main()

@@ -482,16 +482,14 @@ async function handleCardTap() {
         $('#t1').textContent = 'Tap your NFC card to start';
         // Use demo astronaut profile
         const demoAstronaut = {
-          id: 'demo-1',
-          name: 'Crew Member',
-          role: 'Commander',
-          mission: 'Artemis III',
+          ...DEMO.profile,
+          id: DEMO.profile.astronautId,
           nfcCardId: 'DEMO-4821',
           avatarUrl: null,
           healthRecords: []
         };
         appState.astronautProfile = demoAstronaut;
-        updateCrewProfile('Crew Member', 'DEMO-4821');
+        updateCrewProfile(demoAstronaut);
         prepareVialScreen();
         show('s2');
         appState.loginInProgress = false;
@@ -537,7 +535,7 @@ async function handleCardTap() {
         // Success - got astronaut profile
         const astronaut = data.astronaut;
         appState.astronautProfile = astronaut;
-        updateCrewProfile(astronaut.name, astronaut.nfcCardId);
+        updateCrewProfile(astronaut);
 
         playSound('login');
         $('#s1').classList.add('leaving');
@@ -596,10 +594,17 @@ async function handleCardTap() {
   }
 }
 
-function updateCrewProfile(name, cardId = '') {
+function updateCrewProfile(profile) {
+  const name = profile.name || 'Crew Member';
+  const cardId = profile.nfcCardId || '';
+  const details = [profile.role, profile.mission || profile.missionCode, profile.spacecraft]
+    .filter(Boolean)
+    .join(' · ');
   const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
   $('#activeCrewName').textContent = name;
   $('#crewInitials').textContent = initials || 'CR';
+  $('#activeCrewDetails').textContent = details || 'Crew profile';
+  $('#activeCrewDetails').title = details;
   $('#activeCardId').textContent = cardId ? `NFC •••• ${cardId.slice(-4)}` : 'NFC •••• DEMO';
 }
 
@@ -1790,7 +1795,7 @@ async function resetToOnboarding() {
   appState.activeTab = 'overview';
   appState.historyDate = '';
   D = createMetricGroups(currentRecord, activeBloodRecord);
-  updateCrewProfile(DEMO.profile.name);
+  updateCrewProfile({ ...DEMO.profile, nfcCardId: 'DEMO-4821' });
   $('#xlsxInput').value = '';
   $('#s1').classList.remove('leaving');
   $('#reader').classList.remove('reading');
