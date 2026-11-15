@@ -164,6 +164,14 @@ async function seedAstronauts() {
   // Sample astronauts with NFC card IDs
   const astronauts = [
     {
+      id: 'AST-001',
+      name: 'Alex Vance',
+      role: 'Commander',
+      mission: 'ARTEMIS-V',
+      nfc_card_id: 'DEMO-4821',  // Demo NFC card
+      avatar_url: null
+    },
+    {
       id: randomUUID(),
       name: 'Cmdr. A. Reyes',
       role: 'Commander',
@@ -210,9 +218,119 @@ async function seedAstronauts() {
 
   // Sample health records
   const healthRecords = [
+    // Demo astronaut (AST-001) - Alex Vance
     {
       id: randomUUID(),
       astronaut_id: astronauts[0].id,
+      type: 'blood' as const,
+      data: JSON.stringify({
+        rbc: 5.11,
+        wbc: 8.46,
+        hemoglobin: 14.91,
+        hematocrit: 44.8,
+        platelets: 295.1,
+        neutrophils: 63.7,
+        lymphocytes: 27.9,
+        monocytes: 6.6,
+        eosinophils: 2.2,
+        basophils: 0.9,
+        immatureGranulocytes: 0.36,
+        erythroblasts: 0.04,
+        crp: 0.4,
+        ferritin: 156.3,
+        il6: 1.45,
+        tnfAlpha: 3.02,
+        cortisol: 13.7,
+        troponin: 0.0041,
+        sodium: 141.1,
+        potassium: 4.3
+      }),
+      recorded_at: '2025-11-14T00:00:00.000Z' // Baseline
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'vitals' as const,
+      data: JSON.stringify({
+        heartRate: 65.6,
+        systolic: 113.2,
+        diastolic: 73.3,
+        spo2: 99.2,
+        temperature: 36.6,
+        hrv: 61.9,
+        respiratoryRate: 12.0
+      }),
+      recorded_at: '2025-11-14T00:00:00.000Z' // Baseline
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'radiation' as const,
+      data: JSON.stringify({
+        dailyDose: 0.00738,
+        cumulativeDose: 2.7,
+        background: 0.0024
+      }),
+      recorded_at: '2025-11-14T00:00:00.000Z' // Baseline
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'blood' as const,
+      data: JSON.stringify({
+        rbc: 4.98,
+        wbc: 7.92,
+        hemoglobin: 14.3,
+        hematocrit: 43.2,
+        platelets: 287.4,
+        neutrophils: 61.2,
+        lymphocytes: 29.1,
+        monocytes: 7.1,
+        eosinophils: 2.4,
+        basophils: 1.1,
+        immatureGranulocytes: 0.41,
+        erythroblasts: 0.03,
+        crp: 0.6,
+        ferritin: 142.8,
+        il6: 1.67,
+        tnfAlpha: 3.45,
+        cortisol: 15.2,
+        troponin: 0.0038,
+        sodium: 140.5,
+        potassium: 4.4
+      }),
+      recorded_at: '2025-11-28T00:00:00.000Z' // Flight day 14
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'vitals' as const,
+      data: JSON.stringify({
+        heartRate: 67.3,
+        systolic: 115.8,
+        diastolic: 74.1,
+        spo2: 98.7,
+        temperature: 36.7,
+        hrv: 58.4,
+        respiratoryRate: 13.0
+      }),
+      recorded_at: '2025-11-28T00:00:00.000Z' // Flight day 14
+    },
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[0].id,
+      type: 'radiation' as const,
+      data: JSON.stringify({
+        dailyDose: 0.0125,
+        cumulativeDose: 3.1,
+        background: 0.0024
+      }),
+      recorded_at: '2025-11-28T00:00:00.000Z' // Flight day 14
+    },
+    // Cmdr. A. Reyes
+    {
+      id: randomUUID(),
+      astronaut_id: astronauts[1].id,
       type: 'blood' as const,
       data: JSON.stringify({
         hemoglobin: 14.2,
@@ -226,7 +344,7 @@ async function seedAstronauts() {
     },
     {
       id: randomUUID(),
-      astronaut_id: astronauts[0].id,
+      astronaut_id: astronauts[1].id,
       type: 'vitals' as const,
       data: JSON.stringify({
         heart_rate: 68,
@@ -239,7 +357,7 @@ async function seedAstronauts() {
     },
     {
       id: randomUUID(),
-      astronaut_id: astronauts[0].id,
+      astronaut_id: astronauts[1].id,
       type: 'radiation' as const,
       data: JSON.stringify({
         cumulative_dose: 12.5,
@@ -250,7 +368,7 @@ async function seedAstronauts() {
     },
     {
       id: randomUUID(),
-      astronaut_id: astronauts[1].id,
+      astronaut_id: astronauts[2].id,
       type: 'blood' as const,
       data: JSON.stringify({
         hemoglobin: 13.8,
@@ -264,7 +382,7 @@ async function seedAstronauts() {
     },
     {
       id: randomUUID(),
-      astronaut_id: astronauts[2].id,
+      astronaut_id: astronauts[3].id,
       type: 'vitals' as const,
       data: JSON.stringify({
         heart_rate: 72,

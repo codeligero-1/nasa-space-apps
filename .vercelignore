@@ -1,5 +1,4 @@
-# Exclude ONLY the backend build output from Vercel deployment
-backend/dist/
+# Exclude node_modules and environment files
 backend/node_modules/
 *.log
 .env

@@ -2031,3 +2031,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 console.log('[VITAL] App initialized - event handlers attached');
+
+// Initialize the app by showing the first screen
+resetToOnboarding();

@@ -637,7 +637,7 @@ function saveRegistration(name, role, serialNumber = '') {
     const storedCards = JSON.parse(localStorage.getItem('vital.registeredCards') || '[]');
     if (!Array.isArray(storedCards)) {
       statusNode.textContent = 'Could not save this card: the saved card list is invalid.';
-      return;
+      return null;
     }
 
     const cardId = serialNumber || `demo-${Date.now()}`;
@@ -649,9 +649,29 @@ function saveRegistration(name, role, serialNumber = '') {
     });
     localStorage.setItem('vital.registeredCards', JSON.stringify(storedCards));
     statusNode.textContent = `${name} registered as ${role}. The dashboard remains associated with ${DEMO.profile.name}'s demo data.`;
+    return cardId;
   } catch (error) {
     statusNode.textContent = `Card read, but registration could not be saved: ${error.message}`;
+    return null;
   }
+}
+
+function completeRegistration(name, role, serialNumber = '') {
+  const cardId = saveRegistration(name, role, serialNumber);
+  stopCardRegistration();
+  if (!cardId) return;
+
+  const profile = { ...DEMO.profile, name, role, nfcCardId: cardId };
+  appState.astronautProfile = profile;
+  updateCrewProfile(profile);
+  closeRegistration();
+  playSound('login');
+  $('#s1').classList.add('leaving');
+  setTimeout(() => {
+    $('#s1').classList.remove('leaving');
+    prepareVialScreen();
+    show('s2');
+  }, 350);
 }
 
 async function startCardRegistration() {
@@ -686,10 +706,7 @@ async function startCardRegistration() {
         : '';
       const role = /admin/i.test(cardText) ? 'admin' : 'crew';
 
-      saveRegistration(name, role, event.serialNumber || '');
-      controller.abort();
-      appState.registrationReader = null;
-      appState.registrationAbortController = null;
+      completeRegistration(name, role, event.serialNumber || '');
     };
     reader.onreadingerror = () => {
       statusNode.textContent = 'The card could not be read. Hold it near the reader and try again.';
@@ -727,7 +744,7 @@ function simulateCardRegistration() {
     $('#cardHolder').focus();
     return;
   }
-  saveRegistration(name, 'crew');
+  completeRegistration(name, 'crew');
 }
 
 function handleNfcLogin() {
@@ -2014,3 +2031,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 console.log('[VITAL] App initialized - event handlers attached');
+
+// Initialize the app by showing the first screen
+resetToOnboarding();
