@@ -1,20 +1,7 @@
-# Exclude server build output from Vercel deployment
-# This prevents dist/index.js (or dist/main.js) from being detected as entrypoint
+# Exclude ONLY the server build output from Vercel deployment
+# This prevents dist/ from being detected as entrypoint
 dist/
-node_modules/
-*.log
-.env
-.env.local
-.env.production.local
 
-# Exclude development files
-src/
-tsconfig.json
-package.json
-package-lock.json
-.git/
-.gitignore
-README.md
-
-# Keep only what's needed for API function
-!backend/api/
+# Keep everything else - needed for build and API function
+# backend/ (package.json, src/, api/, etc.)
+# html/, css/, js/ (static files)
