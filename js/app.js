@@ -456,6 +456,13 @@ function alertThresholdSummary(reading, statusLabel) {
   return `${statusLabel} alert threshold details: ${thresholds.join('; ')}.`;
 }
 
+function alertPriority(statusLabel) {
+  if (statusLabel === 'Critical') return 0;
+  if (statusLabel === 'Borderline') return 2;
+  if (statusLabel === 'Not Available') return 3;
+  return 1;
+}
+
 function syncCurrentAlerts(alerts, astronautId) {
   const key = alertStorageKey(astronautId);
   let previous = [];
@@ -1101,7 +1108,17 @@ function buildDashboard() {
   $('#hs').textContent = ratedCount
     ? `${counts.ok} of ${ratedCount} measurements with configured ranges are normal. ${issues.length} low, high, warning, critical, or borderline results. ${missing.length} results need a new sample and re-analysis.`
     : `No measurements with configured reference ranges are available. ${missing.length} results need a new sample and re-analysis.`;
-  const issueChips = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`);
+  const issueChips = issues
+    .slice()
+    .sort((left, right) => alertPriority(left.status) - alertPriority(right.status))
+    .map((issue) => {
+      const colorClass = issue.status === 'Borderline'
+        ? 'c-borderline'
+        : issue.key === 'low'
+          ? 'c-low'
+          : 'c-warn';
+      return `<span class="chip ${colorClass}">${issue.name} (${issue.status})</span>`;
+    });
   const missingChips = missing.map((name) => `<span class="chip c-na">${name} (Submit new sample for re-analysis)</span>`);
   $('#hc').innerHTML = [...issueChips, ...missingChips].join('');
   const astronautId = currentRecord.astronautId || DEMO.profile.astronautId;
@@ -1166,6 +1183,7 @@ function renderMetricCard(reading, extraClass = '') {
   const metric = reading[9];
   const range = reading[8];
   const [resultKey, label] = statusForReading(reading);
+  const statusClass = label === 'Borderline' ? 'c-borderline' : `c-${resultKey}`;
   const hasRange = Number.isFinite(range?.min) && Number.isFinite(range?.max) && range.max > range.min;
   const indicator = hasRange ? getRangeIndicator(reading[2], range.min, range.max) : null;
   const currentRecordForMetric = metric.section === 'blood' ? activeBloodRecord : currentRecord;
@@ -1194,7 +1212,7 @@ function renderMetricCard(reading, extraClass = '') {
     <button class="m ${extraClass}" type="button" aria-expanded="false">
       <div class="h">
         <span class="n">${reading[0]}</span>
-        <span class="chip c-${resultKey}">${label}</span>
+        <span class="chip ${statusClass}">${label}</span>
       </div>
       <div class="v">${displayValue(reading)} <small>${reading[1]}</small></div>
       ${hasRange ? `
@@ -1271,6 +1289,74 @@ function renderBloodSummary() {
   `;
 }
 
+function renderPriorityAlertGroups() {
+  const priority = ['Critical', 'Warning', 'Borderline', 'Re-submission'];
+  const entries = D.flatMap((group) => group[2].map((reading) => {
+    const [key, label] = statusForReading(reading);
+    const category = label === 'Not Available'
+      ? 'Re-submission'
+      : label === 'Critical'
+        ? 'Critical'
+        : label === 'Borderline'
+          ? 'Borderline'
+          : key === 'low' || key === 'warn'
+            ? 'Warning'
+            : null;
+    return category ? { group, reading, category } : null;
+  }).filter(Boolean));
+
+  const categories = priority.map((category) => {
+    const categoryEntries = entries.filter((entry) => entry.category === category);
+    if (!categoryEntries.length) return '';
+
+    const cards = categoryEntries.map(({ group, reading }) => {
+      const card = renderMetricCard(reading);
+      if (category === 'Re-submission') {
+        return `
+          <article class="alert-entry">
+            ${card}
+            <div class="alert-details">
+              <p><strong>Re-submission required</strong> · ${group[0]}</p>
+              <p>${reading[0]} has no recorded result. Submit a new sample or take a new measurement.</p>
+            </div>
+          </article>
+        `;
+      }
+
+      const metric = reading[9];
+      const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
+      const alert = appState.alerts.find((item) => (
+        item.recordId === record.id && item.metricId === metric.id
+      ));
+      if (!alert) return `<article class="alert-entry">${card}</article>`;
+
+      return `
+        <article class="alert-entry">
+          ${card}
+          <div class="alert-details">
+            <p class="alert-identity" data-alert-identity></p>
+            <p><strong>${alert.metricName}:</strong> ${alert.value} ${alert.unit} · ${alert.status}</p>
+            <p>${alert.thresholds}</p>
+            <button class="btn alert-acknowledge" type="button" data-alert-id="${encodeURIComponent(alert.id)}" ${alert.acknowledged ? 'disabled' : ''}>
+              ${alert.acknowledged ? 'Acknowledged' : 'Acknowledge'}
+            </button>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    return `
+      <section class="grp alert-priority-group">
+        <h3>${category}</h3>
+        <div class="rows">${cards}</div>
+        ${category === 'Re-submission' ? '<button class="btn missing-sample-action" data-sample-analysis type="button">Start new analysis</button>' : ''}
+      </section>
+    `;
+  }).join('');
+
+  return categories || '<p class="empty-state">No current alerts or re-submissions.</p>';
+}
+
 function renderGroups() {
   const filterAlertsOnly = appState.activeTab === 'alerts';
   const alertContext = $('#alertContext');
@@ -1280,9 +1366,7 @@ function renderGroups() {
       ? appState.astronautProfile.name
       : DEMO.profile.name;
     $('#alertContextTitle').textContent = `Alerts for ${astronautName}`;
-    $('#alertContextNote').textContent = appState.alerts.length
-      ? 'Current alerts are based on the latest available measurements. This browser-local log is not shared with mission control.'
-      : 'No current configured-range alerts. This browser-local log is not shared with mission control.';
+    $('#alertContextNote').textContent = 'Ordered by priority: Critical, Warning, Borderline, then Re-submission. Alerts are based on the latest measurements and stored locally in this browser.';
   }
   const sectionFilter = appState.activeTab === 'overview'
     ? 'vitals'
@@ -1290,62 +1374,32 @@ function renderGroups() {
       ? 'blood'
       : null;
 
-  $('#groups').innerHTML = D
-    .filter((group) => !sectionFilter || group[3] === sectionFilter)
-    .map((group) => {
-      const filtered = group[2].filter((reading) => {
-        if (!Number.isFinite(reading[2])) {
-          return appState.activeTab === 'overview' && group[3] === 'vitals'
-            || filterAlertsOnly && statusForReading(reading)[1] === 'Not Available';
-        }
-        if (!filterAlertsOnly) return true;
-        const key = statusForReading(reading)[0];
-        return key === 'low' || key === 'warn';
-      });
+  const alertHistoryMarkup = `
+    <section class="alert-history" id="alertHistory" hidden>
+      <h2>Outdated alerts</h2>
+      <p>These alerts no longer match the latest measurement record.</p>
+      <div id="alertHistoryItems"></div>
+    </section>
+  `;
 
-      if (!filtered.length) return '';
-
-      const alertMissing = filterAlertsOnly
-        ? filtered.filter((reading) => statusForReading(reading)[1] === 'Not Available')
-        : [];
-
-      return `
-        <div class="grp">
-          <h3>${group[0]}</h3>
-          <p>${group[1]}</p>
-          ${alertMissing.length ? `<p class="missing-sample-prompt">${alertMissing.map((reading) => reading[0]).join(', ')} ${alertMissing.length === 1 ? 'result needs' : 'results need'} a new sample for re-analysis. Start a new blood analysis and submit the sample or its results.</p><button class="btn missing-sample-action" data-sample-analysis type="button">Start new analysis</button>` : ''}
-          <div class="rows">${filtered.map((reading) => {
-            const card = renderMetricCard(reading);
-            if (!filterAlertsOnly || !Number.isFinite(reading[2])) return card;
-            const metric = reading[9];
-            const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
-            const alert = appState.alerts.find((item) => (
-              item.recordId === record.id && item.metricId === metric.id
-            ));
-            if (!alert) return card;
-            return `
-              <article class="alert-entry">
-                ${card}
-                <div class="alert-details">
-                  <p class="alert-identity" data-alert-identity></p>
-                  <p><strong>${alert.metricName}:</strong> ${alert.value} ${alert.unit} · ${alert.status}</p>
-                  <p>${alert.thresholds}</p>
-                  <button class="btn alert-acknowledge" type="button" data-alert-id="${encodeURIComponent(alert.id)}" ${alert.acknowledged ? 'disabled' : ''}>
-                    ${alert.acknowledged ? 'Acknowledged' : 'Acknowledge'}
-                  </button>
-                </div>
-              </article>
-            `;
-          }).join('')}</div>
-        </div>
-      `;
-    }).join('') + (filterAlertsOnly ? `
-      <section class="alert-history" id="alertHistory" hidden>
-        <h2>Outdated alerts</h2>
-        <p>These alerts no longer match the latest measurement record.</p>
-        <div id="alertHistoryItems"></div>
-      </section>
-    ` : '');
+  $('#groups').innerHTML = filterAlertsOnly
+    ? renderPriorityAlertGroups() + alertHistoryMarkup
+    : D
+      .filter((group) => !sectionFilter || group[3] === sectionFilter)
+      .map((group) => {
+        const filtered = group[2].filter((reading) => (
+          Number.isFinite(reading[2])
+          || appState.activeTab === 'overview' && group[3] === 'vitals'
+        ));
+        if (!filtered.length) return '';
+        return `
+          <div class="grp">
+            <h3>${group[0]}</h3>
+            <p>${group[1]}</p>
+            <div class="rows">${filtered.map(renderMetricCard).join('')}</div>
+          </div>
+        `;
+      }).join('');
   bindMetricCards($('#groups'));
   const outdatedAlerts = appState.alertLog.filter((alert) => alert.outdated);
   const historyPanel = $('#alertHistory');

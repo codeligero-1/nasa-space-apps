@@ -11,11 +11,13 @@
   --accent2: #A62F43;
   --hero-grad: linear-gradient(135deg, #2A2B4A 0%, #5B1927 55%, #8B1C1F 100%);
   --ok: #13875B;
-  --warn: #814800;
+  --warn: #B94700;
   --low: #A71D17;
+  --borderline: #765000;
   --okbg: #DDF4EA;
-  --warnbg: #FFEBCC;
+  --warnbg: #FFE0C2;
   --lowbg: #FFE0DC;
+  --borderlinebg: #FFF1B8;
   --pet: #7FE3FF;
   color-scheme: light;
   box-sizing: border-box;
@@ -35,11 +37,13 @@
   --accent2: #FF94A1;
   --hero-grad: linear-gradient(135deg, #2A2B4A 0%, #4A1320 50%, #7A1822 100%);
   --ok: #5FD7A1;
-  --warn: #FFC163;
+  --warn: #FF9A3D;
   --low: #FF8A7A;
+  --borderline: #FFE07A;
   --okbg: #13382E;
-  --warnbg: #463214;
+  --warnbg: #4B2A13;
   --lowbg: #4E1C24;
+  --borderlinebg: #493A13;
   --pet: #7FE3FF;
   color-scheme: dark;
 }
@@ -1088,6 +1092,7 @@ button {
 
 .c-ok { background: var(--okbg); color: var(--ok); }
 .c-warn { background: var(--warnbg); color: var(--warn); }
+.c-borderline { background: var(--borderlinebg); color: var(--borderline); }
 .c-low { background: var(--lowbg); color: var(--low); }
 .c-na { background: var(--surf2); color: var(--mute); }
 
