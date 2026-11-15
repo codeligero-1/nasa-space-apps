@@ -417,18 +417,24 @@ function toast(message, duration = 2500) {
   setTimeout(() => toastNode.classList.remove('on'), duration);
 }
 
-function status(value, lo, hi, warningLow, warningHigh) {
+function status(value, range) {
   if (!Number.isFinite(value)) return ['na', 'Not Available'];
+  if (!range) return ['na', 'Not Rated'];
+  const { min: lo, max: hi, warningLow, warningHigh, criticalLow, criticalHigh } = range;
   if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return ['na', 'Not Rated'];
+  if ((Number.isFinite(criticalLow) && value < criticalLow) ||
+      (Number.isFinite(criticalHigh) && value > criticalHigh)) {
+    return ['low', 'Critical'];
+  }
   if (value < lo) {
-    return Number.isFinite(warningLow) && value >= warningLow
-      ? ['warn', 'Borderline']
-      : ['low', 'Low'];
+    if (Number.isFinite(warningLow) && value >= warningLow) return ['warn', 'Borderline'];
+    if (Number.isFinite(criticalLow) && value > criticalLow) return ['warn', 'Warning'];
+    return ['low', 'Low'];
   }
   if (value > hi) {
-    return Number.isFinite(warningHigh) && value <= warningHigh
-      ? ['warn', 'Borderline']
-      : ['low', 'High'];
+    if (Number.isFinite(warningHigh) && value <= warningHigh) return ['warn', 'Borderline'];
+    if (Number.isFinite(criticalHigh) && value < criticalHigh) return ['warn', 'Warning'];
+    return ['low', 'High'];
   }
   return ['ok', 'Normal'];
 }
@@ -444,7 +450,7 @@ function statusForReading(reading) {
     if (reading[2] < range.min || reading[2] > range.max) return ['warn', 'Warning'];
     return ['ok', 'Normal'];
   }
-  return status(reading[2], range?.min, range?.max, range?.warningLow, range?.warningHigh);
+  return status(reading[2], range);
 }
 
 function displayValue(reading) {
@@ -1143,7 +1149,9 @@ function renderGroups() {
     .filter((group) => !sectionFilter || group[3] === sectionFilter)
     .map((group) => {
       const filtered = group[2].filter((reading) => {
-        if (!Number.isFinite(reading[2])) return false;
+        if (!Number.isFinite(reading[2])) {
+          return appState.activeTab === 'overview' && group[3] === 'vitals';
+        }
         if (!filterAlertsOnly) return true;
         const key = statusForReading(reading)[0];
         return key === 'low' || key === 'warn';
@@ -1177,12 +1185,15 @@ function renderRadiationPanel() {
   $('#radiationUpdatedAt').textContent = currentTestMetadata('radiation');
 
   const allReadings = radiationGroups.flatMap((group) => group[2]);
-  const ratedReadings = allReadings.filter((reading) => statusForReading(reading)[0] !== 'na');
-  const hasHigh = ratedReadings.some((reading) => statusForReading(reading)[0] === 'low');
-  const flagged = hasHigh || ratedReadings.some((reading) => statusForReading(reading)[0] === 'warn');
+  const ratedStatuses = allReadings
+    .map(statusForReading)
+    .filter(([key]) => key !== 'na');
+  const hasCritical = ratedStatuses.some(([, label]) => label === 'Critical');
+  const hasHigh = ratedStatuses.some(([, label]) => label === 'High' || label === 'Low');
+  const flagged = hasCritical || hasHigh || ratedStatuses.some(([key]) => key === 'warn');
   const statusNode = $('#radiationStatus');
-  statusNode.className = `chip c-${hasHigh ? 'low' : flagged ? 'warn' : ratedReadings.length ? 'ok' : 'na'}`;
-  statusNode.textContent = hasHigh ? 'High result' : flagged ? 'Warning' : ratedReadings.length ? 'Within configured ranges' : 'Not Rated';
+  statusNode.className = `chip c-${hasCritical || hasHigh ? 'low' : flagged ? 'warn' : ratedStatuses.length ? 'ok' : 'na'}`;
+  statusNode.textContent = hasCritical ? 'Critical alert' : hasHigh ? 'High result' : flagged ? 'Warning' : ratedStatuses.length ? 'Within configured ranges' : 'Not Rated';
   bindMetricCards($('#radiationPanel'));
 }
 

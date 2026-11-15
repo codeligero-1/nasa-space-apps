@@ -6,7 +6,7 @@
 
 ## Verification Note
 
-Checked items are supported by the current repository code or static prototype data. Unchecked items were not treated as fulfilled because the implementation, integration, or verification evidence is incomplete. No frontend or backend changes were made during this requirements review.
+Checked items are implemented in the static demo and were verified in the browser; this is not formal acceptance or evidence of live sensor integration. Dashboard readings come from the single source-backed demo astronaut. The latest demo flight record has no body-temperature value, so the dashboard now displays it as Not Available rather than omitting it or inventing a reading. Recording/importing new vital or radiation measurements and wiring database records into the crew dashboard remain unimplemented. Radiation alerts use configured biological-indicator ranges; physical dose metrics have no configured thresholds and cumulative dose is displayed from source data, not calculated by the app.
 
 ## 1. Login and Astronaut Identification
 
@@ -41,12 +41,12 @@ Checked items are supported by the current repository code or static prototype d
 
 ## 4. Vital Signs Monitoring
 
-- [ ] Heart rate measurements are displayed correctly.
-- [ ] Blood pressure measurements are displayed correctly.
-- [ ] Oxygen saturation (SpO₂) measurements are displayed correctly.
+- [x] Heart rate measurements are displayed correctly.
+- [x] Blood pressure measurements are displayed correctly.
+- [x] Oxygen saturation (SpO₂) measurements are displayed correctly.
 - [ ] Body temperature measurements are displayed correctly.
-- [ ] Respiratory rate measurements are displayed correctly.
-- [ ] Heart Rate Variability (HRV) data are displayed correctly.
+- [x] Respiratory rate measurements are displayed correctly.
+- [x] Heart Rate Variability (HRV) data are displayed correctly.
 - [ ] New measurements update the dashboard.
 - [ ] Abnormal measurements trigger the appropriate alerts.
 
@@ -56,9 +56,9 @@ Checked items are supported by the current repository code or static prototype d
 - [ ] Cumulative radiation exposure is calculated correctly.
 - [ ] Biological radiation indicators can be recorded or imported.
 - [ ] Radiation information is associated with the correct astronaut.
-- [ ] Radiation exposure trends can be viewed.
+- [x] Radiation exposure trends can be viewed.
 - [ ] Warning and critical thresholds trigger appropriate alerts.
-- [ ] Physical radiation dose and biological radiation indicators are displayed separately.
+- [x] Physical radiation dose and biological radiation indicators are displayed separately.
 
 ## 6. Health Analytics and Baseline Comparison
 
