@@ -10,7 +10,8 @@ const publicFiles = new Map([
   ['/css/styles.css', 'css/styles.css'],
   ['/js/app.js', 'js/app.js'],
   ['/js/data.js', 'js/data.js'],
-  ['/js/demo-health-data.js', 'js/demo-health-data.js']
+  ['/js/demo-health-data.js', 'js/demo-health-data.js'],
+  ['/js/health-summary.js', 'js/health-summary.js']
 ]);
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
