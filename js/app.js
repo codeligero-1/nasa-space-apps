@@ -1319,7 +1319,7 @@ function updateDashboardTab() {
   $('#historyPanel').classList.toggle('hide', !history);
   $('#radiationPanel').classList.toggle('hide', !radiation);
 
-  document.query.querySelectorAll('.nav-item').forEach((button) => {
+  document.querySelectorAll('.nav-item').forEach((button) => {
     const isActive = button.dataset.tab === appState.activeTab;
     button.classList.toggle('active', isActive);
     button.setAttribute('aria-pressed', String(isActive));
