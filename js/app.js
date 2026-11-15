@@ -428,35 +428,6 @@ function toast(message, duration = 2500) {
   setTimeout(() => toastNode.classList.remove('on'), duration);
 }
 
-<<<<<<< HEAD
-=======
-function status(value, range) {
-  if (!Number.isFinite(value)) return ['na', 'Not Available'];
-  if (!range) return ['na', 'Not Rated'];
-  const { min: lo, max: hi, warningLow, warningHigh, criticalLow, criticalHigh } = range;
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return ['na', 'Not Rated'];
-  if ((Number.isFinite(criticalLow) && value < criticalLow) ||
-      (Number.isFinite(criticalHigh) && value > criticalHigh)) {
-    return ['low', 'Critical'];
-  }
-  if (value < lo) {
-    if (Number.isFinite(warningLow) && value >= warningLow) return ['warn', 'Borderline'];
-    if (Number.isFinite(criticalLow) && value > criticalLow) return ['warn', 'Warning'];
-    return ['low', 'Low'];
-  }
-  if (value > hi) {
-    if (Number.isFinite(warningHigh) && value <= warningHigh) return ['warn', 'Borderline'];
-    if (Number.isFinite(criticalHigh) && value < criticalHigh) return ['warn', 'Warning'];
-    return ['low', 'High'];
-  }
-  return ['ok', 'Normal'];
-}
-
-function statusForReading(reading) {
-  return status(reading[2], reading[8]);
-}
-
->>>>>>> c7327d3ce9f52ebbee2b87c81e39d5b11754c3f9
 function displayValue(reading) {
   return formatNumber(reading[2], reading[9]);
 }
