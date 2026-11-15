@@ -206,7 +206,7 @@
           <span class="nav-dot"></span> Radiation
         </button>
         <button class="nav-item" data-tab="alerts" type="button">
-          <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">3</span>
+          <span class="nav-dot"></span> Alerts &amp; Flags <span class="badge-count" id="alertBadge">0</span>
         </button>
         <button class="nav-item" data-tab="history" type="button">
           <span class="nav-dot"></span> History
@@ -251,6 +251,10 @@
       </section>
 
       <!-- Categorized Blood Components -->
+      <section class="alert-context hide" id="alertContext" aria-live="polite">
+        <h2 id="alertContextTitle">Current alerts</h2>
+        <p id="alertContextNote">Alerts are based on the latest available measurements and stored locally in this browser.</p>
+      </section>
       <div id="groups"></div>
 
       <section class="history-panel hide" id="historyPanel" aria-labelledby="historyTitle">

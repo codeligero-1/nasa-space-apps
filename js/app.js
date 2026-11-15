@@ -19,6 +19,8 @@ const appState = {
   historyMetric: 'hemoglobin',
   historyDate: '',
   importedFile: '',
+  alerts: [],
+  alertLog: [],
   // PET AI state
   petAiIsStreaming: false,
   petAiCurrentMessageElement: null,
@@ -430,6 +432,104 @@ function toast(message, duration = 2500) {
 
 function displayValue(reading) {
   return formatNumber(reading[2], reading[9]);
+}
+
+function alertStorageKey(astronautId) {
+  return `vital.alerts.${encodeURIComponent(astronautId)}`;
+}
+
+function alertThresholdSummary(reading, statusLabel) {
+  const range = reading[8];
+  const metric = reading[9];
+  if (!range || !Number.isFinite(range.min) || !Number.isFinite(range.max)) {
+    return 'No configured threshold is available.';
+  }
+  const thresholds = [
+    `reference ${formatNumber(range.min, metric)}–${formatNumber(range.max, metric)} ${metric.unit}`
+  ];
+  if (Number.isFinite(range.warningLow) || Number.isFinite(range.warningHigh)) {
+    thresholds.push(`warning below ${Number.isFinite(range.warningLow) ? formatNumber(range.warningLow, metric) : '—'} or above ${Number.isFinite(range.warningHigh) ? formatNumber(range.warningHigh, metric) : '—'} ${metric.unit}`);
+  }
+  if (Number.isFinite(range.criticalLow) || Number.isFinite(range.criticalHigh)) {
+    thresholds.push(`critical below ${Number.isFinite(range.criticalLow) ? formatNumber(range.criticalLow, metric) : '—'} or above ${Number.isFinite(range.criticalHigh) ? formatNumber(range.criticalHigh, metric) : '—'} ${metric.unit}`);
+  }
+  return `${statusLabel} alert threshold details: ${thresholds.join('; ')}.`;
+}
+
+function syncCurrentAlerts(alerts, astronautId) {
+  const key = alertStorageKey(astronautId);
+  let previous = [];
+  let canPersist = true;
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed) || parsed.some((item) => (
+        !item || typeof item.id !== 'string' || item.astronautId !== astronautId ||
+        typeof item.acknowledged !== 'boolean'
+      ))) {
+        throw new Error('Saved alert log is invalid or belongs to a different crew profile.');
+      }
+      previous = parsed;
+    }
+  } catch (error) {
+    console.error('Could not read the local alert log:', error);
+    toast(`Saved alerts could not be read: ${error.message}`, 5000);
+    canPersist = false;
+  }
+
+  const previousById = new Map(previous.map((item) => [item.id, item]));
+  const current = alerts.map((alert) => ({
+    ...alert,
+    acknowledged: previousById.get(alert.id)?.acknowledged || false,
+    recordedAt: previousById.get(alert.id)?.recordedAt || new Date().toISOString(),
+    outdated: false,
+    outdatedAt: null
+  }));
+  appState.alerts = current;
+  const currentIds = new Set(current.map((alert) => alert.id));
+  const historyById = new Map();
+  previous.forEach((alert) => {
+    if (!currentIds.has(alert.id)) {
+      historyById.set(alert.id, {
+        ...alert,
+        outdated: true,
+        outdatedAt: alert.outdatedAt || new Date().toISOString()
+      });
+    }
+  });
+  current.forEach((alert) => historyById.delete(alert.id));
+  appState.alertLog = [...historyById.values(), ...current];
+
+  if (canPersist) {
+    try {
+      localStorage.setItem(key, JSON.stringify(appState.alertLog));
+    } catch (error) {
+      console.error('Could not record current alerts locally:', error);
+      toast(`Current alerts could not be saved in this browser: ${error.message}`, 5000);
+    }
+  }
+  return current;
+}
+
+function acknowledgeAlert(alertId) {
+  const alert = appState.alerts.find((item) => item.id === alertId);
+  if (!alert || alert.acknowledged) return;
+  alert.acknowledged = true;
+  try {
+    localStorage.setItem(alertStorageKey(alert.astronautId), JSON.stringify(appState.alertLog));
+    renderGroups();
+    const missingCount = D.flatMap((group) => group[2])
+      .filter((reading) => statusForReading(reading)[1] === 'Not Available').length;
+    $('#alertBadge').textContent = String(
+      appState.alerts.filter((item) => !item.acknowledged).length + missingCount
+    );
+    toast('Alert acknowledged');
+  } catch (error) {
+    alert.acknowledged = false;
+    console.error('Could not acknowledge alert:', error);
+    toast(`Alert acknowledgement could not be saved: ${error.message}`, 5000);
+  }
 }
 
 function say(message, isUserMessage = false) {
@@ -984,7 +1084,8 @@ function buildDashboard() {
         issues.push({
           name: reading[0],
           status: label,
-          key
+          key,
+          reading
         });
       }
     });
@@ -1003,7 +1104,27 @@ function buildDashboard() {
   const issueChips = issues.map((issue) => `<span class="chip c-${issue.key}">${issue.name} (${issue.status})</span>`);
   const missingChips = missing.map((name) => `<span class="chip c-na">${name} (Submit new sample for re-analysis)</span>`);
   $('#hc').innerHTML = [...issueChips, ...missingChips].join('');
-  $('#alertBadge').textContent = issues.length + missing.length;
+  const activeAlerts = issues.map((issue) => {
+    const reading = issue.reading;
+    const metric = reading[9];
+    const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
+    const astronautId = record.astronautId || DEMO.profile.astronautId;
+    return {
+      id: JSON.stringify([astronautId, record.id, metric.id]),
+      astronautId,
+      recordId: record.id,
+      metricId: metric.id,
+      metricName: reading[0],
+      value: formatNumber(reading[2], metric),
+      unit: metric.unit,
+      status: issue.status,
+      thresholds: alertThresholdSummary(reading, issue.status)
+    };
+  });
+  syncCurrentAlerts(activeAlerts, astronautId);
+  $('#alertBadge').textContent = String(
+    appState.alerts.filter((alert) => !alert.acknowledged).length + missing.length
+  );
 
   $('#summaryTiles').innerHTML = `
     <div class="tile-card"><small>Vital Measurements Available</small><strong>${D.filter((group) => group[3] === 'vitals').flatMap((group) => group[2]).filter((reading) => Number.isFinite(reading[2])).length}</strong></div>
@@ -1152,6 +1273,17 @@ function renderBloodSummary() {
 
 function renderGroups() {
   const filterAlertsOnly = appState.activeTab === 'alerts';
+  const alertContext = $('#alertContext');
+  alertContext.classList.toggle('hide', !filterAlertsOnly);
+  if (filterAlertsOnly) {
+    const astronautName = appState.astronautProfile?.id === DEMO.profile.astronautId
+      ? appState.astronautProfile.name
+      : DEMO.profile.name;
+    $('#alertContextTitle').textContent = `Alerts for ${astronautName}`;
+    $('#alertContextNote').textContent = appState.alerts.length
+      ? 'Current alerts are based on the latest available measurements. This browser-local log is not shared with mission control.'
+      : 'No current configured-range alerts. This browser-local log is not shared with mission control.';
+  }
   const sectionFilter = appState.activeTab === 'overview'
     ? 'vitals'
     : appState.activeTab === 'analytics'
@@ -1182,11 +1314,64 @@ function renderGroups() {
           <h3>${group[0]}</h3>
           <p>${group[1]}</p>
           ${alertMissing.length ? `<p class="missing-sample-prompt">${alertMissing.map((reading) => reading[0]).join(', ')} ${alertMissing.length === 1 ? 'result needs' : 'results need'} a new sample for re-analysis. Start a new blood analysis and submit the sample or its results.</p><button class="btn missing-sample-action" data-sample-analysis type="button">Start new analysis</button>` : ''}
-          <div class="rows">${filtered.map((reading) => renderMetricCard(reading)).join('')}</div>
+          <div class="rows">${filtered.map((reading) => {
+            const card = renderMetricCard(reading);
+            if (!filterAlertsOnly || !Number.isFinite(reading[2])) return card;
+            const metric = reading[9];
+            const record = metric.section === 'blood' ? activeBloodRecord : currentRecord;
+            const alert = appState.alerts.find((item) => (
+              item.recordId === record.id && item.metricId === metric.id
+            ));
+            if (!alert) return card;
+            return `
+              <article class="alert-entry">
+                ${card}
+                <div class="alert-details">
+                  <p class="alert-identity" data-alert-identity></p>
+                  <p><strong>${alert.metricName}:</strong> ${alert.value} ${alert.unit} · ${alert.status}</p>
+                  <p>${alert.thresholds}</p>
+                  <button class="btn alert-acknowledge" type="button" data-alert-id="${encodeURIComponent(alert.id)}" ${alert.acknowledged ? 'disabled' : ''}>
+                    ${alert.acknowledged ? 'Acknowledged' : 'Acknowledge'}
+                  </button>
+                </div>
+              </article>
+            `;
+          }).join('')}</div>
         </div>
       `;
-    }).join('');
+    }).join('') + (filterAlertsOnly ? `
+      <section class="alert-history" id="alertHistory" hidden>
+        <h2>Outdated alerts</h2>
+        <p>These alerts no longer match the latest measurement record.</p>
+        <div id="alertHistoryItems"></div>
+      </section>
+    ` : '');
   bindMetricCards($('#groups'));
+  const outdatedAlerts = appState.alertLog.filter((alert) => alert.outdated);
+  const historyPanel = $('#alertHistory');
+  if (historyPanel && outdatedAlerts.length) {
+    historyPanel.hidden = false;
+    const historyItems = $('#alertHistoryItems');
+    outdatedAlerts.forEach((alert) => {
+      const item = document.createElement('article');
+      const title = document.createElement('strong');
+      const recorded = document.createElement('span');
+      item.className = 'alert-history-item';
+      title.textContent = `${alert.metricName} · ${alert.value} ${alert.unit} · ${alert.status}`;
+      recorded.textContent = `Recorded ${new Date(alert.recordedAt).toLocaleString()} · Outdated ${new Date(alert.outdatedAt).toLocaleString()}`;
+      item.append(title, recorded);
+      historyItems.appendChild(item);
+    });
+  }
+  $('#groups').querySelectorAll('[data-alert-identity]').forEach((element) => {
+    const astronautName = appState.astronautProfile?.id === DEMO.profile.astronautId
+      ? appState.astronautProfile.name
+      : DEMO.profile.name;
+    element.textContent = `Astronaut: ${astronautName}`;
+  });
+  $('#groups').querySelectorAll('[data-alert-id]').forEach((button) => {
+    button.onclick = () => acknowledgeAlert(decodeURIComponent(button.dataset.alertId));
+  });
   $('#groups').querySelectorAll('[data-sample-analysis]').forEach((button) => {
     button.onclick = () => {
       show('s2');

@@ -9,7 +9,7 @@ const publicFiles = new Map([
   ['/assets/favicon/vital.svg', 'assets/favicon/vital.svg'],
   ['/css/styles.css', 'css/styles.css'],
   ['/js/app.js', 'js/app.js'],
-  ['/js/data.js', 'js/data.js'],
+  ['/js/data.js', 'backend/public/js/data.js'],
   ['/js/demo-health-data.js', 'js/demo-health-data.js'],
   ['/js/health-summary.js', 'js/health-summary.js']
 ]);
